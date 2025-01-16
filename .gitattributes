@@ -1,0 +1,7 @@
+# Set the default behavior for text files
+* text=auto
+
+# Ensure specific file types use LF endings
+*.sh text eol=lf
+*.py text eol=lf
+*.go text eol=lf
