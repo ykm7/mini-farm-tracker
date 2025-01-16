@@ -31,5 +31,8 @@ Primary motivation is I have done similar in Python multiple times (Flask, Quart
 Domain established within DigitalOcean directing to droplet:
 mini-farm-tracker.io
 
+##### Network
 
-#### Oracle Cloud
+Firewall options - inbound port of 3000 (TCP) required
+
+SSL certificate (Let's Encrypt) created on domain bought from namecheap.
