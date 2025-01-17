@@ -14,7 +14,7 @@ func main() {
 	fmt.Println("hello")
 
 	r := gin.Default()
-	r.Use(cors.Default())
+	// r.Use(cors.Default())
 
 	config := cors.DefaultConfig()
 
@@ -23,7 +23,7 @@ func main() {
 	// config.AllowCredentials = true
 
 	if gin.Mode() == "release" {
-		config.AllowOrigins = []string{"https://mini-farm-tracker.io"}
+		config.AllowOrigins = []string{"https://mini-farm-tracker.io", "https://www.mini-farm-tracker.io"}
 	} else {
 		// vue development
 		config.AllowOrigins = []string{"http://localhost:5173"}
@@ -51,8 +51,11 @@ func main() {
 	})
 
 	if gin.Mode() == "release" {
-		log.Fatal(autotls.Run(r, "api.mini-farm-tracker.io"))
+		log.Println("Starting in release mode")
+		// log.Fatal(autotls.Run(r, "api.mini-farm-tracker.io"))
+		log.Fatal(autotls.Run(r, "mini-farm-tracker.io"))
 	} else {
+		log.Println("Starting in local dev mode")
 		log.Fatal(r.Run())
 	}
 }

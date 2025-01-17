@@ -15,6 +15,15 @@ Default
 
 #### [vercel](https://vercel.com)
 
+vercel CLI is used to deploy when required.
+
+##### Environment variables
+Once updated via the vercel dashboard, it is important to pull them locally.
+
+> vercel env pull
+
+From here can use the vercel deploy steps within the `package.json` file. 
+
 #### [Github Pages](https://pages.github.com/)
 
 
@@ -30,6 +39,14 @@ Primary motivation is I have done similar in Python multiple times (Flask, Quart
 
 Domain established within DigitalOcean directing to droplet:
 mini-farm-tracker.io
+
+##### Development
+
+> git checkout .
+> git clean -fd
+
+> go build
+> export GIN_MODE=release && ./mini-farm-tracker-server
 
 ##### Network
 

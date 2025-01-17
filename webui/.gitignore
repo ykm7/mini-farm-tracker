@@ -54,3 +54,7 @@ yarn-error.log
 # End of https://www.toptal.com/developers/gitignore/api/vue,vuejs
 
 public/
+.vercel
+
+.env
+.env*.local
