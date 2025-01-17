@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
 )
 
@@ -50,12 +49,14 @@ func main() {
 		})
 	})
 
-	if gin.Mode() == "release" {
-		log.Println("Starting in release mode")
-		// log.Fatal(autotls.Run(r, "api.mini-farm-tracker.io"))
-		log.Fatal(autotls.Run(r, "mini-farm-tracker.io"))
-	} else {
-		log.Println("Starting in local dev mode")
-		log.Fatal(r.Run())
-	}
+	// if gin.Mode() == "release" {
+	// 	log.Println("Starting in release mode")
+	// 	// log.Fatal(autotls.Run(r, "api.mini-farm-tracker.io"))
+	// 	log.Fatal(autotls.Run(r, "mini-farm-tracker.io"))
+	// } else {
+	// 	log.Println("Starting in local dev mode")
+	// 	log.Fatal(r.Run())
+	// }
+
+	log.Fatal(r.Run())
 }
