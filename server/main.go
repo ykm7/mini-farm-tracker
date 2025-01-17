@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,7 +14,22 @@ func main() {
 	fmt.Println("hello")
 
 	r := gin.Default()
+	r.Use(cors.Default())
 
+	config := cors.DefaultConfig()
+
+	// config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	// config.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
+	// config.AllowCredentials = true
+
+	if gin.Mode() == "release" {
+		config.AllowOrigins = []string{"https://mini-farm-tracker.io"}
+	} else {
+		// vue development
+		config.AllowOrigins = []string{"http://localhost:5173"}
+	}
+
+	r.Use(cors.New(config))
 	// r.SetTrustedProxies([]string{"mini-farm-tracker.io"})
 	// r.ForwardedByClientIP = true
 
@@ -33,10 +50,9 @@ func main() {
 		})
 	})
 
-	log.Println("Starting server on port 3000...")
-
-	// log.Fatal(autotls.Run(r, "mini-farm-tracker.io"))
-	log.Fatal(r.Run(":3000"))
-
-	log.Println("Server has started successfully.")
+	if gin.Mode() == "release" {
+		log.Fatal(autotls.Run(r, "api.mini-farm-tracker.io"))
+	} else {
+		log.Fatal(r.Run())
+	}
 }
