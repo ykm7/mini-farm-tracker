@@ -12,8 +12,10 @@ import (
 func main() {
 	fmt.Println("hello")
 
-	r := gin.Default()
-	// r.Use(cors.Default())
+	// Adding custom logger to prevent logs from being filled with /health endpoints
+	r := gin.New()
+	r.Use(CustomLogger())
+	r.Use(gin.Recovery())
 
 	config := cors.DefaultConfig()
 
@@ -43,7 +45,7 @@ func main() {
 		})
 	})
 
-	r.GET("/health", func(c *gin.Context) {
+	r.GET(HEALTH_ENDPOINT, func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
 		})
@@ -58,5 +60,6 @@ func main() {
 	// 	log.Fatal(r.Run())
 	// }
 
-	log.Fatal(r.Run())
+	// port defaults 8080 but for clarify, declaring
+	log.Fatal(r.Run(":8080"))
 }

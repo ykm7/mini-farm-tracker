@@ -64,6 +64,11 @@ SSL certificate (Let's Encrypt) created on domain bought from namecheap.
 - [ ] Investigate Containerisation options.
     - Initial version is simply running binary.
     - solutions such as k8/docker (compose) are viable however k8 atleast is likely an overkill. All I want really want is crash/restart tolerance.
+    - [x] For now a solution found using the App Platform within DigitalOcean. Allows:
+        - [x] Health endpoints
+        - [x] HA (defaults to 2x containers)
+        - [x] Auto-deploy from git commit
+        - [x] Automatic handling of SSLs.
 
 ### General
 
