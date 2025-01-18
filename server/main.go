@@ -12,7 +12,9 @@ func main() {
 	log.Println("Starting up...")
 
 	// values for Mongo and TTN
-	readEnvs()
+	envs := readEnvs()
+
+	log.Printf("Envs: +%v", envs)
 
 	// Adding custom logger to prevent logs from being filled with /health endpoints
 	r := gin.New()
@@ -45,6 +47,10 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
+	})
+
+	r.POST("/webhook", func(c *gin.Context) {
+		handleWebhook(c, envs)
 	})
 
 	log.Printf("Endpoint: %s not logged\n", HEALTH_ENDPOINT)

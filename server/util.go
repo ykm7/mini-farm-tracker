@@ -13,9 +13,7 @@ type environmentVariables struct {
 	mongo_conn       string
 }
 
-func readEnvs() (envs environmentVariables) {
-	// envs := environmentVariables{}
-
+func readEnvs() *environmentVariables {
 	if !isProduction() {
 		err := godotenv.Load()
 		if err != nil {
@@ -23,12 +21,16 @@ func readEnvs() (envs environmentVariables) {
 		}
 	}
 
-	envs.mongo_conn = os.Getenv("MONGO_CONN")
-	envs.ttn_webhhook_api = os.Getenv("TTN_WEBHOOK_API")
-
-	return
+	return &environmentVariables{
+		ttn_webhhook_api: os.Getenv("TTN_WEBHOOK_API"),
+		mongo_conn:       os.Getenv("MONGO_CONN"),
+	}
 }
 
+/*
+Gins mode is set to "release" if the
+environment variable GIN_MODE == "release"
+*/
 func isProduction() bool {
 	return gin.Mode() == "release"
 }
