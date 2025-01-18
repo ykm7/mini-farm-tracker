@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -10,7 +9,10 @@ import (
 )
 
 func main() {
-	fmt.Println("hello")
+	log.Println("Starting up...")
+
+	// values for Mongo and TTN
+	readEnvs()
 
 	// Adding custom logger to prevent logs from being filled with /health endpoints
 	r := gin.New()
@@ -23,7 +25,7 @@ func main() {
 	// config.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
 	// config.AllowCredentials = true
 
-	if gin.Mode() == "release" {
+	if isProduction() {
 		config.AllowOrigins = []string{"https://mini-farm-tracker.io", "https://www.mini-farm-tracker.io"}
 	} else {
 		// vue development
@@ -45,6 +47,7 @@ func main() {
 		})
 	})
 
+	log.Printf("Endpoint: %s not logged\n", HEALTH_ENDPOINT)
 	r.GET(HEALTH_ENDPOINT, func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
@@ -60,6 +63,7 @@ func main() {
 	// 	log.Fatal(r.Run())
 	// }
 
+	log.Println("Server listening...")
 	// port defaults 8080 but for clarify, declaring
 	log.Fatal(r.Run(":8080"))
 }
