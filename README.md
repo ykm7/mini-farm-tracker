@@ -10,17 +10,6 @@ Current Implementation
 
 Using NodeJS v22.13.0
 
-Hosted on: <b>[vercel](https://vercel.com)</b>
-
-vercel CLI is used to deploy when required.
-
-#### Environment variables
-Once updated via the vercel dashboard, it is important to pull them locally.
-
-> vercel env pull
-
-From here can use the vercel deploy steps within the `package.json` file. 
-
 
 ## server
 
@@ -28,7 +17,22 @@ Using Golang
 
 Primary motivation is I have done similar in Python multiple times (Flask, Quart) and while I have created microservices within Golang, I have not used it for web API hosting.
 
-### Hosting/Deployment Options
+# Hosting:
+
+## WebUI
+
+Hosted on: <b>[vercel](https://vercel.com)</b>
+
+vercel CLI is used to deploy when required.
+
+### Environment variables
+Once updated via the vercel dashboard, it is important to pull them locally.
+
+> vercel env pull
+
+From here can use the vercel deploy steps within the `package.json` file. 
+
+## Server
 
 Hosted on: <b>DigitalOcean</b>
 
@@ -37,7 +41,7 @@ Domain established within DigitalOcean directing to droplet:
 
 DNS Records are configured within DigitalOcean to allow for vercel website to be sued.
 
-#### Development
+### Development
 
 > git checkout .
 > git clean -fd
@@ -45,13 +49,48 @@ DNS Records are configured within DigitalOcean to allow for vercel website to be
 > go build
 > export GIN_MODE=release && ./mini-farm-tracker-server
 
-##### Network
+#### Network
 
 Firewall options - inbound port of 3000 (TCP) required
 
 SSL certificate (Let's Encrypt) created on domain bought from namecheap.
 
-## TODO:
+# Data Flow
+
+```mermaid
+---
+title: Sensor Data into the Server
+---
+flowchart TD
+    webhook@{ shape: bow-rect, label: "webhook" }
+    api_valid@{ shape: diamond, label: "api\nkey\nvalid" }
+    raw_data@{ shape: bow-rect, label: "raw data" }
+    calibrated_data@{ shape: bow-rect, label: "calibrated data" }
+    mongo@{ shape: cyl, label: "MongoDB" }
+    Config_exists@{ shape: diamond, label: "'Configuration'\nexists?" }
+
+    start@{ shape: sm-circ } --> webhook
+    webhook[webhook] --> api_valid{API key valid?}
+
+    subgraph Server
+    api_valid -->|Yes| sensor_exists{Sensor exists?}
+    api_valid -->|No| Dropped[Dropped]
+
+    sensor_exists --->|Yes| raw_data
+    sensor_exists --->|No| Dropped
+
+    raw_data --> Config_exists -->|Yes| calibrated_data
+    end
+
+    raw_data --> mongo
+    calibrated_data --> mongo
+
+    Config_exists -->|No| Stop
+    Dropped --> Stop
+    mongo --> Stop@{ shape: fr-circ }
+```
+
+# TODO:
 
 ### WebUI
 - [] Graphs
