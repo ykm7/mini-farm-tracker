@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const HEALTH_ENDPOINT = "/health"
@@ -16,7 +17,7 @@ func CustomLogger() gin.HandlerFunc {
 	})
 }
 
-func SetupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
+func SetupRouter(envs *environmentVariables, db *mongo.Database) *gin.Engine {
 	r := gin.New()
 	r.Use(CustomLogger())
 	r.Use(gin.Recovery())
@@ -42,6 +43,10 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
 
 	api := r.Group("/api")
 	{
+		api.GET("/sensors", func(c *gin.Context) {
+			handleWithoutSensorID(c, db)
+		})
+		api.GET("/sensors/:SENSOR_ID", handleWithSensorID)
 		api.GET("/data", dataFn)
 	}
 

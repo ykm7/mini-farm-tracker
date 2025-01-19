@@ -64,17 +64,17 @@ func main() {
 	// }
 
 	// WORKING
-	cursor, err := core.GetRawDataCollection(mongoDb).Find(context.TODO(), bson.M{"sensor": sensorName})
+	results, err := core.GetRawDataCollection(mongoDb).Find(context.TODO(), bson.M{"sensor": sensorName})
 	if err != nil {
 		// Handle error
 	}
-	defer cursor.Close(context.TODO())
+	// defer cursor.Close(context.TODO())
 
-	var results []core.RawData
-	if err = cursor.All(context.TODO(), &results); err != nil {
-		// Handle error
-		log.Panicf("%v", err)
-	}
+	// var results []core.RawData
+	// if err = cursor.All(context.TODO(), &results); err != nil {
+	// 	// Handle error
+	// 	log.Panicf("%v", err)
+	// }
 
 	log.Printf("Raw data: %v", results)
 }

@@ -46,7 +46,7 @@ type MongoDatabase interface {
 type MongoCollection[T any] interface {
 	InsertOne(ctx context.Context, document T) (*mongo.InsertOneResult, error)
 	FindOne(ctx context.Context, filter interface{}, result *T) error
-	Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error)
+	Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) ([]T, error)
 	UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 }
 
@@ -75,8 +75,24 @@ func (m *MongoCollectionWrapper[T]) FindOne(ctx context.Context, filter interfac
 	return m.col.FindOne(ctx, filter).Decode(result)
 }
 
-func (m *MongoCollectionWrapper[T]) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error) {
-	return m.col.Find(ctx, filter, opts...)
+func (m *MongoCollectionWrapper[T]) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) ([]T, error) {
+	if filter == nil {
+		filter = bson.D{}
+	}
+	cursor, err := m.col.Find(ctx, filter, opts...)
+
+	if err != nil {
+		// Handle error
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	var results []T
+	if err = cursor.All(ctx, &results); err != nil {
+		// Handle error
+		return nil, err
+	}
+
+	return results, nil
 }
 
 func (m *MongoCollectionWrapper[T]) UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
