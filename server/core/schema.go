@@ -14,7 +14,8 @@ const (
 )
 
 type Sensor struct {
-	Id string `bson:"_id"`
+	Id          string `bson:"_id"`
+	Description string `bson:"description"`
 }
 
 type RawData struct {

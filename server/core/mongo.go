@@ -46,6 +46,8 @@ type MongoDatabase interface {
 type MongoCollection[T any] interface {
 	InsertOne(ctx context.Context, document T) (*mongo.InsertOneResult, error)
 	FindOne(ctx context.Context, filter interface{}, result *T) error
+	Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error)
+	UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 }
 
 // Wrapper struct implementing MongoCollection
@@ -71,4 +73,12 @@ func (m *MongoCollectionWrapper[T]) InsertOne(ctx context.Context, document T) (
 
 func (m *MongoCollectionWrapper[T]) FindOne(ctx context.Context, filter interface{}, result *T) error {
 	return m.col.FindOne(ctx, filter).Decode(result)
+}
+
+func (m *MongoCollectionWrapper[T]) Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) (*mongo.Cursor, error) {
+	return m.col.Find(ctx, filter, opts...)
+}
+
+func (m *MongoCollectionWrapper[T]) UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
+	return m.col.UpdateOne(ctx, filter, update, opts...)
 }
