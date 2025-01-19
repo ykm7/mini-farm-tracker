@@ -16,12 +16,14 @@ func CustomLogger() gin.HandlerFunc {
 	})
 }
 
-func setupRouter(envs *environmentVariables) *gin.Engine {
+func setupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
 	r := gin.New()
 	r.Use(CustomLogger())
 	r.Use(gin.Recovery())
 
 	config := cors.DefaultConfig()
+
+	// usage - NewMongoCollection[Sensor](db.Collection(string(SENSORS_COLLECTION)))
 
 	// config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	// config.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
