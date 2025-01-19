@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"log"
@@ -13,7 +13,7 @@ type environmentVariables struct {
 	mongo_conn       string
 }
 
-func readEnvs() *environmentVariables {
+func ReadEnvs() *environmentVariables {
 	if !isProduction() {
 		err := godotenv.Load()
 		if err != nil {

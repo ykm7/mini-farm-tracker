@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"log"
-	"time"
+	"mini-farm-tracker-server/core"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -13,16 +12,16 @@ func main() {
 	log.Println("Starting up...")
 
 	// values for Mongo and TTN
-	envs := readEnvs()
+	envs := core.ReadEnvs()
 
-	mongoDb, mongoDeferFn := setupMongo(envs)
+	mongoDb, mongoDeferFn := core.SetupMongo(envs)
 	defer mongoDeferFn()
 
 	// testing mongo - START
 	var inserted *mongo.InsertOneResult
 	var err error
 
-	inserted, err = GetSensorCollection(mongoDb).InsertOne(context.TODO(), Sensor{Id: primitive.NewObjectIDFromTimestamp(time.Now())})
+	inserted, err = core.GetSensorCollection(mongoDb).InsertOne(context.TODO(), core.Sensor{Id: "Sensor X"})
 	if err != nil {
 		log.Panicf("%v", err)
 	}
@@ -30,7 +29,7 @@ func main() {
 	log.Printf("%v", inserted)
 	// testing mongo - END
 
-	r := setupRouter(envs, mongoDb)
+	r := core.SetupRouter(envs, mongoDb)
 
 	log.Println("Server listening...")
 	// port defaults 8080 but for clarify, declaring

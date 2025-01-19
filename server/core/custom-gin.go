@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"log"
@@ -16,7 +16,7 @@ func CustomLogger() gin.HandlerFunc {
 	})
 }
 
-func setupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
+func SetupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
 	r := gin.New()
 	r.Use(CustomLogger())
 	r.Use(gin.Recovery())

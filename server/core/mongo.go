@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"context"
@@ -9,7 +9,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func setupMongo(envs *environmentVariables) (*mongo.Database, func()) {
+/*
+TODO: Add cancellation context
+*/
+func SetupMongo(envs *environmentVariables) (db *mongo.Database, deferFn func()) {
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	opts := options.Client().ApplyURI(envs.mongo_conn).SetServerAPIOptions(serverAPI)
 	// Create a new client and connect to the server
@@ -23,11 +26,15 @@ func setupMongo(envs *environmentVariables) (*mongo.Database, func()) {
 		panic(err)
 	}
 	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
-	return client.Database(DATABASE_NAME), func() {
+
+	db = client.Database(DATABASE_NAME)
+	deferFn = func() {
 		if err = client.Disconnect(context.TODO()); err != nil {
 			panic(err)
 		}
 	}
+
+	return
 }
 
 // MongoDatabase interface remains non-generic

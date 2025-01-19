@@ -1,4 +1,4 @@
-package main
+package core
 
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -14,22 +14,23 @@ const (
 )
 
 type Sensor struct {
-	Id primitive.ObjectID `bson:"_id"`
+	Id string `bson:"_id"`
 }
 
 type RawData struct {
 	Id        primitive.ObjectID `bson:"_id"`
 	Timestamp primitive.DateTime `bson:"timestamp"`
-	Sensor    primitive.ObjectID `bson:"_id"`
+	Sensor    string             `bson:"sensor"`
 }
 
 type CalibrateddData struct {
 	Id        primitive.ObjectID `bson:"_id"`
 	Timestamp primitive.DateTime `bson:"timestamp"`
-	Sensor    primitive.ObjectID `bson:"_id"`
+	Sensor    string             `bson:"sensor"`
 }
 
 type SensorConfiguration struct {
-	Id     primitive.ObjectID `bson:"_id"`
-	Sensor primitive.ObjectID `bson:"_id"`
+	Id        primitive.ObjectID `bson:"_id"`
+	Sensor    string             `bson:"sensor"`
+	Timestamp primitive.DateTime `bson:"timestamp"`
 }
