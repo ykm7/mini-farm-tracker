@@ -18,19 +18,21 @@ type Sensor struct {
 }
 
 type RawData struct {
-	Id        primitive.ObjectID `bson:"_id"`
+	Id        primitive.ObjectID `bson:"_id,omitempty"`
 	Timestamp primitive.DateTime `bson:"timestamp"`
 	Sensor    string             `bson:"sensor"`
+	Data      int64              `bson:"data"`
 }
 
 type CalibrateddData struct {
-	Id        primitive.ObjectID `bson:"_id"`
+	Id        primitive.ObjectID `bson:"_id,omitempty"`
 	Timestamp primitive.DateTime `bson:"timestamp"`
 	Sensor    string             `bson:"sensor"`
+	Data      int64              `bson:"data"`
 }
 
 type SensorConfiguration struct {
-	Id        primitive.ObjectID `bson:"_id"`
+	Id        primitive.ObjectID `bson:"_id,omitempty"`
 	Sensor    string             `bson:"sensor"`
 	Timestamp primitive.DateTime `bson:"timestamp"`
 }
