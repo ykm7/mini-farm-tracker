@@ -1,4 +1,4 @@
-package data_generation
+package main
 
 import (
 	"context"
@@ -23,6 +23,7 @@ func main() {
 	if err != nil {
 		log.Panicf("%v", err)
 	}
+	log.Printf("%v", inserted)
 
 	inserted, err = core.GetSensorCollection(mongoDb).InsertOne(context.TODO(), core.Sensor{Id: "Sensor 2"})
 	if err != nil {
@@ -30,5 +31,4 @@ func main() {
 	}
 
 	log.Printf("%v", inserted)
-
 }
