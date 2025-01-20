@@ -92,6 +92,10 @@ func (m *MongoCollectionWrapper[T]) Find(ctx context.Context, filter interface{}
 		return nil, err
 	}
 
+	if results == nil {
+		results = make([]T, 0)
+	}
+
 	return results, nil
 }
 
