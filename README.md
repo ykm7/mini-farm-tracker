@@ -57,9 +57,16 @@ SSL certificate (Let's Encrypt) created on domain bought from namecheap.
 
 ### Testing
 
-#### testContainer
+#### testContainer (currently only implemented for server - mongoDB)
 
 NOTE: testContainer can use cloud resources however prefer to run locally.
+
+#### Test result generation
+
+##### Server
+
+> go test ./... -coverprofile=coverage.out
+> go tool cover -html coverage -o coverage.html
 
 Requires:
 * Docker Desktop

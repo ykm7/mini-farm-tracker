@@ -23,8 +23,6 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
 
 	config := cors.DefaultConfig()
 
-	db.Collection("testing")
-
 	// usage - NewMongoCollection[Sensor](db.Collection(string(SENSORS_COLLECTION)))
 
 	// config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
