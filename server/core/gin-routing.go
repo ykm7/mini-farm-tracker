@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -9,6 +10,7 @@ import (
 )
 
 const HEALTH_ENDPOINT = "/health"
+const SENSOR_ID_PARAM = "SENSOR_ID"
 
 func CustomLogger() gin.HandlerFunc {
 	return gin.LoggerWithConfig(gin.LoggerConfig{
@@ -33,11 +35,21 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
 	r.Use(cors.New(config))
 	api := r.Group("/api")
 	{
-		api.GET("/sensors", func(c *gin.Context) {
-			handleWithoutSensorID(c, db)
-		})
-		api.GET("/sensors/:SENSOR_ID", handleWithSensorID)
-		api.GET("/data", dataFn)
+		sensorApi := api.Group("/sensors")
+		{
+			sensorApi.GET("", func(c *gin.Context) {
+				handleWithoutSensorID(c, db)
+			})
+			sensorApi.GET(fmt.Sprintf(":%s", SENSOR_ID_PARAM), handleWithSensorID)
+
+			sensorDataApi := sensorApi.Group(fmt.Sprintf(":%s/data", SENSOR_ID_PARAM))
+			{
+				sensorDataApi.GET("/raw_data", func(c *gin.Context) {
+					getRawDataWithSensorId(c, db)
+				})
+				sensorDataApi.GET("/calibrated_data", getCalibratedDataWithSensorId)
+			}
+		}
 	}
 
 	r.GET("/ping", func(c *gin.Context) {

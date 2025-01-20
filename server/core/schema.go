@@ -25,7 +25,7 @@ type RawData struct {
 	Data      int64              `bson:"data"`
 }
 
-type CalibrateddData struct {
+type CalibratedData struct {
 	Id        primitive.ObjectID `bson:"_id,omitempty"`
 	Timestamp primitive.DateTime `bson:"timestamp"`
 	Sensor    string             `bson:"sensor"`

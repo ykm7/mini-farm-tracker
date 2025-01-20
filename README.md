@@ -28,7 +28,8 @@ vercel CLI is used to deploy when required.
 ### Environment variables
 Once updated via the vercel dashboard, it is important to pull them locally.
 
-> vercel env pull
+This will pull the "production" environment fields to test local development against the production server.
+> vercel env pull --environment=production .env.production
 
 From here can use the vercel deploy steps within the `package.json` file. 
 

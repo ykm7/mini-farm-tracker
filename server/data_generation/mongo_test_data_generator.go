@@ -4,8 +4,10 @@ import (
 	"context"
 	"log"
 	"mini-farm-tracker-server/core"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -46,24 +48,24 @@ func main() {
 	log.Printf("%v", inserted)
 
 	// inserted, err = core.GetSensorCollection(mongoDb).InsertOne(context.TODO(), core.Sensor{Id: "Sensor 2"})
-	// // Ignore duplicate key error
-	// dontPanicOnMongoCode(11000, err)
-	// log.Printf("%v", inserted)
+	// Ignore duplicate key errorls
+	dontPanicOnMongoCode(11000, err)
+	log.Printf("%v", inserted)
 
-	// // generates raw data - WORKING
-	// mockSensorData := []int64{35, 20, 15, 115, 80, 25}
-	// timestamp := time.Now()
-	// for _, v := range mockSensorData {
-	// 	if _, err = core.GetRawDataCollection(mongoDb).InsertOne(context.TODO(), core.RawData{
-	// 		Timestamp: primitive.NewDateTimeFromTime(timestamp),
-	// 		Sensor:    sensorName,
-	// 		Data:      v,
-	// 	}); err != nil {
-	// 		log.Panicf("%v", err)
-	// 	}
+	// generates raw data - WORKING
+	mockSensorData := []int64{35, 20, 15, 115, 80, 25}
+	timestamp := time.Now()
+	for _, v := range mockSensorData {
+		if _, err = core.GetRawDataCollection(mongoDb).InsertOne(context.TODO(), core.RawData{
+			Timestamp: primitive.NewDateTimeFromTime(timestamp),
+			Sensor:    sensorName,
+			Data:      v,
+		}); err != nil {
+			log.Panicf("%v", err)
+		}
 
-	// 	timestamp = timestamp.Add(-1 + 24*time.Hour)
-	// }
+		timestamp = timestamp.Add(-1 + 24*time.Hour)
+	}
 
 	// WORKING
 	results, err := core.GetRawDataCollection(mongoDb).Find(context.TODO(), bson.M{"sensor": sensorName})

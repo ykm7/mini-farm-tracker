@@ -19,6 +19,7 @@
     "@vercel/speed-insights": "^1.1.0",
     "axios": "^1.7.9",
     "chart.js": "^4.4.7",
+    "chartjs-adapter-moment": "^1.0.1",
     "dotenv": "^16.4.7",
     "pinia": "^2.3.0",
     "process": "^0.11.10",
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",
     "@types/jsdom": "^21.1.7",
+    "@types/mongodb": "^4.0.6",
     "@types/node": "^22.10.7",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitejs/plugin-vue-jsx": "^4.1.1",
