@@ -2,7 +2,7 @@
 import type { RawData } from '@/models/Data'
 import type { Sensor } from '@/models/Sensor'
 import axios from 'axios'
-import type { ChartData, ChartDataset, ChartOptions, Point, TimeScaleOptions } from 'chart.js'
+import type { ChartData, ChartOptions } from 'chart.js'
 import { computed, ref } from 'vue'
 import { Line } from 'vue-chartjs'
 import { Chart, TimeScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
@@ -29,20 +29,20 @@ const BASE_URL: string = import.meta.env.VITE_BASE_URL
 const message = ref('')
 const availableSensors = ref<Sensor[]>([])
 const rawData = ref<RawData[]>([])
-  const chartOptions = ref<ChartOptions>({
+  const chartOptions = ref<ChartOptions<'line'>>({
   responsive: true,
   scales: {
     x: {
       type: 'time',
       time: {
-        unit: 'day', // Adjust granularity as needed
+        unit: undefined, // 'day', // Adjust granularity as needed
         displayFormats: {
           day: 'MMM DD' // Customize date display format
         }
       },
       title: {
         display: true,
-        text: 'Date'
+        text: 'Timestamp'
       }
     },
     y: {
@@ -60,16 +60,15 @@ const rawData = ref<RawData[]>([])
   }
 })
 
-const rawDataGraph = computed<ChartData<'line', TimePoint[]>>(() => {
-  console.log("🚀 ~ rawData.value:", rawData.value)
-
+// const rawDataGraph = computed<ChartData<'line', TimePoint[]>>(() => {
+const rawDataGraph = computed<ChartData<'line'>>(() => {
   return {
     datasets: [
       {
         label: `Raw data for: ${rawData.value[0].Sensor}`,
         data: rawData.value.map((v) => {
           return {
-            x: v.Timestamp,
+            x: v.Timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
             y: v.Data,
           }
         })
@@ -147,11 +146,11 @@ const pullSensorsRawDataFn = async (sensorId: string) => {
 
   <br />
 
-  <div>
+  <div v-if="rawData.length > 0 && rawDataGraph?.datasets.length > 0">
     <a>Raw data for the first sensor</a>
     <!-- {{  rawDataGraph?.datasets }} -->
     <div class="container">
-      <Line v-if="rawDataGraph?.datasets.length > 0" :options="chartOptions" :data="rawDataGraph" />
+      <Line :options="chartOptions" :data="rawDataGraph" />
     </div>
   </div>
 </template>
