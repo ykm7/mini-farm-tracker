@@ -2,7 +2,7 @@
 import type { RawData } from '@/models/Data'
 import type { Sensor } from '@/models/Sensor'
 import axios from 'axios'
-import type { ChartData, ChartOptions } from 'chart.js'
+import type { ChartData, ChartOptions, Point } from 'chart.js'
 import { computed, ref } from 'vue'
 import { Line } from 'vue-chartjs'
 import {
@@ -33,67 +33,32 @@ const selectedSensor = ref<Sensor | undefined>(undefined)
 const dataPull = ref<boolean>(false)
 
 const rawData = ref<RawData[]>([])
-const chartOptions = ref<ChartOptions<'line'>>({
-  responsive: true,
-  scales: {
-    x: {
-      type: 'time',
-      time: {
-        unit: undefined, // 'day', // Adjust granularity as needed
-        displayFormats: {
-          day: 'MMM DD', // Customize date display format
-        },
-      },
-      ticks: {
-        color: 'white',
-      },
-      grid: {
-        color: 'rgba(255,255,255,0.2)',
-      },
-      title: {
-        display: true,
-        text: 'Timestamp',
-      },
-    },
-    y: {
-      title: {
-        display: true,
-        text: 'Value',
-      },
-      ticks: {
-        color: 'white',
-      },
-      grid: {
-        color: 'rgba(255,255,255,0.2)',
-      },
-    },
-  },
-  plugins: {
-    title: {
-      display: true,
-      text: 'Time Series Chart',
-    },
-  },
-  elements: {
-    line: {
-      borderColor: 'white',
-      backgroundColor: 'white',
-    },
-    point: {
-      borderColor: 'white',
-      backgroundColor: 'white',
-    },
-  },
-})
+
+const determineTimeUnit = (dataPoints: Point[]) => {
+  const timeDiffs = dataPoints.slice(1).map((point, index) => {
+    const prevTime = new Date(dataPoints[index].x).getTime()
+    const currTime = new Date(point.x).getTime()
+    return currTime - prevTime
+  })
+
+  const avgTimeDiff = timeDiffs.reduce((a, b) => a + b, 0) / timeDiffs.length
+  const hours = avgTimeDiff / (1000 * 60 * 60)
+
+  if (hours < 1) return 'minute'
+  if (hours < 24) return 'hour'
+  if (hours < 30 * 24) return 'day'
+  if (hours < 365 * 24) return 'month'
+  return 'year'
+}
 
 // const rawDataGraph = computed<ChartData<'line', TimePoint[]>>(() => {
-const rawDataGraph = computed<ChartData<'line'>>(() => {
+const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
   return {
     datasets: [
       {
-        label: `Raw data for: ${rawData.value[0].Sensor}`,
+        label: `Raw data for: ${rawData.value?.length > 0 ? rawData.value[0].Sensor : 'Unknown'}`,
         data: rawData.value
-          ? rawData.value.map((v) => {
+          ? rawData.value.map<Point>((v) => {
               return {
                 x: v.Timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
                 y: v.Data,
@@ -105,11 +70,71 @@ const rawDataGraph = computed<ChartData<'line'>>(() => {
   }
 })
 
+const chartOptions = computed<ChartOptions<'line'>>(() => {
+  return {
+    responsive: true,
+    scales: {
+      x: {
+        type: 'time',
+        time: {
+          unit: rawDataGraph.value
+            ? determineTimeUnit(rawDataGraph.value.datasets[0].data)
+            : undefined,
+          displayFormats: {
+            minute: 'HH:mm',
+            hour: 'DD MMM HH:mm',
+            day: 'DD MMM YYYY',
+            month: 'MMM YYYY',
+            year: 'YYYY',
+          },
+        },
+        ticks: {
+          color: 'white',
+        },
+        grid: {
+          color: 'rgba(255,255,255,0.2)',
+        },
+        title: {
+          display: true,
+          text: 'Timestamp',
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Value',
+        },
+        ticks: {
+          color: 'white',
+        },
+        grid: {
+          color: 'rgba(255,255,255,0.2)',
+        },
+      },
+    },
+    plugins: {
+      title: {
+        display: true,
+        text: 'Time Series Chart',
+      },
+    },
+    elements: {
+      line: {
+        borderColor: 'white',
+        backgroundColor: 'white',
+      },
+      point: {
+        borderColor: 'white',
+        backgroundColor: 'white',
+      },
+    },
+  }
+})
+
 const pingServerFn = async () => {
   console.log('Attempting to ping server')
   try {
     const response = await axios.get(`${BASE_URL}/ping`)
-    console.log(response)
     message.value = 'success'
   } catch (e) {
     console.warn(e)
@@ -134,7 +159,6 @@ const pullSensorsRawDataFn = async (sensor: Sensor) => {
       `${BASE_URL}/api/sensors/${sensor.Id}/data/raw_data`,
     )
     rawData.value = response.data
-    console.log(rawData.value)
   } catch (e) {
     console.warn(e)
   }
