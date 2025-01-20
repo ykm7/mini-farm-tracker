@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func handleWithoutSensorID(c *gin.Context, mongoDb *mongo.Database) {
+func handleWithoutSensorID(c *gin.Context, mongoDb MongoDatabase) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	results, err := GetSensorCollection(mongoDb).Find(ctx, nil)

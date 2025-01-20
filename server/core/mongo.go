@@ -59,11 +59,11 @@ func newMongoCollection[T any](col *mongo.Collection) MongoCollection[T] {
 	return &MongoCollectionWrapper[T]{col: col}
 }
 
-func GetSensorCollection(mongoDb *mongo.Database) MongoCollection[Sensor] {
+func GetSensorCollection(mongoDb MongoDatabase) MongoCollection[Sensor] {
 	return newMongoCollection[Sensor](mongoDb.Collection(string(SENSORS_COLLECTION)))
 }
 
-func GetRawDataCollection(mongoDb *mongo.Database) MongoCollection[RawData] {
+func GetRawDataCollection(mongoDb MongoDatabase) MongoCollection[RawData] {
 	return newMongoCollection[RawData](mongoDb.Collection(string(RAW_DATA_COLLECTION)))
 }
 

@@ -55,6 +55,22 @@ Firewall options - inbound port of 3000 (TCP) required
 
 SSL certificate (Let's Encrypt) created on domain bought from namecheap.
 
+### Testing
+
+#### testContainer
+
+NOTE: testContainer can use cloud resources however prefer to run locally.
+
+Requires:
+* Docker Desktop
+* [testContainer](https://app.testcontainers.cloud/accounts/14403/dashboard/install?target=windows-desktop)
+
+With my environment, I have problems with the embedded testContainers cleanup logic.
+
+Following [configuration path](https://golang.testcontainers.org/features/configuration/) adding a line to disable `ryuk` allows correct running:
+
+> ryuk.disabled=true
+
 # Data Flow
 
 ```mermaid
