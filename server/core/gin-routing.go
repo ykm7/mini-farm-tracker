@@ -23,12 +23,6 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
 
 	config := cors.DefaultConfig()
 
-	// usage - NewMongoCollection[Sensor](db.Collection(string(SENSORS_COLLECTION)))
-
-	// config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
-	// config.AllowHeaders = []string{"Origin", "Content-Type", "Accept"}
-	// config.AllowCredentials = true
-
 	if isProduction() {
 		config.AllowOrigins = []string{"https://mini-farm-tracker.io", "https://www.mini-farm-tracker.io"}
 	} else {
@@ -37,9 +31,6 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
 	}
 
 	r.Use(cors.New(config))
-	// r.SetTrustedProxies([]string{"mini-farm-tracker.io"})
-	// r.ForwardedByClientIP = true
-
 	api := r.Group("/api")
 	{
 		api.GET("/sensors", func(c *gin.Context) {

@@ -26,8 +26,10 @@ func dontPanicOnMongoCode(code int, err error) {
 	}
 }
 
+/*
+To be run manually to populate the database with various mock data
+*/
 func main() {
-
 	envs := core.ReadEnvs()
 
 	mongoDb, mongoDeferFn := core.SetupMongo(envs)
@@ -67,14 +69,8 @@ func main() {
 	results, err := core.GetRawDataCollection(mongoDb).Find(context.TODO(), bson.M{"sensor": sensorName})
 	if err != nil {
 		// Handle error
+		panic(err)
 	}
-	// defer cursor.Close(context.TODO())
-
-	// var results []core.RawData
-	// if err = cursor.All(context.TODO(), &results); err != nil {
-	// 	// Handle error
-	// 	log.Panicf("%v", err)
-	// }
 
 	log.Printf("Raw data: %v", results)
 }
