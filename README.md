@@ -79,7 +79,9 @@ Following [configuration path](https://golang.testcontainers.org/features/config
 
 > ryuk.disabled=true
 
-# Data Flow
+# Diagrams
+
+## Data Flow of data into the system
 
 ```mermaid
 ---
@@ -122,9 +124,9 @@ flowchart TD
 - [ ] V2 will have auth, although as part of the purpose of this is a demo project, putting it behind a auth "wall" is counter productive initially.
 
 ### Server
-- [ ] Investigate HTTP servers 
+- [x] Investigate HTTP servers - SSL secured and CORs established
     - Currently implmented with [gin](https://github.com/gin-gonic/gin)
-- [ ] Investigate Containerisation options.
+- [x] Investigate Containerisation options.
     - Initial version is simply running binary.
     - solutions such as k8/docker (compose) are viable however k8 atleast is likely an overkill. All I want really want is crash/restart tolerance.
     - [x] For now a solution found using the App Platform within DigitalOcean. Allows:
@@ -135,10 +137,11 @@ flowchart TD
 
 ### General
 
-- [ ] Connect MongoDB
+- [x] Connect MongoDB
     - [x] Account Created
     - The ideal is to try the Timeseries support. Historically not been MongoDB strong suite but have never personally tried it and apparently improved in v8.
-    - [] Schema definitions - Some additional information is diagram (./data structure.drawio.png)
+    - [x] Schema definitions - Some additional information is diagram (./data structure.drawio.png)
+        - [ ] Not all defined - enough for E2E functionality to be possible
 
 - [x] Connect The Things Stack
     - [x] Account Created
