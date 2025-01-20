@@ -2,29 +2,9 @@
 import type { RawData } from '@/models/Data'
 import type { Sensor } from '@/models/Sensor'
 import axios from 'axios'
-import type { ChartData, ChartOptions, Point } from 'chart.js'
-import { computed, ref } from 'vue'
-import { Line } from 'vue-chartjs'
-import {
-  Chart,
-  TimeScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js'
-import 'chartjs-adapter-moment'
+import { ref } from 'vue'
 
-// Register necessary Chart.js components
-Chart.register(TimeScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
-
-interface TimePoint {
-  x: Date // Date as string
-  y: number
-}
-
+import TimeseriesGraph from './TimeseriesGraph.vue'
 const BASE_URL: string = import.meta.env.VITE_BASE_URL
 
 const message = ref('')
@@ -34,107 +14,10 @@ const dataPull = ref<boolean>(false)
 
 const rawData = ref<RawData[]>([])
 
-const determineTimeUnit = (dataPoints: Point[]) => {
-  const timeDiffs = dataPoints.slice(1).map((point, index) => {
-    const prevTime = new Date(dataPoints[index].x).getTime()
-    const currTime = new Date(point.x).getTime()
-    return currTime - prevTime
-  })
-
-  const avgTimeDiff = timeDiffs.reduce((a, b) => a + b, 0) / timeDiffs.length
-  const hours = avgTimeDiff / (1000 * 60 * 60)
-
-  if (hours < 1) return 'minute'
-  if (hours < 24) return 'hour'
-  if (hours < 30 * 24) return 'day'
-  if (hours < 365 * 24) return 'month'
-  return 'year'
-}
-
-// const rawDataGraph = computed<ChartData<'line', TimePoint[]>>(() => {
-const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
-  return {
-    datasets: [
-      {
-        label: `Raw data for: ${rawData.value?.length > 0 ? rawData.value[0].Sensor : 'Unknown'}`,
-        data: rawData.value
-          ? rawData.value.map<Point>((v) => {
-              return {
-                x: v.Timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
-                y: v.Data,
-              }
-            })
-          : [],
-      },
-    ],
-  }
-})
-
-const chartOptions = computed<ChartOptions<'line'>>(() => {
-  return {
-    responsive: true,
-    scales: {
-      x: {
-        type: 'time',
-        time: {
-          unit: rawDataGraph.value
-            ? determineTimeUnit(rawDataGraph.value.datasets[0].data)
-            : undefined,
-          displayFormats: {
-            minute: 'HH:mm',
-            hour: 'DD MMM HH:mm',
-            day: 'DD MMM YYYY',
-            month: 'MMM YYYY',
-            year: 'YYYY',
-          },
-        },
-        ticks: {
-          color: 'white',
-        },
-        grid: {
-          color: 'rgba(255,255,255,0.2)',
-        },
-        title: {
-          display: true,
-          text: 'Timestamp',
-        },
-      },
-      y: {
-        title: {
-          display: true,
-          text: 'Value',
-        },
-        ticks: {
-          color: 'white',
-        },
-        grid: {
-          color: 'rgba(255,255,255,0.2)',
-        },
-      },
-    },
-    plugins: {
-      title: {
-        display: true,
-        text: 'Time Series Chart',
-      },
-    },
-    elements: {
-      line: {
-        borderColor: 'white',
-        backgroundColor: 'white',
-      },
-      point: {
-        borderColor: 'white',
-        backgroundColor: 'white',
-      },
-    },
-  }
-})
-
 const pingServerFn = async () => {
   console.log('Attempting to ping server')
   try {
-    const response = await axios.get(`${BASE_URL}/ping`)
+    await axios.get(`${BASE_URL}/ping`)
     message.value = 'success'
   } catch (e) {
     console.warn(e)
@@ -213,15 +96,7 @@ const pullSensorsRawDataFn = async (sensor: Sensor) => {
 
   <div v-if="selectedSensor">
     <a>Raw data</a>
-    <div>
-      <Line
-        v-if="rawData.length > 0 && rawDataGraph?.datasets.length > 0"
-        class="container"
-        :options="chartOptions"
-        :data="rawDataGraph"
-      />
-      <div v-else class="empty-chart-placeholder">No data available for this sensor</div>
-    </div>
+    <TimeseriesGraph :rawData="rawData" />
   </div>
 </template>
 
@@ -258,15 +133,5 @@ tr:hover {
 
 td {
   padding: 0.75rem 1rem;
-}
-
-.empty-chart-placeholder {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 300px;
-  background-color: rgba(0, 0, 0, 0.05);
-  color: gray;
-  border-radius: 8px;
 }
 </style>
