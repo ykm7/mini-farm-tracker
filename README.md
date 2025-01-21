@@ -6,8 +6,8 @@ Initial design is required to track available water in water tanks.
 
 MVP:
 
-- [ ] Raw data (from LoRaWAN nodes) propagate through the system and are saved.
-- [ ] This raw data is able to be queried from and displayed via graphs
+- [x] Raw data (from LoRaWAN nodes) propagate through the system and are saved.
+- [?] This raw data is able to be queried from and displayed via graphs
 - [ ] Configurations per sensors are able to be created; these are responsible to determine how the raw data is to be modified as then stored as calibrated data. These are to have "starting" times to all the sensor to be re-installed.
   - [ ] While for the MVP I want configurations to affect incoming data, the actual creation of these configurations should be behind a authentication. This can be V2.
 - [ ] This calibrated data is also to be able to be viewed via the website
@@ -63,8 +63,6 @@ flowchart TD
 # Devices
 
 ## gateway - LPS8v2 Indoor LoRaWAN Multichannel Gateway
-
-gateway EUI - a84041fdfe27eb8c
 
 
 ## Water tank - water levels - Dragino LDDS45

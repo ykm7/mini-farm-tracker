@@ -28,19 +28,57 @@ const props = defineProps<{
 }>()
 
 const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
+  // if (props.rawData.length == 0) {
+  //   return {}
+  // }
+
   return {
     datasets: [
+      // {
+      //   label: 'Battery',
+      //   data: props.rawData
+      //     ? props.rawData.map<Point>((v) => {
+      //         return {
+      //           x: v.Timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
+      //           y: v.Data.Bat,
+      //         }
+      //       })
+      //     : [],
+      // },
       {
-        label: `Raw data for: ${props.rawData?.length > 0 ? props.rawData[0].Sensor : 'Unknown'}`,
+        label: `Distance`,
         data: props.rawData
           ? props.rawData.map<Point>((v) => {
               return {
                 x: v.Timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
-                y: v.Data,
+                y: v.Data.Distance.split(" ")[0] as unknown as number,
               }
             })
           : [],
       },
+      // {
+      //   label: `Raw data for: ${props.rawData?.length > 0 ? props.rawData[0].Sensor : 'Unknown'}`,
+      //   data: props.rawData
+      //     ? props.rawData.map<Point>((v) => {
+      //         return {
+      //           x: v.Timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
+      //           y: v.Data.Temperature,
+      //         }
+      //       })
+      //     : [],
+      // },
+      // {
+      //   label: `Raw data for: ${props.rawData?.length > 0 ? props.rawData[0].Sensor : 'Unknown'}`,
+      //   data: props.rawData
+          
+      //     ? props.rawData.map<Point>((v) => {
+      //         return {
+      //           x: v.Timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
+      //           y: v.Data.SensorFlag,
+      //         }
+      //       })
+      //     : [],
+      // },
     ],
   }
 })
@@ -94,7 +132,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
       y: {
         title: {
           display: true,
-          text: 'Value',
+          text: 'Value (mm)',
         },
         ticks: {
           color: 'white',
