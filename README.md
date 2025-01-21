@@ -60,6 +60,16 @@ flowchart TD
     mongo --> Stop@{ shape: fr-circ }
 ```
 
+# Devices
+
+## Water tank - water levels - Dragino LDDS45
+
+[Decoder](https://github.com/dragino/dragino-end-node-decoder)
+
+[Dropbox](https://www.dropbox.com/scl/fo/ehbyykfvqb549beg69nly/AGksttCIAr55scX6QxXg4RA?rlkey=crbquiode216okgxrqleck654&e=1&dl=0)
+
+[User Manual](https://wiki.dragino.com/xwiki/bin/view/Main/User%20Manual%20for%20LoRaWAN%20End%20Nodes/LDDS45%20-%20LoRaWAN%20Distance%20Detection%20Sensor%20User%20Manual/)
+
 # Hosting:
 
 ## WebUI
