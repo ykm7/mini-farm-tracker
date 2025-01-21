@@ -63,8 +63,8 @@ func GetSensorCollection(mongoDb MongoDatabase) MongoCollection[Sensor] {
 	return newMongoCollection[Sensor](mongoDb.Collection(string(SENSORS_COLLECTION)))
 }
 
-func GetRawDataCollection(mongoDb MongoDatabase) MongoCollection[RawData] {
-	return newMongoCollection[RawData](mongoDb.Collection(string(RAW_DATA_COLLECTION)))
+func GetRawDataCollection[T RawDataType](mongoDb MongoDatabase) MongoCollection[RawData[T]] {
+	return newMongoCollection[RawData[T]](mongoDb.Collection(string(RAW_DATA_COLLECTION)))
 }
 
 func (m *MongoCollectionWrapper[T]) InsertOne(ctx context.Context, document T) (*mongo.InsertOneResult, error) {

@@ -1,10 +1,16 @@
 package core
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 /*
@@ -123,7 +129,10 @@ type UplinkMessage struct {
 	} `json:"uplink_message"`
 }
 
-func handleWebhook(c *gin.Context, envs *environmentVariables) {
+func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoDatabase) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	apiKey := c.GetHeader("X-Downlink-Apikey")
 	if apiKey == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing X-Downlink-Apikey header"})
@@ -145,6 +154,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables) {
 	log.Printf("'Raw' payload: %v\n", uplinkMessage.UplinkMessage.FrmPayload)
 
 	log.Printf("'Raw' payload: %v\n", uplinkMessage.UplinkMessage.FrmPayload)
+
 	log.Printf("'Decoded' payload: %v\n", uplinkMessage.UplinkMessage.DecodedPayload)
 
 	log.Printf("device id is: %s\n", *uplinkMessage.EndDeviceIDs.DeviceID)
@@ -153,7 +163,61 @@ func handleWebhook(c *gin.Context, envs *environmentVariables) {
 	log.Printf("device 'rx_metadata' is: %v\n", uplinkMessage.UplinkMessage.RxMetadata)
 	// TODO: Check its actually a device I care about
 
+	var sensor *Sensor
+	var err error
+	err = GetSensorCollection(mongoDb).FindOne(ctx, bson.D{{Key: "sensor", Value: *uplinkMessage.EndDeviceIDs.DeviceID}}, sensor)
+	if err != nil {
+		// Handle error
+		c.JSON(http.StatusNotFound, gin.H{
+			"status": fmt.Sprintf("A gateway with the TTN deviceId of %s was not found", *uplinkMessage.EndDeviceIDs.DeviceID),
+		})
+	}
+
+	jsonData, err := json.Marshal(uplinkMessage.UplinkMessage.DecodedPayload)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": fmt.Sprintf("Error parsing the decoded payload", *uplinkMessage.EndDeviceIDs.DeviceID),
+		})
+	}
+
 	// TODO: Store data point within Mongo
+	switch sensor.Model {
+	case LDDS45:
+
+		var data *LDDS45RawData
+
+		err = json.Unmarshal(jsonData, &data)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status": fmt.Sprintf("Error casting the decoded json: %v to expected data type for: %s", jsonData, LDDS45),
+			})
+		}
+
+		// data, err = sensor.ParseLDDS45(*uplinkMessage.UplinkMessage.FrmPayload)
+		// if err != nil {
+		// 	c.JSON(http.StatusInternalServerError, gin.H{
+		// 		"status": fmt.Sprintf("Error parsing data for LDDS45 sensor %s\n", err),
+		// 	})
+		// }
+
+		insertResult, err := GetRawDataCollection[LDDS45RawData](mongoDb).InsertOne(ctx, RawData[LDDS45RawData]{
+			Timestamp: primitive.DateTime(*uplinkMessage.UplinkMessage.RxMetadata[0].Timestamp),
+			Sensor:    sensor.Id,
+			Data:      *data,
+		})
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status": fmt.Sprintf("Error trying to insert raw data %s\n", err),
+			})
+		}
+
+		log.Printf("insertResult: %v", insertResult)
+	default:
+		c.JSON(http.StatusNotFound, gin.H{
+			"status": fmt.Sprintf("For sensor: %s unknown model type to handle: %s\n", sensor.Id, sensor.Model),
+		})
+	}
 
 	// Respond with a success status
 	c.JSON(http.StatusOK, gin.H{"message": "Webhook received successfully"})

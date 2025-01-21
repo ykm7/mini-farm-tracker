@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -37,7 +38,12 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	results, err := GetRawDataCollection(mongoDb).Find(ctx, bson.D{{Key: "sensor", Value: sensorID}})
+
+	// TODO: Revisit this. Having the query the database again simply to pull the sensor model isn't ideal.
+	// Want to investigate using the mongo listener to have a cached version of all the available sensors.
+	var sensor *Sensor
+	var err error
+	err = GetSensorCollection(mongoDb).FindOne(ctx, bson.D{{Key: "sensor", Value: sensorID}}, sensor)
 	if err != nil {
 		// Handle error
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -45,7 +51,30 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase) {
 		})
 	}
 
-	c.JSON(http.StatusOK, results)
+	// var results []interface{}
+	switch sensor.Model {
+	case LDDS45:
+		results, err := GetRawDataCollection[LDDS45RawData](mongoDb).Find(ctx, bson.D{{Key: "sensor", Value: sensorID}})
+		if err != nil {
+			log.Printf("Error within raw data query: %v\n", err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status": "ok",
+			})
+		}
+
+		c.JSON(http.StatusOK, results)
+	default:
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": fmt.Sprintf("Unexpected sensor model: %s for sensor id: %s\n", sensor.Model, sensor.Id),
+		})
+	}
+
+	if err != nil {
+		// Handle error
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "ok",
+		})
+	}
 }
 
 func getCalibratedDataWithSensorId(c *gin.Context) {

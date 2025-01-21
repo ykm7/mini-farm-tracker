@@ -59,7 +59,7 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
 	})
 
 	r.POST("/webhook", func(c *gin.Context) {
-		handleWebhook(c, envs)
+		handleWebhook(c, envs, db)
 	})
 
 	log.Printf("Endpoint: %s not logged\n", HEALTH_ENDPOINT)

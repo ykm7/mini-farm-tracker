@@ -1,10 +1,6 @@
 package core
 
 import (
-	"encoding/binary"
-	"errors"
-	"fmt"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -26,23 +22,52 @@ const (
 )
 
 type Sensor struct {
-	Id          string `bson:"_id"`
-	Description string `bson:"description"`
+	Id          string        `bson:"_id"`
+	Description string        `bson:"description"`
+	Model       SENSOR_MODELS `bson:"model"`
 }
 
-type RawData struct {
+// func (s *Sensor) parsePayload(bs []byte) (parsed interface{}, err error) {
+
+// 	switch s.Model {
+// 	case LDDS45:
+// 		parsed, err = parseLDDS45(bs)
+
+// 	default:
+// 		err = errors.New(fmt.Sprintf("Unknown sensor model: %s, with payload: %s", s.Id, bs))
+// 	}
+
+// 	return
+// }
+
+// func (s *Sensor) ParseLDDS45(bs)
+
+type RawDataType interface {
+	LDDS45RawData | RandomRawData
+}
+
+type RawData[T RawDataType] struct {
 	Id        primitive.ObjectID `bson:"_id,omitempty"`
 	Timestamp primitive.DateTime `bson:"timestamp"`
 	Sensor    string             `bson:"sensor"`
-	Data      uint16             `bson:"data"`
+	Data      T                  `bson:"data"`
 }
 
+/*
+Raw result from within the TTN payload. [mini-farm-tracker-server] [2025-01-21 07:14:44] 2025/01/21 07:14:44 'Decoded' payload: map[Bat:3.402 Distance:1752 mm Interrupt_flag:0 Sensor_flag:1 TempC_DS18B20:0.00]
+
+Uplink formatter added to within the TTN when selecting the device from the repository.
+*/
 type LDDS45RawData struct {
-	Battery      uint16
-	Distance     uint16
-	InterruptPin uint8
-	Temperature  float32
-	SensorFlag   uint8
+	Battery      uint16  `json:"Bat"`     // units are 'mv'
+	Distance     uint16  `Distance:"Bat"` // units are 'mm'
+	InterruptPin uint8   `json:"Interrupt_flag"`
+	Temperature  float32 `json:"TempC_DS18B20"` // units are 'c'
+	SensorFlag   uint8   `json:"Sensor_flag"`
+}
+
+// Just to test the generics
+type RandomRawData struct {
 }
 
 type CalibratedData struct {
@@ -58,23 +83,10 @@ type SensorConfiguration struct {
 	Timestamp primitive.DateTime `bson:"timestamp"`
 }
 
-type SensorModel struct {
-	Id    SENSOR_MODELS `bson:"_id"`
-	Units string        `bson:"units"`
-}
-
-func (s *SensorModel) parsePayload(bs []byte) (parsed interface{}, err error) {
-
-	switch s.Id {
-	case LDDS45:
-		parsed, err = parseLDDS45(bs)
-
-	default:
-		err = errors.New(fmt.Sprintf("Unknown sensor model: %s, with payload: %s", s.Id, bs))
-	}
-
-	return
-}
+// type SensorModel struct {
+// 	Id    SENSOR_MODELS `bson:"_id"`
+// 	// Units string        `bson:"units"`
+// }
 
 /*
 https://wiki.dragino.com/xwiki/bin/view/Main/User%20Manual%20for%20LoRaWAN%20End%20Nodes/LDDS45%20-%20LoRaWAN%20Distance%20Detection%20Sensor%20User%20Manual/#H2.A0ConfigureLDDS45toconnecttoLoRaWANnetwork
@@ -109,34 +121,34 @@ If payload is: FF3FH :  (FF3F & FC00 == 1) , temp = (FF3FH - 65536)/10 = -19.3 d
 0x01: Detect Ultrasonic Sensor
 0x00: No Ultrasonic Sensor
 */
-func parseLDDS45(bs []byte) (*LDDS45RawData, error) {
-	if len(bs) != 8 {
-		return nil, errors.New("Expected 8 bytes when parsing LDDS45 payload")
-	}
+// func (s *Sensor) ParseLDDS45(bs []byte) (*LDDS45RawData, error) {
+// 	if len(bs) != 8 {
+// 		return nil, errors.New("Expected 8 bytes when parsing LDDS45 payload")
+// 	}
 
-	battery := uint16(bs[0])<<8 | uint16(bs[1])
+// 	battery := uint16(bs[0])<<8 | uint16(bs[1])
 
-	distance := uint16(bs[2])<<8 | uint16(bs[3])
+// 	distance := uint16(bs[2])<<8 | uint16(bs[3])
 
-	interrupt := uint8(bs[4])
+// 	interrupt := uint8(bs[4])
 
-	raw_temperature := uint16(bs[5])<<8 | uint16(bs[6])
-	positive_temp := raw_temperature&binary.BigEndian.Uint16([]byte{0xFC, 0x00}) == 0
+// 	raw_temperature := uint16(bs[5])<<8 | uint16(bs[6])
+// 	positive_temp := raw_temperature&binary.BigEndian.Uint16([]byte{0xFC, 0x00}) == 0
 
-	var temperature float32
-	if positive_temp {
-		temperature = float32(raw_temperature) / 10
-	} else {
-		temperature = float32(int32(raw_temperature)-65536) / 10
-	}
+// 	var temperature float32
+// 	if positive_temp {
+// 		temperature = float32(raw_temperature) / 10
+// 	} else {
+// 		temperature = float32(int32(raw_temperature)-65536) / 10
+// 	}
 
-	sensorFlag := uint8(bs[7])
+// 	sensorFlag := uint8(bs[7])
 
-	return &LDDS45RawData{
-		Battery:      battery,
-		Distance:     distance,
-		InterruptPin: interrupt,
-		Temperature:  temperature,
-		SensorFlag:   sensorFlag,
-	}, nil
-}
+// 	return &LDDS45RawData{
+// 		Battery:      battery,
+// 		Distance:     distance,
+// 		InterruptPin: interrupt,
+// 		Temperature:  temperature,
+// 		SensorFlag:   sensorFlag,
+// 	}, nil
+// }

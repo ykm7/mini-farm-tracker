@@ -53,10 +53,18 @@ func main() {
 	log.Printf("%v", inserted)
 
 	// generates raw data - WORKING
-	mockSensorData := []int64{35, 20, 15, 115, 80, 25}
+	mockSensorData := []core.LDDS45RawData{
+		{
+			Distance:     uint16(3000),
+			Battery:      uint16(2000),
+			InterruptPin: uint8(0),
+			Temperature:  float32(20.0),
+			SensorFlag:   uint8(0),
+		},
+	}
 	timestamp := time.Now()
 	for _, v := range mockSensorData {
-		if _, err = core.GetRawDataCollection(mongoDb).InsertOne(context.TODO(), core.RawData{
+		if _, err = core.GetRawDataCollection[core.LDDS45RawData](mongoDb).InsertOne(context.TODO(), core.RawData[core.LDDS45RawData]{
 			Timestamp: primitive.NewDateTimeFromTime(timestamp),
 			Sensor:    sensorName,
 			Data:      v,
@@ -68,7 +76,7 @@ func main() {
 	}
 
 	// WORKING
-	results, err := core.GetRawDataCollection(mongoDb).Find(context.TODO(), bson.M{"sensor": sensorName})
+	results, err := core.GetRawDataCollection[core.LDDS45RawData](mongoDb).Find(context.TODO(), bson.M{"sensor": sensorName})
 	if err != nil {
 		// Handle error
 		panic(err)

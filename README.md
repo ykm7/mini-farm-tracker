@@ -62,6 +62,11 @@ flowchart TD
 
 # Devices
 
+## gateway - LPS8v2 Indoor LoRaWAN Multichannel Gateway
+
+gateway EUI - a84041fdfe27eb8c
+
+
 ## Water tank - water levels - Dragino LDDS45
 
 [Decoder](https://github.com/dragino/dragino-end-node-decoder)
