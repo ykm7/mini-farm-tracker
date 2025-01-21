@@ -10,7 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 /*
@@ -182,6 +181,14 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 		return
 	}
 
+	receivedAtTime, err := convertTimeStringToMongoTime(*uplinkMessage.ReceivedAt)
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
+			"status": fmt.Sprintf("Unable to parse timestamp: %s", *uplinkMessage.ReceivedAt),
+		})
+		return
+	}
+
 	// TODO: Store data point within Mongo
 	switch sensor.Model {
 	case LDDS45:
@@ -195,15 +202,8 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 			return
 		}
 
-		// data, err = sensor.ParseLDDS45(*uplinkMessage.UplinkMessage.FrmPayload)
-		// if err != nil {
-		// 	c.JSON(http.StatusInternalServerError, gin.H{
-		// 		"status": fmt.Sprintf("Error parsing data for LDDS45 sensor %s\n", err),
-		// 	})
-		// }
-
 		insertResult, err := GetRawDataCollection[LDDS45RawData](mongoDb).InsertOne(ctx, RawData[LDDS45RawData]{
-			Timestamp: primitive.DateTime(*uplinkMessage.UplinkMessage.RxMetadata[0].Timestamp),
+			Timestamp: receivedAtTime,
 			Sensor:    sensor.Id,
 			Data:      *data,
 		})

@@ -3,9 +3,11 @@ package core
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type environmentVariables struct {
@@ -33,4 +35,13 @@ environment variable GIN_MODE == "release"
 */
 func isProduction() bool {
 	return gin.Mode() == "release"
+}
+
+func convertTimeStringToMongoTime(timeStr string) (primitive.DateTime, error) {
+	t, err := time.Parse(time.RFC3339Nano, timeStr)
+	if err != nil {
+		// Handle error
+		return 0, err
+	}
+	return primitive.NewDateTimeFromTime(t), nil
 }
