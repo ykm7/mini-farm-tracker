@@ -187,7 +187,6 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 	case LDDS45:
 
 		var data *LDDS45RawData
-
 		err = json.Unmarshal(jsonData, &data)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{

@@ -53,12 +53,20 @@ func main() {
 	log.Printf("%v", inserted)
 
 	// generates raw data - WORKING
+	// From successfully parsed payload
+	// {
+	// 	"Bat": 3.427,
+	// 	"Distance": "2321 mm",
+	// 	"Interrupt_flag": 0,
+	// 	"Sensor_flag": 1,
+	// 	"TempC_DS18B20": "0.00"
+	// }
 	mockSensorData := []core.LDDS45RawData{
 		{
-			Distance:     uint16(3000),
-			Battery:      uint16(2000),
+			Distance:     "2321 mm",
+			Battery:      3.427,
 			InterruptPin: uint8(0),
-			Temperature:  float32(20.0),
+			Temperature:  "0.00",
 			SensorFlag:   uint8(0),
 		},
 	}

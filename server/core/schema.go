@@ -59,10 +59,10 @@ Raw result from within the TTN payload. [mini-farm-tracker-server] [2025-01-21 0
 Uplink formatter added to within the TTN when selecting the device from the repository.
 */
 type LDDS45RawData struct {
-	Battery      uint16  `json:"Bat"`     // units are 'mv'
-	Distance     uint16  `Distance:"Bat"` // units are 'mm'
+	Battery      float64 `json:"Bat"`      // units are 'mv'
+	Distance     string  `json:"Distance"` // units are 'mm'
 	InterruptPin uint8   `json:"Interrupt_flag"`
-	Temperature  float32 `json:"TempC_DS18B20"` // units are 'c'
+	Temperature  string  `json:"TempC_DS18B20"` // units are 'c'
 	SensorFlag   uint8   `json:"Sensor_flag"`
 }
 
