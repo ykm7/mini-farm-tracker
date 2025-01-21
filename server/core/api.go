@@ -41,7 +41,7 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase) {
 
 	// TODO: Revisit this. Having the query the database again simply to pull the sensor model isn't ideal.
 	// Want to investigate using the mongo listener to have a cached version of all the available sensors.
-	var sensor *Sensor
+	sensor := &Sensor{}
 	var err error
 	err = GetSensorCollection(mongoDb).FindOne(ctx, bson.D{{Key: "sensor", Value: sensorID}}, sensor)
 	if err != nil {

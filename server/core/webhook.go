@@ -163,7 +163,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 	log.Printf("device 'rx_metadata' is: %v\n", uplinkMessage.UplinkMessage.RxMetadata)
 	// TODO: Check its actually a device I care about
 
-	var sensor *Sensor
+	sensor := &Sensor{}
 	var err error
 	err = GetSensorCollection(mongoDb).FindOne(ctx, bson.D{{Key: "sensor", Value: *uplinkMessage.EndDeviceIDs.DeviceID}}, sensor)
 	if err != nil {
@@ -176,7 +176,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 	jsonData, err := json.Marshal(uplinkMessage.UplinkMessage.DecodedPayload)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": fmt.Sprintf("Error parsing the decoded payload", *uplinkMessage.EndDeviceIDs.DeviceID),
+			"status": fmt.Sprintf("Error parsing the decoded payload: %s", *uplinkMessage.EndDeviceIDs.DeviceID),
 		})
 	}
 
