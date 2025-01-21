@@ -127,7 +127,7 @@ func parseLDDS45(bs []byte) (*LDDS45RawData, error) {
 	if positive_temp {
 		temperature = float32(raw_temperature) / 10
 	} else {
-		temperature = float32(raw_temperature) - 65536/10
+		temperature = float32(int32(raw_temperature)-65536) / 10
 	}
 
 	sensorFlag := uint8(bs[7])

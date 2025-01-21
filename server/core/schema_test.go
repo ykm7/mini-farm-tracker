@@ -18,6 +18,25 @@ func Test_parseLDDS45(t *testing.T) {
 		{
 			args: args{
 				bs: []byte{
+					0x0B, 0x49, // - 2889mV
+					0x00, 0x00, // 0B05(H) = 2821 (D) = 0 mm.
+					0x01,       // Normal uplink packet.
+					0xFF, 0x3F, // (FF3F & FC00 == 1) , temp = (FF3FH - 65536)/10 = -19.3 degrees.
+					0x00, // Detect Ultrasonic Sensor
+				},
+			},
+			want: &LDDS45RawData{
+				Battery:      2889,
+				Distance:     0,
+				InterruptPin: 1,
+				Temperature:  -19.3,
+				SensorFlag:   0,
+			},
+			wantErr: false,
+		},
+		{
+			args: args{
+				bs: []byte{
 					0x0B, 0x45, // - 2885mV
 					0x0B, 0x05, // 0B05(H) = 2821 (D) = 2821 mm.
 					0x00,       // Normal uplink packet.
