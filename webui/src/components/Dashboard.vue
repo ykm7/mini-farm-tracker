@@ -60,7 +60,7 @@ const pullSensorsRawDataFn = async (sensor: Sensor) => {
   <br />
 
   <div>
-    <a>Available sensors <i>Note that these are currently mocked values (including the data)</i></a>
+    <a>Available sensors</a>
     <button class="button" @click="pullSensorsFn">Pull sensors</button>
 
     <br />
