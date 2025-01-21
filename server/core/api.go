@@ -20,6 +20,7 @@ func handleWithoutSensorID(c *gin.Context, mongoDb MongoDatabase) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "ok",
 		})
+		return
 	}
 
 	c.JSON(http.StatusOK, results)
@@ -43,37 +44,35 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase) {
 	// Want to investigate using the mongo listener to have a cached version of all the available sensors.
 	sensor := &Sensor{}
 	var err error
-	err = GetSensorCollection(mongoDb).FindOne(ctx, bson.D{{Key: "sensor", Value: sensorID}}, sensor)
+	err = GetSensorCollection(mongoDb).FindOne(ctx, bson.D{{Key: "_id", Value: sensorID}}, sensor)
 	if err != nil {
 		// Handle error
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "ok",
 		})
+		return
 	}
 
 	// var results []interface{}
 	switch sensor.Model {
 	case LDDS45:
-		results, err := GetRawDataCollection[LDDS45RawData](mongoDb).Find(ctx, bson.D{{Key: "sensor", Value: sensorID}})
+		results, err := GetRawDataCollection[LDDS45RawData](mongoDb).Find(ctx, bson.D{{Key: "sensor", Value: sensor.Id}})
 		if err != nil {
 			log.Printf("Error within raw data query: %v\n", err)
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "ok",
 			})
+			return
 		}
 
 		c.JSON(http.StatusOK, results)
+		return
+
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": fmt.Sprintf("Unexpected sensor model: %s for sensor id: %s\n", sensor.Model, sensor.Id),
 		})
-	}
-
-	if err != nil {
-		// Handle error
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": "ok",
-		})
+		return
 	}
 }
 

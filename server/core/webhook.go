@@ -165,12 +165,13 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 
 	sensor := &Sensor{}
 	var err error
-	err = GetSensorCollection(mongoDb).FindOne(ctx, bson.D{{Key: "sensor", Value: *uplinkMessage.EndDeviceIDs.DeviceID}}, sensor)
+	err = GetSensorCollection(mongoDb).FindOne(ctx, bson.D{{Key: "_id", Value: *uplinkMessage.EndDeviceIDs.DeviceID}}, sensor)
 	if err != nil {
 		// Handle error
 		c.JSON(http.StatusNotFound, gin.H{
 			"status": fmt.Sprintf("A gateway with the TTN deviceId of %s was not found", *uplinkMessage.EndDeviceIDs.DeviceID),
 		})
+		return
 	}
 
 	jsonData, err := json.Marshal(uplinkMessage.UplinkMessage.DecodedPayload)
@@ -178,6 +179,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": fmt.Sprintf("Error parsing the decoded payload: %s", *uplinkMessage.EndDeviceIDs.DeviceID),
 		})
+		return
 	}
 
 	// TODO: Store data point within Mongo
@@ -191,6 +193,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v to expected data type for: %s", jsonData, LDDS45),
 			})
+			return
 		}
 
 		// data, err = sensor.ParseLDDS45(*uplinkMessage.UplinkMessage.FrmPayload)
@@ -210,6 +213,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status": fmt.Sprintf("Error trying to insert raw data %s\n", err),
 			})
+			return
 		}
 
 		log.Printf("insertResult: %v", insertResult)
@@ -217,6 +221,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 		c.JSON(http.StatusNotFound, gin.H{
 			"status": fmt.Sprintf("For sensor: %s unknown model type to handle: %s\n", sensor.Id, sensor.Model),
 		})
+		return
 	}
 
 	// Respond with a success status
