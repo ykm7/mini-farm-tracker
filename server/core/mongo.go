@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,23 +14,28 @@ import (
 TODO: Add cancellation context
 */
 func SetupMongo(envs *environmentVariables) (db *mongo.Database, deferFn func()) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	opts := options.Client().ApplyURI(envs.mongo_conn).SetServerAPIOptions(serverAPI)
 	// Create a new client and connect to the server
-	client, err := mongo.Connect(context.TODO(), opts)
+	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
 		panic(err)
 	}
 
 	// Send a ping to confirm a successful connection
-	if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Err(); err != nil {
+	if err := client.Database("admin").RunCommand(ctx, bson.D{{Key: "ping", Value: 1}}).Err(); err != nil {
 		panic(err)
 	}
 	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
 
 	db = client.Database(DATABASE_NAME)
 	deferFn = func() {
-		if err = client.Disconnect(context.TODO()); err != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err = client.Disconnect(ctx); err != nil {
 			panic(err)
 		}
 	}

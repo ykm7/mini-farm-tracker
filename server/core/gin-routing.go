@@ -64,6 +64,8 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
 
 	log.Printf("Endpoint: %s not logged\n", HEALTH_ENDPOINT)
 	r.GET(HEALTH_ENDPOINT, func(c *gin.Context) {
+
+		// TODO: Realistically should include checks to Mongo within here.
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
 		})

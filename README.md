@@ -91,6 +91,8 @@ From here can use the vercel deploy steps within the `package.json` file.
 
 ## Server
 
+built in: [gin-gonic](https://gin-gonic.com/)
+
 Hosted on: <b>DigitalOcean</b>
 
 Domain established within DigitalOcean directing to droplet:
