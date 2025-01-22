@@ -14,6 +14,8 @@ import (
 func main() {
 	log.Println("Starting up...")
 
+	exitChan := make(chan struct{})
+
 	// values for Mongo and TTN
 	envs := core.ReadEnvs()
 
@@ -23,7 +25,7 @@ func main() {
 	// The idea is to keep a cache of the sensor information to prevent constant polling.
 	// Also as I haven't used it directly myself.
 	sensorCache := map[string]core.Sensor{}
-	core.ListenToSensors(context.Background(), mongoDb, sensorCache)
+	core.ListenToSensors(context.Background(), mongoDb, sensorCache, exitChan)
 
 	r := core.SetupRouter(envs, mongoDb, sensorCache)
 
@@ -48,8 +50,13 @@ func main() {
 	// kill -2 is syscall.SIGINT
 	// kill -9 is syscall. SIGKILL but can"t be catch, so don't need add it
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("Shutdown Server ...")
+
+	select {
+	case <-quit:
+		log.Println("Received OS signal, shutting down...")
+	case <-exitChan:
+		log.Println("Change stream on the 'sensors' collection exited, shutting down...")
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()

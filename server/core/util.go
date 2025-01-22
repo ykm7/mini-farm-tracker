@@ -55,7 +55,7 @@ func convertTimeStringToMongoTime(timeStr string) (primitive.DateTime, error) {
 TODO: Move the "Watch" function to within the wrapper functionality to be the same as .Find etc
 Fair bit of TODOs here. propagate cancellation context. Examine retry... I believe it retries one automatically
 */
-func ListenToSensors(ctx context.Context, mongoDb *mongo.Database, sensorCache map[string]Sensor) {
+func ListenToSensors(ctx context.Context, mongoDb *mongo.Database, sensorCache map[string]Sensor, exitChan chan struct{}) {
 	results, err := GetSensorCollection(mongoDb).Find(ctx, nil)
 	for _, r := range results {
 		sensorCache[r.Id] = r
@@ -77,7 +77,7 @@ func ListenToSensors(ctx context.Context, mongoDb *mongo.Database, sensorCache m
 		// defer waitGroup.Done()
 
 		for stream.Next(routineCtx) {
-			fmt.Println("Stream listener")
+			fmt.Println("Stream listener on the 'sensors' collection started...")
 
 			var changeEvent bson.M
 			if err := sensorStream.Decode(&changeEvent); err != nil {
@@ -123,6 +123,7 @@ func ListenToSensors(ctx context.Context, mongoDb *mongo.Database, sensorCache m
 
 		if err := sensorStream.Err(); err != nil {
 			log.Printf("Stream error: %v", err)
+			exitChan <- struct{}{}
 		}
 	}(ctx, sensorStream)
 }
