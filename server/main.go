@@ -20,7 +20,12 @@ func main() {
 	mongoDb, mongoDeferFn := core.SetupMongo(envs)
 	defer mongoDeferFn()
 
-	r := core.SetupRouter(envs, mongoDb)
+	// The idea is to keep a cache of the sensor information to prevent constant polling.
+	// Also as I haven't used it directly myself.
+	sensorCache := map[string]core.Sensor{}
+	core.ListenToSensors(context.Background(), mongoDb, sensorCache)
+
+	r := core.SetupRouter(envs, mongoDb, sensorCache)
 
 	srv := &http.Server{
 		// port defaults 8080 but for clarify, declaring

@@ -32,6 +32,19 @@ func SetupMongo(envs *environmentVariables) (db *mongo.Database, deferFn func())
 	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
 
 	db = client.Database(DATABASE_NAME)
+
+	//// Leaving this here for documentation. These is required to be set BUT the established user does not have permission to modify.
+	// result := db.RunCommand(ctx, bson.D{
+	// 	{Key: "collMod", Value: SENSORS_COLLECTION},
+	// 	{Key: "changeStreamPreAndPostImages", Value: bson.D{{Key: "enabled", Value: true}}},
+	// })
+
+	// var raw bson.Raw
+	// err = result.Decode(&raw)
+	// if err != nil {
+	// 	log.Panicf("Failed to enable changeStreamPreAndPostImages: %v", err)
+	// }
+
 	deferFn = func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()

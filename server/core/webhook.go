@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 /*
@@ -128,7 +127,7 @@ type UplinkMessage struct {
 	} `json:"uplink_message"`
 }
 
-func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoDatabase) {
+func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoDatabase, sensorCache map[string]Sensor) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -150,23 +149,9 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 		return
 	}
 
-	log.Printf("'Raw' payload: %v\n", uplinkMessage.UplinkMessage.FrmPayload)
-
-	log.Printf("'Raw' payload: %v\n", uplinkMessage.UplinkMessage.FrmPayload)
-
-	log.Printf("'Decoded' payload: %v\n", uplinkMessage.UplinkMessage.DecodedPayload)
-
-	log.Printf("device id is: %s\n", *uplinkMessage.EndDeviceIDs.DeviceID)
-	log.Printf("device 'dev_eui' is: %s\n", *uplinkMessage.EndDeviceIDs.DevEUI)
-
-	log.Printf("device 'rx_metadata' is: %v\n", uplinkMessage.UplinkMessage.RxMetadata)
-	// TODO: Check its actually a device I care about
-
-	sensor := &Sensor{}
-	var err error
-	err = GetSensorCollection(mongoDb).FindOne(ctx, bson.D{{Key: "_id", Value: *uplinkMessage.EndDeviceIDs.DeviceID}}, sensor)
-	if err != nil {
-		// Handle error
+	sensor, exists := sensorCache[*uplinkMessage.EndDeviceIDs.DeviceID]
+	if !exists {
+		// Key exists, use the value
 		c.JSON(http.StatusNotFound, gin.H{
 			"status": fmt.Sprintf("A gateway with the TTN deviceId of %s was not found", *uplinkMessage.EndDeviceIDs.DeviceID),
 		})

@@ -18,7 +18,7 @@ func CustomLogger() gin.HandlerFunc {
 	})
 }
 
-func SetupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
+func SetupRouter(envs *environmentVariables, db MongoDatabase, sensorCache map[string]Sensor) *gin.Engine {
 	r := gin.New()
 	r.Use(CustomLogger())
 	r.Use(gin.Recovery())
@@ -38,14 +38,14 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
 		sensorApi := api.Group("/sensors")
 		{
 			sensorApi.GET("", func(c *gin.Context) {
-				handleWithoutSensorID(c, db)
+				handleWithoutSensorID(c, sensorCache)
 			})
 			sensorApi.GET(fmt.Sprintf(":%s", SENSOR_ID_PARAM), handleWithSensorID)
 
 			sensorDataApi := sensorApi.Group(fmt.Sprintf(":%s/data", SENSOR_ID_PARAM))
 			{
 				sensorDataApi.GET("/raw_data", func(c *gin.Context) {
-					getRawDataWithSensorId(c, db)
+					getRawDataWithSensorId(c, db, sensorCache)
 				})
 				sensorDataApi.GET("/calibrated_data", getCalibratedDataWithSensorId)
 			}
@@ -59,7 +59,7 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase) *gin.Engine {
 	})
 
 	r.POST("/webhook", func(c *gin.Context) {
-		handleWebhook(c, envs, db)
+		handleWebhook(c, envs, db, sensorCache)
 	})
 
 	log.Printf("Endpoint: %s not logged\n", HEALTH_ENDPOINT)

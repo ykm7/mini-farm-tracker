@@ -11,44 +11,37 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func handleWithoutSensorID(c *gin.Context, mongoDb MongoDatabase) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	results, err := GetSensorCollection(mongoDb).Find(ctx, nil)
-	if err != nil {
-		// Handle error
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": "ok",
-		})
-		return
-	}
+func handleWithoutSensorID(c *gin.Context, sensorCache map[string]Sensor) {
+	// ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// defer cancel()
+	// results, err := GetSensorCollection(mongoDb).Find(ctx, nil)
+	// if err != nil {
+	// 	// Handle error
+	// 	c.JSON(http.StatusInternalServerError, gin.H{
+	// 		"status": "ok",
+	// 	})
+	// 	return
+	// }
 
-	c.JSON(http.StatusOK, results)
+	c.JSON(http.StatusOK, mapToList(sensorCache))
 }
 
 func handleWithSensorID(c *gin.Context) {
-	sensorID := c.Param("SENSOR_ID")
+	// sensorID := c.Param("SENSOR_ID")
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Fetching data for sensor " + sensorID,
-	})
+	c.JSON(http.StatusNotImplemented, nil)
 }
 
-func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase) {
+func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache map[string]Sensor) {
 	sensorID := c.Param("SENSOR_ID")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// TODO: Revisit this. Having the query the database again simply to pull the sensor model isn't ideal.
-	// Want to investigate using the mongo listener to have a cached version of all the available sensors.
-	sensor := &Sensor{}
-	var err error
-	err = GetSensorCollection(mongoDb).FindOne(ctx, bson.D{{Key: "_id", Value: sensorID}}, sensor)
-	if err != nil {
-		// Handle error
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": "ok",
+	sensor, exists := sensorCache[sensorID]
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status": fmt.Sprintf("Unable to find sensor: %s", sensorID),
 		})
 		return
 	}
