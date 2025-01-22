@@ -53,6 +53,7 @@ func convertTimeStringToMongoTime(timeStr string) (primitive.DateTime, error) {
 
 /*
 TODO: Move the "Watch" function to within the wrapper functionality to be the same as .Find etc
+Fair bit of TODOs here. propagate cancellation context. Examine retry... I believe it retries one automatically
 */
 func ListenToSensors(ctx context.Context, mongoDb *mongo.Database, sensorCache map[string]Sensor) {
 	results, err := GetSensorCollection(mongoDb).Find(ctx, nil)
