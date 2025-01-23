@@ -151,7 +151,6 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 
 	sensor, exists := sensorCache[*uplinkMessage.EndDeviceIDs.DeviceID]
 	if !exists {
-		// Key exists, use the value
 		c.JSON(http.StatusNotFound, gin.H{
 			"status": fmt.Sprintf("A gateway with the TTN deviceId of %s was not found", *uplinkMessage.EndDeviceIDs.DeviceID),
 		})
