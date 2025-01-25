@@ -22,7 +22,9 @@ func TestSetupRouter(t *testing.T) {
 	db, deferFn := MockSetupMongo(context.TODO())
 	defer deferFn()
 
-	router := SetupRouter(&environmentVariables{}, db, map[string]Sensor{})
+	mongoDb := &MongoDatabaseImpl{Db: db}
+
+	router := SetupRouter(&environmentVariables{}, mongoDb, map[string]Sensor{})
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ping", nil)

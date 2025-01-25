@@ -69,33 +69,41 @@ type MongoCollection[T any] interface {
 	UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 }
 
+type MongoDatabaseImpl struct {
+	Db *mongo.Database
+}
+
 // Wrapper struct implementing MongoCollection
 type MongoCollectionWrapper[T any] struct {
 	col *mongo.Collection
 }
 
-func mongoCollection[T any](col *mongo.Collection) MongoCollection[T] {
-	return &MongoCollectionWrapper[T]{col: col}
+func (m *MongoDatabaseImpl) Collection(name string, opts ...*options.CollectionOptions) *mongo.Collection {
+	return m.Db.Collection(name, opts...)
+}
+
+func GetTypedCollection[T any](mongoDb MongoDatabase, collectionName string) MongoCollection[T] {
+	return &MongoCollectionWrapper[T]{col: mongoDb.Collection(collectionName)}
 }
 
 func GetSensorCollection(mongoDb MongoDatabase) MongoCollection[Sensor] {
-	return mongoCollection[Sensor](mongoDb.Collection(string(SENSORS_COLLECTION)))
+	return GetTypedCollection[Sensor](mongoDb, string(SENSORS_COLLECTION))
 }
 
 func GetRawDataCollection[T RawDataType](mongoDb MongoDatabase) MongoCollection[RawData[T]] {
-	return mongoCollection[RawData[T]](mongoDb.Collection(string(RAW_DATA_COLLECTION)))
+	return GetTypedCollection[RawData[T]](mongoDb, string(RAW_DATA_COLLECTION))
 }
 
 func GetSensorConfigurationCollection(mongoDb MongoDatabase) MongoCollection[SensorConfiguration] {
-	return mongoCollection[SensorConfiguration](mongoDb.Collection(string(SENSOR_CONFIGURATIONS_COLLECTION)))
+	return GetTypedCollection[SensorConfiguration](mongoDb, string(SENSOR_CONFIGURATIONS_COLLECTION))
 }
 
 func GetCalibratedDataCollection(mongoDb MongoDatabase) MongoCollection[CalibratedData] {
-	return mongoCollection[CalibratedData](mongoDb.Collection(string(CALIBRATED_DATA_COLLECTION)))
+	return GetTypedCollection[CalibratedData](mongoDb, string(CALIBRATED_DATA_COLLECTION))
 }
 
 func GetAssetsCollection(mongoDb MongoDatabase) MongoCollection[Asset] {
-	return mongoCollection[Asset](mongoDb.Collection(string(ASSETS_COLLECTION)))
+	return GetTypedCollection[Asset](mongoDb, string(ASSETS_COLLECTION))
 }
 
 func (m *MongoCollectionWrapper[T]) InsertOne(ctx context.Context, document T) (*mongo.InsertOneResult, error) {

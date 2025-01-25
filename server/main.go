@@ -22,8 +22,10 @@ func main() {
 	// values for Mongo and TTN
 	envs := core.ReadEnvs()
 
-	mongoDb, mongoDeferFn := core.SetupMongo(envs)
+	database, mongoDeferFn := core.SetupMongo(envs)
 	defer mongoDeferFn()
+
+	mongoDb := &core.MongoDatabaseImpl{Db: database}
 
 	// The idea is to keep a cache of the sensor information to prevent constant polling.
 	// Also as I haven't used it directly myself.
