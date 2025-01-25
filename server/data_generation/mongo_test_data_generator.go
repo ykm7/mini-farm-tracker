@@ -74,7 +74,7 @@ func main() {
 	for _, v := range mockSensorData {
 		if _, err = core.GetRawDataCollection[core.LDDS45RawData](mongoDb).InsertOne(context.TODO(), core.RawData[core.LDDS45RawData]{
 			Timestamp: primitive.NewDateTimeFromTime(timestamp),
-			Sensor:    sensorName,
+			Sensor:    &sensorName,
 			Data:      v,
 		}); err != nil {
 			log.Panicf("%v", err)

@@ -86,6 +86,18 @@ func GetRawDataCollection[T RawDataType](mongoDb MongoDatabase) MongoCollection[
 	return newMongoCollection[RawData[T]](mongoDb.Collection(string(RAW_DATA_COLLECTION)))
 }
 
+func GetSensorConfigurationCollection(mongoDb MongoDatabase) MongoCollection[SensorConfiguration] {
+	return newMongoCollection[SensorConfiguration](mongoDb.Collection(string(SENSOR_CONFIGURATIONS_COLLECTION)))
+}
+
+func GetCalibratedDataCollection(mongoDb MongoDatabase) MongoCollection[CalibratedData] {
+	return newMongoCollection[CalibratedData](mongoDb.Collection(string(CALIBRATED_DATA_COLLECTION)))
+}
+
+func GetAssetsCollection(mongoDb MongoDatabase) MongoCollection[Asset] {
+	return newMongoCollection[Asset](mongoDb.Collection(string(ASSETS_COLLECTION)))
+}
+
 func (m *MongoCollectionWrapper[T]) InsertOne(ctx context.Context, document T) (*mongo.InsertOneResult, error) {
 	return m.col.InsertOne(ctx, document)
 }

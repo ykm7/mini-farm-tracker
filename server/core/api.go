@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func handleWithoutSensorID(c *gin.Context, sensorCache map[string]Sensor) {
@@ -29,7 +30,7 @@ func handleWithoutSensorID(c *gin.Context, sensorCache map[string]Sensor) {
 func handleWithSensorID(c *gin.Context) {
 	// sensorID := c.Param("SENSOR_ID")
 
-	c.JSON(http.StatusNotImplemented, nil)
+	c.AbortWithStatusJSON(http.StatusNotImplemented, nil)
 }
 
 func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache map[string]Sensor) {
@@ -40,7 +41,7 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache m
 
 	sensor, exists := sensorCache[sensorID]
 	if !exists {
-		c.JSON(http.StatusNotFound, gin.H{
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"status": fmt.Sprintf("Unable to find sensor: %s", sensorID),
 		})
 		return
@@ -48,10 +49,23 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache m
 
 	switch sensor.Model {
 	case LDDS45:
-		results, err := GetRawDataCollection[LDDS45RawData](mongoDb).Find(ctx, bson.D{{Key: "sensor", Value: sensor.Id}})
+		results, err := GetRawDataCollection[LDDS45RawData](mongoDb).Find(
+			ctx,
+			bson.D{{Key: "sensor", Value: sensor.Id}},
+			options.Find().SetProjection(
+				bson.D{
+					{
+						Key: "Id", Value: 0,
+					},
+					{
+						Key: "Sensor", Value: 0,
+					},
+				},
+			),
+		)
 		if err != nil {
 			log.Printf("Error within raw data query: %v\n", err)
-			c.JSON(http.StatusBadRequest, gin.H{
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"status": "ok",
 			})
 			return
@@ -61,7 +75,7 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache m
 		return
 
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"status": fmt.Sprintf("Unexpected sensor model: %s for sensor id: %s\n", sensor.Model, sensor.Id),
 		})
 		return
@@ -71,5 +85,5 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache m
 func getCalibratedDataWithSensorId(c *gin.Context) {
 	sensorID := c.Param("SENSOR_ID")
 	log.Printf("%s\n", sensorID)
-	c.JSON(http.StatusNotImplemented, nil)
+	c.AbortWithStatusJSON(http.StatusNotImplemented, nil)
 }

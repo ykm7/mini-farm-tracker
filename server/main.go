@@ -15,6 +15,9 @@ func main() {
 	log.Println("Starting up...")
 
 	exitChan := make(chan struct{})
+	ctx := context.Background()
+	innerCtx, innerCtxCancel := core.ContextWithQuitChannel(ctx, exitChan)
+	defer innerCtxCancel()
 
 	// values for Mongo and TTN
 	envs := core.ReadEnvs()
@@ -25,7 +28,8 @@ func main() {
 	// The idea is to keep a cache of the sensor information to prevent constant polling.
 	// Also as I haven't used it directly myself.
 	sensorCache := map[string]core.Sensor{}
-	core.ListenToSensors(context.Background(), mongoDb, sensorCache, exitChan)
+
+	core.ListenToSensors(innerCtx, mongoDb, sensorCache, exitChan)
 
 	r := core.SetupRouter(envs, mongoDb, sensorCache)
 

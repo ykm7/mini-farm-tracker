@@ -20,6 +20,18 @@ type environmentVariables struct {
 	mongo_conn       string
 }
 
+func ContextWithQuitChannel(parent context.Context, quit <-chan struct{}) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(parent)
+	go func() {
+		select {
+		case <-quit:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	return ctx, cancel
+}
+
 func ReadEnvs() *environmentVariables {
 	if !isProduction() {
 		err := godotenv.Load()
