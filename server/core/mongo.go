@@ -74,28 +74,28 @@ type MongoCollectionWrapper[T any] struct {
 	col *mongo.Collection
 }
 
-func newMongoCollection[T any](col *mongo.Collection) MongoCollection[T] {
+func mongoCollection[T any](col *mongo.Collection) MongoCollection[T] {
 	return &MongoCollectionWrapper[T]{col: col}
 }
 
 func GetSensorCollection(mongoDb MongoDatabase) MongoCollection[Sensor] {
-	return newMongoCollection[Sensor](mongoDb.Collection(string(SENSORS_COLLECTION)))
+	return mongoCollection[Sensor](mongoDb.Collection(string(SENSORS_COLLECTION)))
 }
 
 func GetRawDataCollection[T RawDataType](mongoDb MongoDatabase) MongoCollection[RawData[T]] {
-	return newMongoCollection[RawData[T]](mongoDb.Collection(string(RAW_DATA_COLLECTION)))
+	return mongoCollection[RawData[T]](mongoDb.Collection(string(RAW_DATA_COLLECTION)))
 }
 
 func GetSensorConfigurationCollection(mongoDb MongoDatabase) MongoCollection[SensorConfiguration] {
-	return newMongoCollection[SensorConfiguration](mongoDb.Collection(string(SENSOR_CONFIGURATIONS_COLLECTION)))
+	return mongoCollection[SensorConfiguration](mongoDb.Collection(string(SENSOR_CONFIGURATIONS_COLLECTION)))
 }
 
 func GetCalibratedDataCollection(mongoDb MongoDatabase) MongoCollection[CalibratedData] {
-	return newMongoCollection[CalibratedData](mongoDb.Collection(string(CALIBRATED_DATA_COLLECTION)))
+	return mongoCollection[CalibratedData](mongoDb.Collection(string(CALIBRATED_DATA_COLLECTION)))
 }
 
 func GetAssetsCollection(mongoDb MongoDatabase) MongoCollection[Asset] {
-	return newMongoCollection[Asset](mongoDb.Collection(string(ASSETS_COLLECTION)))
+	return mongoCollection[Asset](mongoDb.Collection(string(ASSETS_COLLECTION)))
 }
 
 func (m *MongoCollectionWrapper[T]) InsertOne(ctx context.Context, document T) (*mongo.InsertOneResult, error) {
