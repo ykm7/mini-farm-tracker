@@ -303,6 +303,9 @@ func storeLDDS45CalibratedData(
 	*/
 	// Find current configuration for sensor
 	sensorConfig := SensorConfiguration{}
+
+	// mongoDb.G
+
 	if err := GetSensorConfigurationCollection(mongoDb).FindOne(ctx, bson.M{
 		"sensor": sensorId,
 	}, &sensorConfig); err != nil {
