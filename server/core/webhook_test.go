@@ -8,8 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func Test_handleWebhook(t *testing.T) {
@@ -102,24 +100,20 @@ func Test_handleWebhook(t *testing.T) {
 }
 
 func Test_storeLDDS45CalibratedData(t *testing.T) {
-
 	mockCollection := &MockMongoCollection[any]{
-		InsertOneFn: func(ctx context.Context, document any) (*mongo.InsertOneResult, error) {
-			// Verify the document here if needed
-			return &mongo.InsertOneResult{InsertedID: "mocked_id"}, nil
+		FindOneFn: func(ctx context.Context, filter interface{}, result *any) error {
+			*result = SensorConfiguration{
+				Sensor: "sensor id",
+			}
+			return nil
 		},
-		// FindOneFn: func(ctx context.Context, filter interface{}, result *any) error {
-		// 	// Mock the FindOne behavior
-		// 	*result = CalibratedData{ /* initialize with test data */ }
-		// 	return nil // or return an error if you want to test error handling
-		// },
 	}
 
-	mockDb := &MockMongoDatabase{
-		CollectionFn: func(name string, opts ...*options.CollectionOptions) MongoCollection[any] {
-			return mockCollection
-		},
-	}
+	mockDb := NewMockMongoDatabase()
+	mockDb.SetCollection(string(SENSOR_CONFIGURATIONS_COLLECTION), mockCollection)
+
+	// In your test function
+	// typedCollection := getTypedCollection[YourType](mockDb, "your_collection_name")
 
 	type args struct {
 		ctx            context.Context

@@ -56,12 +56,12 @@ func SetupMongo(envs *environmentVariables) (db *mongo.Database, deferFn func())
 	return
 }
 
-// MongoDatabase interface remains non-generic
+//go:generate mockgen -destination=../mocks/mock_MongoDatabase.go -package=mocks MongoDatabase
 type MongoDatabase interface {
 	Collection(name string, opts ...*options.CollectionOptions) MongoCollection[any]
 }
 
-// Generic interface for collection operations
+//go:generate mockgen -destination=../mocks/mock_MongoCollection.go -package=mocks MongoCollection
 type MongoCollection[T any] interface {
 	InsertOne(ctx context.Context, document T) (*mongo.InsertOneResult, error)
 	FindOne(ctx context.Context, filter interface{}, result *T) error
@@ -83,8 +83,32 @@ func (m *MongoDatabaseImpl) Collection(name string, opts ...*options.CollectionO
 	return &MongoCollectionWrapper[any]{col: m.Db.Collection(name, opts...)}
 }
 
+// func getTypedCollection[T any](mongoDb MongoDatabase, collectionName string) MongoCollection[T] {
+// 	anyCollection := mongoDb.Collection(collectionName)
+
+// 	switch c := anyCollection.(type) {
+// 	case MongoCollection[T]:
+// 		return c
+// 	case *MongoCollectionWrapper[any]:
+// 		return &MongoCollectionWrapper[T]{col: c.col}
+// 	default:
+// 		panic(fmt.Sprintf("Unexpected collection type: %T", anyCollection))
+// 	}
+// }
+
 func getTypedCollection[T any](mongoDb MongoDatabase, collectionName string) MongoCollection[T] {
-	return &MongoCollectionWrapper[T]{col: mongoDb.Collection(collectionName).(*MongoCollectionWrapper[any]).col}
+	anyCollection := mongoDb.Collection(collectionName)
+
+	switch c := anyCollection.(type) {
+	case MongoCollection[T]:
+		return c
+	case *MongoCollectionWrapper[any]:
+		return &MongoCollectionWrapper[T]{col: c.col}
+	case MongoCollection[any]:
+		return &MockMongoCollectionWrapper[T]{col: c}
+	default:
+		panic(fmt.Sprintf("Unexpected collection type: %T", anyCollection))
+	}
 }
 
 func GetSensorCollection(mongoDb MongoDatabase) MongoCollection[Sensor] {

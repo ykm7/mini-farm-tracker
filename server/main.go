@@ -29,6 +29,7 @@ func main() {
 
 	// The idea is to keep a cache of the sensor information to prevent constant polling.
 	// Also as I haven't used it directly myself.
+	// TODO: race condition lock access
 	sensorCache := map[string]core.Sensor{}
 
 	core.ListenToSensors(innerCtx, mongoDb, sensorCache, exitChan)
