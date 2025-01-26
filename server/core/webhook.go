@@ -303,9 +303,6 @@ func storeLDDS45CalibratedData(
 	*/
 	// Find current configuration for sensor
 	sensorConfig := SensorConfiguration{}
-
-	// mongoDb.G
-
 	if err := GetSensorConfigurationCollection(mongoDb).FindOne(ctx, bson.M{
 		"sensor": sensorId,
 	}, &sensorConfig); err != nil {
@@ -320,7 +317,18 @@ func storeLDDS45CalibratedData(
 	log.Printf("Sensor configuration: %s found\n", sensorConfig.Id)
 	// find the asset attached.
 
-	var asset Asset
+	asset := Asset{}
+	if err := GetAssetsCollection(mongoDb).FindOne(ctx, bson.M{
+		"_id": sensorConfig.Asset,
+	}, &asset); err != nil {
+		// 404 is a successful return
+		if err == mongo.ErrNoDocuments {
+			return nil
+		}
+
+		return err
+	}
+
 	if asset.Metrics != nil {
 		// handle volume
 		if asset.Metrics.Volume != nil {

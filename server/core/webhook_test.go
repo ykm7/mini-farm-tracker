@@ -100,6 +100,14 @@ func Test_handleWebhook(t *testing.T) {
 }
 
 func Test_storeLDDS45CalibratedData(t *testing.T) {
+	/*
+		All in all, I don't like this solution.
+		TODO: Will be implementing previously implemented Mongodb solution.
+		Within testContainer
+		Have an "init" collections documents which are written to mongo
+		Have an "post" collection documents which are the expected documents to be found.
+		Compare.
+	*/
 	mockCollection := &MockMongoCollection[any]{
 		FindOneFn: func(ctx context.Context, filter interface{}, result *any) error {
 			*result = SensorConfiguration{

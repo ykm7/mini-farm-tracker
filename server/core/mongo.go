@@ -96,6 +96,9 @@ func (m *MongoDatabaseImpl) Collection(name string, opts ...*options.CollectionO
 // 	}
 // }
 
+/*
+Not ideal as mocking logic is now within the core code path. TODO: revisit - however functional and allows tests
+*/
 func getTypedCollection[T any](mongoDb MongoDatabase, collectionName string) MongoCollection[T] {
 	anyCollection := mongoDb.Collection(collectionName)
 

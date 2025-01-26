@@ -56,13 +56,13 @@ type AssetMetrics struct {
 }
 
 type Asset struct {
-	Id          string `bson:"_id"`
-	Name        string `bson:"name"`
-	Description string `bson:"description"`
+	Id          primitive.ObjectID `bson:"_id,omitempty"`
+	Name        string             `bson:"name"`
+	Description string             `bson:"description"`
 	// To be used when authentication is added
 	// User        primitive.ObjectID    `bson:"user"`
-	Sensors *[]primitive.ObjectID `bson:"sensors,omitempty"`
-	Metrics *AssetMetrics         `bson:"metrics,omitempty"`
+	Sensors *[]string     `bson:"sensors,omitempty"`
+	Metrics *AssetMetrics `bson:"metrics,omitempty"`
 }
 
 type Sensor struct {
@@ -110,7 +110,7 @@ type CalibratedData struct {
 type SensorConfiguration struct {
 	Id      primitive.ObjectID `bson:"_id,omitempty"`
 	Sensor  string             `bson:"sensor"`
-	Asset   primitive.ObjectID `bson:"sensor"`
+	Asset   primitive.ObjectID `bson:"asset"`
 	Applied primitive.DateTime `bson:"applied"`
 	// to indicate that this sensor is no longer applied.
 	// Initially thought there would initially be another config to "take over" but this is cleaner
