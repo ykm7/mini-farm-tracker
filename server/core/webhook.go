@@ -191,7 +191,6 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 			return
 		}
 
-		valid := data.SensorFlag == 0
 		_, err := GetRawDataCollection[LDDS45RawData](mongoDb).InsertOne(ctx, RawData[LDDS45RawData]{
 			Timestamp: receivedAtTime,
 			Sensor:    &sensor.Id,
@@ -205,9 +204,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 			return
 		}
 
-		if valid {
-			storeLDDS45CalibratedData(ctx, mongoDb, sensor.Id, data, receivedAtTime)
-		}
+		storeLDDS45CalibratedData(ctx, mongoDb, sensor.Id, data, receivedAtTime)
 
 		/*
 			TODO:
