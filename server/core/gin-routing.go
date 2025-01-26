@@ -47,7 +47,9 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase, sensorCache map[s
 				sensorDataApi.GET("/raw_data", func(c *gin.Context) {
 					getRawDataWithSensorId(c, db, sensorCache)
 				})
-				sensorDataApi.GET("/calibrated_data", getCalibratedDataWithSensorId)
+				sensorDataApi.GET("/calibrated_data", func(ctx *gin.Context) {
+					getCalibratedDataWithSensorId(ctx, db, sensorCache)
+				})
 			}
 		}
 	}
