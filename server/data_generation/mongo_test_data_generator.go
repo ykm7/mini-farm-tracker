@@ -34,7 +34,8 @@ To be run manually to populate the database with various mock data
 func main() {
 	envs := core.ReadEnvs()
 
-	mongoDb, mongoDeferFn := core.SetupMongo(envs)
+	database, mongoDeferFn := core.SetupMongo(envs)
+	mongoDb := &core.MongoDatabaseImpl{Db: database}
 	defer mongoDeferFn()
 
 	// testing mongo - START

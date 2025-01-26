@@ -67,6 +67,7 @@ type MongoCollection[T any] interface {
 	FindOne(ctx context.Context, filter interface{}, result *T) error
 	Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) ([]T, error)
 	UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
+	Watch(ctx context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
 }
 
 type MongoDatabaseImpl struct {
@@ -140,4 +141,8 @@ func (m *MongoCollectionWrapper[T]) Find(ctx context.Context, filter interface{}
 
 func (m *MongoCollectionWrapper[T]) UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error) {
 	return m.col.UpdateOne(ctx, filter, update, opts...)
+}
+
+func (m *MongoCollectionWrapper[T]) Watch(ctx context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
+	return m.col.Watch(ctx, pipeline, opts...)
 }
