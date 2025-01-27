@@ -8,13 +8,14 @@
 </template>
 
 <script setup lang="ts">
+import type { Asset } from '@/models/Asset';
 import { useAssetStore } from '@/stores/asset'
 import { computed } from 'vue'
 // import { storeToRefs } from 'pinia'
 
 const assetCollection = useAssetStore()
 
-const assets = computed(() => assetCollection.assets)
+const assets = computed<Asset[]>(() => assetCollection.assets)
 // const { assets } = storeToRefs(assetCollection)
 </script>
 <style scoped></style>

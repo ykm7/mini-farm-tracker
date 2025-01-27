@@ -4,13 +4,31 @@ import DashboardHeader from '../components/DashboardHeader.vue'
 </script>
 
 <template>
-  <main>
-    <div class="dashboard">
+  <main class="main-content">
+    <div class="dashboard-header">
       <DashboardHeader />
-      <div class="dashboard-content"></div>
+      <!-- <div class="dashboard-content"></div> -->
     </div>
-    <Dashboard />
-
-    <router-view></router-view>
+    <div class="dashboard">
+      <Dashboard />
+    </div>
   </main>
 </template>
+
+<style scoped>
+.main-content {
+  padding: 2rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-header {
+  height: 50px;
+  flex-shrink: 0;
+}
+
+.dashboard {
+  flex-grow: 1;
+}
+</style>
