@@ -181,7 +181,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 	// TODO: Store data point within Mongo
 	switch sensor.Model {
 	case LDDS45:
-		// "LDDS45" is aware to be an volume related Sensor type.
+		// "LDDS45" is aware it is an volume related Sensor type.
 		var data *LDDS45RawData
 		err = json.Unmarshal(jsonData, &data)
 		if err != nil {
@@ -191,10 +191,12 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 			return
 		}
 
+		valid := data.DetermineValid()
 		_, err := GetRawDataCollection[LDDS45RawData](mongoDb).InsertOne(ctx, RawData[LDDS45RawData]{
 			Timestamp: receivedAtTime,
 			Sensor:    &sensor.Id,
 			Data:      *data,
+			Valid:     valid,
 		})
 
 		if err != nil {
@@ -204,82 +206,9 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 			return
 		}
 
-		storeLDDS45CalibratedData(ctx, mongoDb, sensor.Id, data, receivedAtTime)
-
-		/*
-			TODO:
-			1. Identify latest (if it exists) volume (or just directly sensor?) calibration for the sensor.
-				Find SensorConfiguration by "Sensor". current time is between applied and unapplied
-			2. Use the asset on the configuration
-		*/
-
-		// // Find current configuration for sensor
-		// var sensorConfig *SensorConfiguration
-		// // sensorConfig := &SensorConfiguration{}
-
-		// if sensorConfig != nil {
-		// 	log.Printf("Sensor configuration: %s found\n", sensorConfig.Id)
-		// 	// find the asset attached.
-
-		// 	var asset Asset
-		// 	// asset := &Asset{}
-		// 	if asset.Metrics != nil {
-		// 		// handle volume
-		// 		if asset.Metrics.Volume != nil {
-		// 			offset := 0.0
-
-		// 			if sensorConfig.Offset != nil && sensorConfig.Offset.Distance != nil {
-		// 				offset = sensorConfig.Offset.Distance.Distance
-		// 				// For this sensor need the offset to be in metres
-		// 				switch sensorConfig.Offset.Distance.Units {
-		// 				case MM_METRE:
-		// 					offset = offset / 1000
-		// 				case CM_METRE:
-		// 					offset = offset / 100
-		// 				case METRES:
-		// 					// ignore
-		// 				default:
-		// 					c.AbortWithStatusJSON(http.StatusInternalServerError,
-		// 						gin.H{
-		// 							"status": fmt.Sprintf("Unexpected units for a distance measurement: %s\n", sensorConfig.Offset.Distance.Units),
-		// 						})
-		// 					return
-		// 				}
-		// 			}
-
-		// 			distanceSplit := strings.Split(data.Distance, " ")
-		// 			// we don't need to dynamically handle units - sensor type will always generate the same units
-		// 			distanceInMmsString, _ := distanceSplit[0], distanceSplit[1]
-
-		// 			distanceInMms, err := strconv.ParseFloat(distanceInMmsString, 64)
-		// 			if err != nil {
-		// 				fmt.Println("Error:", err)
-		// 				return
-		// 			}
-
-		// 			distanceInMs := distanceInMms / 1000
-
-		// 			// TODO: need 'offset'. sensor is installed in the roof of the water tank, pointing down.
-		// 			// Need to know the offset value from the "top" of the tank. Top in the case is the top of the overflow output pipeline.
-		// 			volume := asset.Metrics.Volume.CalcVolume(distanceInMs + offset)
-
-		// 			calibrated := CalibratedData{
-		// 				Timestamp: receivedAtTime,
-		// 				Sensor:    sensor.Id,
-		// 				Data:      volume,
-		// 				Units:     METRES_CUBE,
-		// 			}
-
-		// 			_, err = GetCalibratedDataCollection(mongoDb).InsertOne(ctx, calibrated)
-		// 			if err != nil {
-		// 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-		// 					"status": fmt.Sprintf("Error trying to insert calibrated data %s\n", err),
-		// 				})
-		// 				return
-		// 			}
-		// 		}
-		// 	}
-		// }
+		if valid {
+			storeLDDS45CalibratedData(ctx, mongoDb, sensor.Id, data, receivedAtTime)
+		}
 	default:
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"status": fmt.Sprintf("For sensor: %s unknown model type to handle: %s\n", sensor.Id, sensor.Model),
@@ -361,16 +290,25 @@ func storeLDDS45CalibratedData(
 				return fmt.Errorf("Error converting LDDS45RawData distance to float %w", err)
 			}
 
-			distanceInMs := distanceInMms / 1000
+			distanceInM := distanceInMms / 1000
 
-			// TODO: need 'offset'. sensor is installed in the roof of the water tank, pointing down.
-			// Need to know the offset value from the "top" of the tank. Top in the case is the top of the overflow output pipeline.
-			volume := asset.Metrics.Volume.CalcVolume(distanceInMs + offset)
+			/*
+				Depth of the cylinder
+				TODO: need 'offset'. sensor is installed in the roof of the water tank, pointing down.
+				Positive offset is how much ABOVE the overflow pipe the sensor is located
+				Need to know the offset value from the "top" of the tank. Top in the case is the top of the overflow output pipeline.
+			*/
+			cylinderDepth := asset.Metrics.Volume.Height - distanceInM - offset
+
+			volume := asset.Metrics.Volume.CalcVolume(cylinderDepth)
+
+			// 1 m³ = 1,000 litres
+			litres := volume * 1000
 
 			calibrated := CalibratedData{
 				Timestamp: receivedAtTime,
 				Sensor:    sensorId,
-				Data:      volume,
+				Data:      litres,
 				Units:     METRES_CUBE,
 			}
 

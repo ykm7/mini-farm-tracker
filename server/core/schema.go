@@ -1,7 +1,9 @@
 package core
 
 import (
+	"fmt"
 	"math"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -31,7 +33,25 @@ const (
 	CM_METRE    UNITS = "cm"
 	METRES      UNITS = "m"
 	METRES_CUBE UNITS = "m³"
+	LITRES      UNITS = "L"
 )
+
+func StringToUnits(s string) (UNITS, error) {
+	switch s {
+	case string(MM_METRE):
+		return MM_METRE, nil
+	case string(CM_METRE):
+		return CM_METRE, nil
+	case string(METRES):
+		return METRES, nil
+	case string(METRES_CUBE):
+		return METRES_CUBE, nil
+	case string(LITRES):
+		return LITRES, nil
+	default:
+		return "", fmt.Errorf("Cannot convert string [%s] to units", s)
+	}
+}
 
 type AssetMetricsCylinderVolume struct {
 	// Max static volume
@@ -79,7 +99,12 @@ type RawData[T RawDataType] struct {
 	Id        *primitive.ObjectID `bson:"_id,omitempty"`
 	Timestamp primitive.DateTime  `bson:"timestamp"`
 	Sensor    *string             `bson:"sensor,omitempty"`
+	Valid     bool                `bson:"valid,omitempty"`
 	Data      T                   `bson:"data"`
+}
+
+type RawDataFns interface {
+	DetermineValid() bool
 }
 
 /*
@@ -93,6 +118,14 @@ type LDDS45RawData struct {
 	InterruptPin uint8   `json:"Interrupt_flag"`
 	Temperature  string  `json:"TempC_DS18B20"` // units are 'c'
 	SensorFlag   uint8   `json:"Sensor_flag"`
+}
+
+func (lDDS45RawData *LDDS45RawData) DetermineValid() bool {
+	distanceSplit := strings.Split(lDDS45RawData.Distance, "")
+	_, units := distanceSplit[0], distanceSplit[1]
+
+	_, ok := StringToUnits(units)
+	return ok == nil
 }
 
 // Just to test the generics
