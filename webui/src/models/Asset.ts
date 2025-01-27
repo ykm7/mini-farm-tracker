@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb'
+import type { ObjectId } from '@/types/ObjectId'
 
 interface AssetMetricsCylinderVolume {
     Volume: number;
