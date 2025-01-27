@@ -28,10 +28,6 @@ const props = defineProps<{
 }>()
 
 const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
-  // if (props.rawData.length == 0) {
-  //   return {}
-  // }
-
   return {
     datasets: [
       // {
@@ -119,7 +115,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
           },
         },
         ticks: {
-          color: 'white',
+          color: 'black',
         },
         grid: {
           color: 'rgba(255,255,255,0.2)',
@@ -135,7 +131,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
           text: 'Value (mm)',
         },
         ticks: {
-          color: 'white',
+          color: 'black',
         },
         grid: {
           color: 'rgba(255,255,255,0.2)',
@@ -150,12 +146,12 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
     },
     elements: {
       line: {
-        borderColor: 'white',
-        backgroundColor: 'white',
+        borderColor: 'black',
+        backgroundColor: 'black',
       },
       point: {
-        borderColor: 'white',
-        backgroundColor: 'white',
+        borderColor: 'black',
+        backgroundColor: 'black',
       },
     },
   }

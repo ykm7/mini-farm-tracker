@@ -1,13 +1,22 @@
 <script setup lang="ts">
+import { useAssetStore } from '@/stores/asset'
+import { useSensorStore } from '@/stores/sensor'
 import { onMounted } from 'vue'
 
 const assetCollection = useAssetStore()
+const sensorCollection = useSensorStore()
 
 onMounted(async () => {
-  await assetCollection.fetchData()
+  const result = await Promise.allSettled([
+    assetCollection.fetchData(),
+    sensorCollection.fetchData(),
+  ])
+  result.forEach((r) => {
+    if (r.status == 'rejected') {
+      console.warn(r.reason)
+    }
+  })
 })
-
-import { useAssetStore } from '@/stores/asset'
 </script>
 
 <template>
@@ -18,5 +27,4 @@ import { useAssetStore } from '@/stores/asset'
   </main>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

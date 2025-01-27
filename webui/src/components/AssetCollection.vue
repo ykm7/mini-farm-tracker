@@ -2,7 +2,7 @@
   <div>
     <h4>Asset Collection</h4>
     <div v-for="asset in assets">
-      <CCard>
+      <CCard style="margin: 0.5rem 0">
         <CCardTitle>{{ asset.Name }}</CCardTitle>
         <!-- <CCardSubtitle class="mb-2 text-body-secondary">{{ asset.Id }}</CCardSubtitle> -->
         <CCardBody>{{ asset.Description }}</CCardBody>
@@ -47,6 +47,5 @@ import {
 const assetCollection = useAssetStore()
 
 const assets = computed<Asset[]>(() => assetCollection.assets)
-// const { assets } = storeToRefs(assetCollection)
 </script>
 <style scoped></style>

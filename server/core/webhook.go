@@ -232,7 +232,6 @@ func storeLDDS45CalibratedData(
 			Find SensorConfiguration by "Sensor". current time is between applied and unapplied
 		2. Use the asset on the configuration
 	*/
-	// Find current configuration for sensor
 	sensorConfig := SensorConfiguration{}
 	if err := GetSensorConfigurationCollection(mongoDb).FindOne(ctx, bson.M{
 		"sensor": sensorId,
