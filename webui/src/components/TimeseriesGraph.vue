@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 import type { ChartData, ChartOptions, Point, ChartDataset } from 'chart.js'
 import type { RawData } from '@/models/Data'
 import { computed, ref } from 'vue'
@@ -23,8 +22,10 @@ interface TimePoint {
 }
 
 const props = defineProps<{
-//   dataSets: ChartDataset<"line", Point[]>[]
-    rawData: RawData[]
+  //   dataSets: ChartDataset<"line", Point[]>[]
+  rawData: RawData[]
+  emptyLabel: string
+  yAxisUnit: 'mm' | 'cm' | 'm' | 'm³' | 'L'
 }>()
 
 const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
@@ -47,7 +48,7 @@ const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
           ? props.rawData.map<Point>((v) => {
               return {
                 x: v.Timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
-                y: v.Data.Distance.split(" ")[0] as unknown as number,
+                y: v.Data.Distance.split(' ')[0] as unknown as number,
               }
             })
           : [],
@@ -66,7 +67,7 @@ const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
       // {
       //   label: `Raw data for: ${props.rawData?.length > 0 ? props.rawData[0].Sensor : 'Unknown'}`,
       //   data: props.rawData
-          
+
       //     ? props.rawData.map<Point>((v) => {
       //         return {
       //           x: v.Timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
@@ -128,7 +129,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
       y: {
         title: {
           display: true,
-          text: 'Value (mm)',
+          text: `Value (${props.yAxisUnit})`,
         },
         ticks: {
           color: 'black',
@@ -156,17 +157,16 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
     },
   }
 })
-
 </script>
 
 <template>
-    <Line
-        v-if="rawData.length > 0 && rawDataGraph?.datasets.length > 0"
-        class="container"
-        :options="chartOptions"
-        :data="rawDataGraph"
-      />
-      <div v-else class="empty-chart-placeholder">No data available for this sensor</div>
+  <Line
+    v-if="rawData.length > 0 && rawDataGraph?.datasets.length > 0"
+    class="container"
+    :options="chartOptions"
+    :data="rawDataGraph"
+  />
+  <div v-else class="empty-chart-placeholder">{{ emptyLabel }}</div>
 </template>
 
 <style scoped>

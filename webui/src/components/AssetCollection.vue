@@ -22,7 +22,27 @@
         </div>
 
         <div class="group-section">
-          <TimeseriesGraph :rawData="[]" />
+          <Suspense>
+            <template #default>
+              <div>
+                <AsyncWrapper :promise="pullCalibratedDataFn(asset)">
+                  <template v-slot="{ data }">
+                    <div v-if="data">
+                      <!-- {{ data[0] }} -->
+                      <TimeseriesGraph
+                        :rawData="data"
+                        emptyLabel="No calibrated data available for this asset"
+                        yAxisUnit="L"
+                      />
+                    </div>
+                  </template>
+                </AsyncWrapper>
+              </div>
+            </template>
+            <template #fallback>
+              <div>Loading...</div>
+            </template>
+          </Suspense>
         </div>
       </CCard>
     </div>
@@ -33,7 +53,8 @@
 import type { Asset } from '@/models/Asset'
 import { useAssetStore } from '@/stores/asset'
 import TimeseriesGraph from './TimeseriesGraph.vue'
-
+import { Suspense } from 'vue'
+import AsyncWrapper from './AsyncWrapper.vue'
 import { computed } from 'vue'
 import {
   CCard,
@@ -43,9 +64,27 @@ import {
   CListGroup,
   CListGroupItem,
 } from '@coreui/vue'
+import axios from 'axios'
+import type { CalibratedData } from '@/models/Data'
 
+const BASE_URL: string = import.meta.env.VITE_BASE_URL
 const assetCollection = useAssetStore()
 
 const assets = computed<Asset[]>(() => assetCollection.assets)
+
+const pullCalibratedDataFn = async (asset: Asset): Promise<CalibratedData[]> => {
+  if (!(asset.Sensors && asset.Sensors?.length > 0)) {
+    return []
+  }
+  try {
+    const response = await axios.get<CalibratedData[]>(
+      `${BASE_URL}/api/sensors/${asset.Sensors[0]}/data/calibrated_data`,
+    )
+    return response.data ? response.data : []
+  } catch (e) {
+    console.warn(e)
+    return []
+  }
+}
 </script>
 <style scoped></style>
