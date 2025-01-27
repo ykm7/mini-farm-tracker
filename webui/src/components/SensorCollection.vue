@@ -52,7 +52,6 @@ import TimeseriesGraph from './TimeseriesGraph.vue'
 import axios from 'axios'
 import type { RawData } from '@/models/Data'
 import type { Sensor } from '@/models/Sensor'
-const message = ref('')
 const availableSensors = ref<Sensor[]>([])
 const selectedSensor = ref<Sensor | undefined>(undefined)
 const dataPull = ref<boolean>(false)

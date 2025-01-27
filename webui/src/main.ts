@@ -1,3 +1,4 @@
+import '@coreui/coreui/dist/css/coreui.min.css'
 import './assets/main.css'
 
 import { createApp } from 'vue'
