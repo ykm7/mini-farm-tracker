@@ -120,6 +120,9 @@ SSL certificate (Let's Encrypt) created on domain bought from namecheap.
 
 NOTE: testContainer can use cloud resources however prefer to run locally.
 
+#### TODO:
+Implement what I have done previously; allowing for initial, expected post data per collection to be tested after each test run.
+
 #### Test result generation
 
 ##### Server
@@ -136,7 +139,6 @@ With my environment, I have problems with the embedded testContainers cleanup lo
 Following [configuration path](https://golang.testcontainers.org/features/configuration/) adding a line to disable `ryuk` allows correct running:
 
 > ryuk.disabled=true
-
 
 
 # Rough TODO:
