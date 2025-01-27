@@ -27,6 +27,21 @@ func handleWithoutSensorID(c *gin.Context, sensorCache map[string]Sensor) {
 	c.JSON(http.StatusOK, mapToList(sensorCache))
 }
 
+func handleAssetsWithoutId(c *gin.Context, mongoDb MongoDatabase) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	results, err := GetAssetsCollection(mongoDb).Find(ctx, nil)
+	if err != nil {
+		// Handle error
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"status": "ok",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, results)
+}
+
 func handleWithSensorID(c *gin.Context) {
 	// sensorID := c.Param("SENSOR_ID")
 

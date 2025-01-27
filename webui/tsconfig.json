@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "types": ["node"],
-    "module": "ESNext"
   },
   "files": [],
   "references": [

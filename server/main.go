@@ -72,7 +72,7 @@ func main() {
 	}
 	select {
 	case <-ctx.Done():
-		log.Println("timeout of 5 seconds.")
+		log.Println("timeout of 2 seconds.")
 	}
 	log.Println("Server exiting")
 }

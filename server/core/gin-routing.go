@@ -52,6 +52,13 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase, sensorCache map[s
 				})
 			}
 		}
+
+		assetsApi := api.Group("/assets")
+		{
+			assetsApi.GET("", func(ctx *gin.Context) {
+				handleAssetsWithoutId(ctx, db)
+			})
+		}
 	}
 
 	r.GET("/ping", func(c *gin.Context) {

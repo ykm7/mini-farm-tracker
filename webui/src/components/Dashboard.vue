@@ -2,9 +2,16 @@
 import type { RawData } from '@/models/Data'
 import type { Sensor } from '@/models/Sensor'
 import axios from 'axios'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
+
+const assetCollection = useAssetStore()
+
+onMounted(async () => {
+  await assetCollection.fetchData()
+})
 
 import TimeseriesGraph from './TimeseriesGraph.vue'
+import { useAssetStore } from '@/stores/asset'
 const BASE_URL: string = import.meta.env.VITE_BASE_URL
 
 const message = ref('')
