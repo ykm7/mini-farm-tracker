@@ -10,5 +10,7 @@ import DashboardHeader from '../components/DashboardHeader.vue'
       <div class="dashboard-content"></div>
     </div>
     <Dashboard />
+
+    <router-view></router-view>
   </main>
 </template>

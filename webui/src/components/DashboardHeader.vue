@@ -1,11 +1,15 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+</script>
 
 <template>
   <header class="dashboard-header">
     <nav class="navigation">
       <ul>
-        <li><a href="#">Assets</a></li>
-        <li><a href="#">Sensors</a></li>
+        <li><router-link to="/">
+            <font-awesome-icon :icon="['fas', 'house']" />
+        </router-link></li>
+        <li><router-link to="/">Assets</router-link></li>
+        <li><router-link to="/sensor">Sensors</router-link></li>
       </ul>
     </nav>
     <div class="user-info">

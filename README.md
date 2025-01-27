@@ -102,6 +102,15 @@ DNS Records are configured within DigitalOcean to allow for vercel website to be
 
 ### Development
 
+#### WebUI
+
+Allow for asset generation
+> npm install -g @vue/cli
+
+> vue generate component MyComponent
+
+#### Server
+
 > git checkout .
 > git clean -fd
 
