@@ -164,8 +164,6 @@ func validateDataExistingsWithinMockDb[T RawDataType](t *testing.T, expected *Da
 
 		ignoreFields := cmpopts.IgnoreFields(RawData[T]{}, "Id")
 
-		// assert.ElementsMatch(t, expected.rawData, results)
-
 		if diff := cmp.Diff(expected.rawData, results, ignoreFields, cmpopts.SortSlices(func(a, b RawData[T]) bool {
 			return a.Timestamp < b.Timestamp
 		})); diff != "" {
@@ -192,7 +190,9 @@ func validateDataExistingsWithinMockDb[T RawDataType](t *testing.T, expected *Da
 			panic(err)
 		}
 
-		if diff := cmp.Diff(expected.calibratedData, results, cmpopts.SortSlices(func(a, b Asset) bool {
+		ignoreFields := cmpopts.IgnoreFields(CalibratedData{}, "Id")
+
+		if diff := cmp.Diff(expected.calibratedData, results, ignoreFields, cmpopts.SortSlices(func(a, b Asset) bool {
 			return a.Name < b.Name // Assuming there's an ID field for sorting
 		})); diff != "" {
 			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
@@ -270,6 +270,7 @@ func Test_handleWebhook(t *testing.T) {
 	MOCK_DEVICE_ID := "MOCK_DEVICE_ID"
 	MOCK_SENSOR_ID := "112233445566778899"
 	MOCK_RECEIVED_AT := "2025-01-28T03:14:25.480959673Z"
+	MOCK_ASSET_ID := primitive.NewObjectID()
 
 	defaultHeader := http.Header{
 		"Content-Type": {"application/json"},
@@ -295,7 +296,7 @@ func Test_handleWebhook(t *testing.T) {
 		expected expected
 	}{
 		{
-			name:    "In-valid 'LDDS45RawData' data",
+			name:    "Valid 'LDDS45RawData' data",
 			runTest: true,
 			args: args{
 				additionalHeaders: http.Header{
@@ -321,6 +322,44 @@ func Test_handleWebhook(t *testing.T) {
 						Model: LDDS45,
 					},
 				},
+				preData: CollectionToData[LDDS45RawData]{
+					sensorConfigurations: CollectionWrapper[SensorConfiguration]{
+						data: []SensorConfiguration{
+							{
+								Sensor:  MOCK_SENSOR_ID,
+								Asset:   MOCK_ASSET_ID,
+								Applied: mockConvertTimeStringToMongoTime("2025-01-26T13:35:18.467+00:00"),
+								Offset: &struct {
+									Distance *struct {
+										Distance float64 "bson:\"distance\""
+										Units    UNITS   "bson:\"units\""
+									} "bson:\"distance\""
+								}{
+									Distance: &struct {
+										Distance float64 "bson:\"distance\""
+										Units    UNITS   "bson:\"units\""
+									}{
+										Distance: 0,
+										Units:    METRES,
+									},
+								},
+							},
+						},
+					},
+					assets: CollectionWrapper[Asset]{
+						data: []Asset{
+							Asset{
+								Id: MOCK_ASSET_ID,
+								Metrics: &AssetMetrics{
+									Volume: &AssetMetricsCylinderVolume{
+										Radius: float64(5),
+										Height: float64(2.2),
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 			expected: expected{
 				code: http.StatusOK,
@@ -342,12 +381,21 @@ func Test_handleWebhook(t *testing.T) {
 							},
 						},
 					},
+					calibratedData: []CalibratedData{
+						{
+							Timestamp: mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
+							Sensor:    MOCK_SENSOR_ID,
+							Data:      float64(62517.69),
+							Units:     METRES_CUBE,
+						},
+					},
 				},
 			},
 		},
 		{
-			name: "No 'X-Downlink-Apikey' header provided",
-			args: args{},
+			name:    "No 'X-Downlink-Apikey' header provided",
+			runTest: true,
+			args:    args{},
 			expected: expected{
 				code: http.StatusBadRequest,
 				message: map[string]string{
@@ -356,7 +404,8 @@ func Test_handleWebhook(t *testing.T) {
 			},
 		},
 		{
-			name: "Mismatch 'X-Downlink-Apikey' header provided",
+			name:    "Mismatch 'X-Downlink-Apikey' header provided",
+			runTest: true,
 			args: args{
 				additionalHeaders: http.Header{
 					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},

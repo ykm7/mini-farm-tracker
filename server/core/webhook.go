@@ -199,7 +199,6 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 			Data:      *data,
 			Valid:     valid,
 		}
-		log.Printf("Raw data payload: %v\n", dataPayload)
 		_, err := GetRawDataCollection[LDDS45RawData](mongoDb).InsertOne(ctx, dataPayload)
 
 		if err != nil {
@@ -210,10 +209,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 		}
 
 		if valid {
-			log.Println("Raw data payload is considered valid")
 			storeLDDS45CalibratedData(ctx, mongoDb, sensor.Id, data, receivedAtTime)
-		} else {
-			log.Println("Raw data payload is considered NOT valid")
 		}
 	default:
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
@@ -233,10 +229,8 @@ func storeLDDS45CalibratedData(
 	data *LDDS45RawData,
 	receivedAtTime primitive.DateTime) error {
 	/*
-		TODO:
-		1. Identify latest (if it exists) volume (or just directly sensor?) calibration for the sensor.
-			Find SensorConfiguration by "Sensor". current time is between applied and unapplied
-		2. Use the asset on the configuration
+		TODO: Current version simply finds an existing configuration for a sensor. Need to find the "latest"
+		and one which hasn't been completed.
 	*/
 	sensorConfig := SensorConfiguration{}
 	if err := GetSensorConfigurationCollection(mongoDb).FindOne(ctx, bson.M{
