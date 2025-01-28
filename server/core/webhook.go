@@ -192,12 +192,14 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 		}
 
 		valid := data.DetermineValid()
-		_, err := GetRawDataCollection[LDDS45RawData](mongoDb).InsertOne(ctx, RawData[LDDS45RawData]{
+		dataPayload := RawData[LDDS45RawData]{
 			Timestamp: receivedAtTime,
 			Sensor:    &sensor.Id,
 			Data:      *data,
 			Valid:     valid,
-		})
+		}
+		log.Printf("Raw data payload: %v\n", dataPayload)
+		_, err := GetRawDataCollection[LDDS45RawData](mongoDb).InsertOne(ctx, dataPayload)
 
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -207,7 +209,10 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 		}
 
 		if valid {
+			log.Println("Raw data payload is considered valid")
 			storeLDDS45CalibratedData(ctx, mongoDb, sensor.Id, data, receivedAtTime)
+		} else {
+			log.Println("Raw data payload is considered NOT valid")
 		}
 	default:
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
