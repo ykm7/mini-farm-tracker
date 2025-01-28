@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -140,15 +142,74 @@ func insertMockData[T RawDataType](cw *CollectionToData[T]) {
 
 func validateDataExistingsWithinMockDb[T RawDataType](t *testing.T, expected *DateExpectedToFind[T], cw *CollectionToData[T]) {
 	ctx := context.Background()
+
+	if expected.sensors != nil {
+		results, err := cw.sensors.collection.Find(ctx, nil)
+		if err != nil {
+			panic(err)
+		}
+
+		if diff := cmp.Diff(expected.sensors, results, cmpopts.SortSlices(func(a, b Asset) bool {
+			return a.Name < b.Name // Assuming there's an ID field for sorting
+		})); diff != "" {
+			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
+		}
+	}
+
 	if expected.rawData != nil {
 		results, err := cw.rawData.collection.Find(ctx, nil)
 		if err != nil {
 			panic(err)
 		}
 
-		// ignoreFields := cmpopts.IgnoreFields(RawData{}, "FieldToIgnore1", "FieldToIgnore2")
+		ignoreFields := cmpopts.IgnoreFields(RawData[T]{}, "Id")
 
-		assert.ElementsMatch(t, expected.rawData, results)
+		// assert.ElementsMatch(t, expected.rawData, results)
+
+		if diff := cmp.Diff(expected.rawData, results, ignoreFields, cmpopts.SortSlices(func(a, b RawData[T]) bool {
+			return a.Timestamp < b.Timestamp
+		})); diff != "" {
+			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
+		}
+	}
+
+	if expected.sensorConfigurations != nil {
+		results, err := cw.sensorConfigurations.collection.Find(ctx, nil)
+		if err != nil {
+			panic(err)
+		}
+
+		if diff := cmp.Diff(expected.sensorConfigurations, results, cmpopts.SortSlices(func(a, b Asset) bool {
+			return a.Name < b.Name // Assuming there's an ID field for sorting
+		})); diff != "" {
+			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
+		}
+	}
+
+	if expected.calibratedData != nil {
+		results, err := cw.calibratedData.collection.Find(ctx, nil)
+		if err != nil {
+			panic(err)
+		}
+
+		if diff := cmp.Diff(expected.calibratedData, results, cmpopts.SortSlices(func(a, b Asset) bool {
+			return a.Name < b.Name // Assuming there's an ID field for sorting
+		})); diff != "" {
+			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
+		}
+	}
+
+	if expected.assets != nil {
+		results, err := cw.assets.collection.Find(ctx, nil)
+		if err != nil {
+			panic(err)
+		}
+
+		if diff := cmp.Diff(expected.assets, results, cmpopts.SortSlices(func(a, b Asset) bool {
+			return a.Name < b.Name // Assuming there's an ID field for sorting
+		})); diff != "" {
+			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
+		}
 	}
 }
 
@@ -352,75 +413,3 @@ func Test_handleWebhook(t *testing.T) {
 		})
 	}
 }
-
-// func Test_storeLDDS45CalibratedData(t *testing.T) {
-// 	/*
-// 		All in all, I don't like this solution.
-// 		TODO: Will be implementing previously implemented Mongodb solution.
-// 		Within testContainer
-// 		Have an "init" collections documents which are written to mongo
-// 		Have an "post" collection documents which are the expected documents to be found.
-// 		Compare.
-// 	*/
-// 	EXPECTED_SENSOR_ID := "EXPECTED_SENSOR_ID"
-
-// 	// mockSensorCollection := &MockMongoCollection[any]{
-// 	// 	FindOneFn: func(ctx context.Context, filter interface{}, result *any) error {
-// 	// 		*result = SensorConfiguration{
-// 	// 			Sensor: "sensor id",
-// 	// 		}
-// 	// 		return nil
-// 	// 	},
-// 	// }
-
-// 	// mockAssetCollection := &MockMongoCollection[any]{
-// 	// 	FindOneFn: func(ctx context.Context, filter interface{}, result *any) error {
-// 	// 		*result = Asset{}
-// 	// 		return nil
-// 	// 	},
-// 	// }
-
-// 	// mockCalibratedDataCollection := &mockSensorCollection[any]{
-// 	// 	InsertOneFn: func(ctx context.Context, document T) (*mongo.InsertOneResult, error) {
-
-// 	// 		return nil, nil
-// 	// 	},
-// 	// }
-
-// 	mockDb := NewMockMongoDatabase()
-// 	// mockDb.SetCollection(string(SENSOR_CONFIGURATIONS_COLLECTION), mockSensorCollection)
-// 	// mockDb.SetCollection(string(ASSETS_COLLECTION), mockAssetCollection)
-// 	// mockDb.SetCollection(string(CALIBRATED_DATA_COLLECTION), mockCalibratedDataCollection)
-
-// 	type args struct {
-// 		ctx            context.Context
-// 		mongoDb        MongoDatabase
-// 		sensorId       string
-// 		data           *LDDS45RawData
-// 		receivedAtTime primitive.DateTime
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		args    args
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "Successful insertion of data.",
-// 			args: args{
-// 				mongoDb:        mockDb,
-// 				sensorId:       EXPECTED_SENSOR_ID,
-// 				data:           &LDDS45RawData{},
-// 				ctx:            context.TODO(),
-// 				receivedAtTime: primitive.NewDateTimeFromTime(time.Now()),
-// 			},
-// 			wantErr: false,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			if err := storeLDDS45CalibratedData(tt.args.ctx, tt.args.mongoDb, tt.args.sensorId, tt.args.data, tt.args.receivedAtTime); (err != nil) != tt.wantErr {
-// 				t.Errorf("storeLDDS45CalibratedData() error = %v, wantErr %v", err, tt.wantErr)
-// 			}
-// 		})
-// 	}
-// }
