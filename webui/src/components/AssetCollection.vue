@@ -5,7 +5,6 @@
       <CCard class="card-holder" style="margin: 0.5rem 0">
         <div class="card-details">
           <CCardTitle>{{ asset.Name }}</CCardTitle>
-          <!-- <CCardSubtitle class="mb-2 text-body-secondary">{{ asset.Id }}</CCardSubtitle> -->
           <CCardBody>{{ asset.Description }}</CCardBody>
 
           <div>
@@ -30,11 +29,12 @@
                   <AsyncWrapper :promise="pullCalibratedDataFn(asset)">
                     <template v-slot="{ data }">
                       <div v-if="data">
-                        <!-- {{ data[0] }} -->
                         <TimeseriesGraph
                           :displayData="data"
                           emptyLabel="No calibrated data available for this asset"
                           yAxisUnit="L"
+                          lineLabel="Litres"
+                          title="Water in tank"
                         />
                       </div>
                     </template>
@@ -86,7 +86,7 @@ const pullCalibratedDataFn = async (asset: Asset): Promise<DisplayPoint[]> => {
     const convertedData: DisplayPoint[] = response.data
     .map<DisplayPoint>((c: CalibratedData) => {
       return {
-        timestamp: c.Timestamp as unknown as number,
+        timestamp: c.Timestamp,
         value: c.Data
       }
     })

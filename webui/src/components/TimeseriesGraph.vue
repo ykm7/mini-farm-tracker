@@ -16,20 +16,17 @@ import {
 import 'chartjs-adapter-moment'
 Chart.register(TimeScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
-interface TimePoint {
-  x: Date // Date as string
-  y: number
-}
-
 export interface DisplayPoint {
   value: number
-  timestamp: number 
+  timestamp: string 
 }
 
 const props = defineProps<{
   //   dataSets: ChartDataset<"line", Point[]>[]
   displayData: DisplayPoint[]
+  lineLabel: string
   emptyLabel: string
+  title: string
   yAxisUnit: 'mm' | 'cm' | 'm' | 'm³' | 'L'
 }>()
 
@@ -37,11 +34,11 @@ const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
   return {
     datasets: [
       {
-        label: `Distance`,
+        label: props.lineLabel,
         data: props.displayData
           ? props.displayData.map<Point>((v) => {
               return {
-                x: v.timestamp, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
+                x: v.timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
                 y: v.value
               }
             })
@@ -51,15 +48,13 @@ const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
   }
 })
 
-const determineTimeUnit = (dataPoints: Point[]) => {
-  const timeDiffs = dataPoints.slice(1).map((point, index) => {
-    const prevTime = new Date(dataPoints[index].x).getTime()
-    const currTime = new Date(point.x).getTime()
-    return currTime - prevTime
-  })
+const dynamicTimeUnit = (dataPoints: DisplayPoint[]) => {
+  const oldest = dataPoints[0]
+  const newest = dataPoints[dataPoints.length-1]
 
-  const avgTimeDiff = timeDiffs.reduce((a, b) => a + b, 0) / timeDiffs.length
-  const hours = avgTimeDiff / (1000 * 60 * 60)
+  const diff = Date.parse(newest.timestamp) - Date.parse(oldest.timestamp)
+
+  const hours = diff / (1000 * 60 * 60)
 
   if (hours < 1) return 'minute'
   if (hours < 24) return 'hour'
@@ -78,7 +73,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
         type: 'time',
         time: {
           unit: rawDataGraph.value
-            ? determineTimeUnit(rawDataGraph.value.datasets[0].data)
+            ? dynamicTimeUnit(props.displayData)
             : undefined,
           displayFormats: {
             minute: 'HH:mm',
@@ -115,7 +110,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
     plugins: {
       title: {
         display: true,
-        text: 'Time Series Chart',
+        text: props.title,
       },
     },
     elements: {

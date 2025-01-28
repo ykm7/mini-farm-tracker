@@ -13,19 +13,18 @@
           </div>
           <div class="card-graph">
             <div class="group-section">
-              <!-- {{  sensorToData.get(sensor.Id) }} -->
-
               <Suspense>
                 <template #default>
                   <div>
                     <AsyncWrapper :promise="pullSensorsRawDataFn(sensor)">
                       <template v-slot="{ data }">
                         <div v-if="data">
-                          <!-- {{ data[0] }} -->
                           <TimeseriesGraph
                             :displayData="data"
                             emptyLabel="No data available for this sensor"
                             yAxisUnit="mm"
+                            lineLabel="Distance"
+                            title="Distance measured by sensor"
                           />
                         </div>
                       </template>
@@ -72,7 +71,7 @@ const pullSensorsRawDataFn = async (sensor: Sensor): Promise<DisplayPoint[]> => 
       })
       .map<DisplayPoint>((d: RawData) => {
         return {
-          timestamp: d.Timestamp as unknown as number, // TODO: fix
+          timestamp: d.Timestamp,
           value: d.Data.Distance.split(' ')[0] as unknown as number,
         }
       })
