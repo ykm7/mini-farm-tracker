@@ -5,35 +5,38 @@
       <a>Available sensors</a>
 
       <div v-for="sensor in sensors">
-        <CCard style="margin: 0.5rem 0">
-          <CCardTitle>{{ sensor.Id }}</CCardTitle>
-          <!-- <CCardSubtitle class="mb-2 text-body-secondary">{{ asset.Id }}</CCardSubtitle> -->
-          <CCardBody>{{ sensor.Description }}</CCardBody>
+        <CCard class="card-holder" style="margin: 0.5rem 0">
+          <div class="card-details">
+            <CCardTitle>{{ sensor.Id }}</CCardTitle>
+            <!-- <CCardSubtitle class="mb-2 text-body-secondary">{{ asset.Id }}</CCardSubtitle> -->
+            <CCardBody>{{ sensor.Description }}</CCardBody>
+          </div>
+          <div class="card-graph">
+            <div class="group-section">
+              <!-- {{  sensorToData.get(sensor.Id) }} -->
 
-          <div class="group-section">
-            <!-- {{  sensorToData.get(sensor.Id) }} -->
-
-            <Suspense>
-              <template #default>
-                <div>
-                  <AsyncWrapper :promise="pullSensorsRawDataFn(sensor)">
-                    <template v-slot="{ data }">
-                      <div v-if="data">
-                        <!-- {{ data[0] }} -->
-                        <TimeseriesGraph
-                          :rawData="data"
-                          emptyLabel="No data available for this sensor"
-                          yAxisUnit="mm"
-                        />
-                      </div>
-                    </template>
-                  </AsyncWrapper>
-                </div>
-              </template>
-              <template #fallback>
-                <div>Loading...</div>
-              </template>
-            </Suspense>
+              <Suspense>
+                <template #default>
+                  <div>
+                    <AsyncWrapper :promise="pullSensorsRawDataFn(sensor)">
+                      <template v-slot="{ data }">
+                        <div v-if="data">
+                          <!-- {{ data[0] }} -->
+                          <TimeseriesGraph
+                            :rawData="data"
+                            emptyLabel="No data available for this sensor"
+                            yAxisUnit="mm"
+                          />
+                        </div>
+                      </template>
+                    </AsyncWrapper>
+                  </div>
+                </template>
+                <template #fallback>
+                  <div>Loading...</div>
+                </template>
+              </Suspense>
+            </div>
           </div>
         </CCard>
       </div>
@@ -43,7 +46,6 @@
 
 <script setup lang="ts">
 import { CCard, CCardBody, CCardTitle } from '@coreui/vue'
-import { Suspense } from 'vue'
 import AsyncWrapper from './AsyncWrapper.vue'
 import { computed, ref } from 'vue'
 

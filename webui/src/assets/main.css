@@ -29,7 +29,9 @@ a,
   color: white;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  transition:
+    background-color 0.3s ease,
+    transform 0.2s ease;
 }
 
 .button:hover {
@@ -45,8 +47,24 @@ a,
   cursor: not-allowed;
 }
 
-/* @media (min-width: 1024px) {
-  body {
+.card-holder {
+  display: flex;
+  flex-direction: row;
+
+  .card-details {
+    flex: 1;
+  }
+
+  .card-graph {
+    flex: 2;
+  }
+}
+
+@media (max-width: 1024px) {
+  .card-holder {
+    display: flex;
+    flex-direction: column;
+    /* body {
     display: flex;
     place-items: center;
   }
@@ -55,5 +73,6 @@ a,
     display: grid;
     grid-template-columns: 1fr 1fr;
     padding: 0 2rem;
+  } */
   }
-} */
+}

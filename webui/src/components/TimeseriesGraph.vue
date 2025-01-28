@@ -100,6 +100,8 @@ const determineTimeUnit = (dataPoints: Point[]) => {
 const chartOptions = computed<ChartOptions<'line'>>(() => {
   return {
     responsive: true,
+    maintainAspectRatio: false,
+    aspectRatio: 2,
     scales: {
       x: {
         type: 'time',
@@ -162,15 +164,15 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
 <template>
   <Line
     v-if="rawData.length > 0 && rawDataGraph?.datasets.length > 0"
-    class="container"
+    class="graph-custom-wrapper"
     :options="chartOptions"
     :data="rawDataGraph"
   />
-  <div v-else class="empty-chart-placeholder">{{ emptyLabel }}</div>
+  <div v-else class="graph-custom-wrapper">{{ emptyLabel }}</div>
 </template>
 
 <style scoped>
-.empty-chart-placeholder {
+.graph-custom-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
