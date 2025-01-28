@@ -1,5 +1,7 @@
 package core
 
+import "testing"
+
 // func Test_parseLDDS45(t *testing.T) {
 // 	type args struct {
 // 		bs []byte
@@ -62,3 +64,33 @@ package core
 // 		})
 // 	}
 // }
+
+func TestLDDS45RawData_DetermineValid(t *testing.T) {
+	tests := []struct {
+		name          string
+		lDDS45RawData *LDDS45RawData
+		want          bool
+	}{
+		{
+			name: "Testing raw LDDS45RawData data metric which should be valid",
+			lDDS45RawData: &LDDS45RawData{
+				Distance: "2205 mm",
+			},
+			want: true,
+		},
+		{
+			name: "Testing raw LDDS45RawData data metric which should be not valid",
+			lDDS45RawData: &LDDS45RawData{
+				Distance: "no value",
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.lDDS45RawData.DetermineValid(); got != tt.want {
+				t.Errorf("LDDS45RawData.DetermineValid() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

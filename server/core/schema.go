@@ -121,7 +121,7 @@ type LDDS45RawData struct {
 }
 
 func (lDDS45RawData *LDDS45RawData) DetermineValid() bool {
-	distanceSplit := strings.Split(lDDS45RawData.Distance, "")
+	distanceSplit := strings.Split(lDDS45RawData.Distance, " ")
 	_, units := distanceSplit[0], distanceSplit[1]
 
 	_, ok := StringToUnits(units)
