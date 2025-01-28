@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -307,7 +308,7 @@ func storeLDDS45CalibratedData(
 			volume := asset.Metrics.Volume.CalcVolume(cylinderDepth)
 
 			// 1 m³ = 1,000 litres
-			litres := volume * 1000
+			litres := math.Round((volume*1000)*100) / 100
 
 			calibrated := CalibratedData{
 				Timestamp: receivedAtTime,

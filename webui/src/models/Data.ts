@@ -16,6 +16,7 @@ interface LDDS45RawData {
 }
 
 export interface RawData extends Data {
+  Valid?: boolean
   Data: LDDS45RawData // TODO: RawData should be able to take various
 }
 

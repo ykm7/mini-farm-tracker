@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ChartData, ChartOptions, Point, ChartDataset } from 'chart.js'
-import type { RawData } from '@/models/Data'
+import type { CalibratedData, RawData } from '@/models/Data'
 import { computed, ref } from 'vue'
 import { Line } from 'vue-chartjs'
 import {
@@ -21,9 +21,14 @@ interface TimePoint {
   y: number
 }
 
+export interface DisplayPoint {
+  value: number
+  timestamp: number 
+}
+
 const props = defineProps<{
   //   dataSets: ChartDataset<"line", Point[]>[]
-  rawData: RawData[]
+  displayData: DisplayPoint[]
   emptyLabel: string
   yAxisUnit: 'mm' | 'cm' | 'm' | 'm³' | 'L'
 }>()
@@ -31,51 +36,17 @@ const props = defineProps<{
 const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
   return {
     datasets: [
-      // {
-      //   label: 'Battery',
-      //   data: props.rawData
-      //     ? props.rawData.map<Point>((v) => {
-      //         return {
-      //           x: v.Timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
-      //           y: v.Data.Bat,
-      //         }
-      //       })
-      //     : [],
-      // },
       {
         label: `Distance`,
-        data: props.rawData
-          ? props.rawData.map<Point>((v) => {
+        data: props.displayData
+          ? props.displayData.map<Point>((v) => {
               return {
-                x: v.Timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
-                y: v.Data.Distance.split(' ')[0] as unknown as number,
+                x: v.timestamp, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
+                y: v.value
               }
             })
           : [],
       },
-      // {
-      //   label: `Raw data for: ${props.rawData?.length > 0 ? props.rawData[0].Sensor : 'Unknown'}`,
-      //   data: props.rawData
-      //     ? props.rawData.map<Point>((v) => {
-      //         return {
-      //           x: v.Timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
-      //           y: v.Data.Temperature,
-      //         }
-      //       })
-      //     : [],
-      // },
-      // {
-      //   label: `Raw data for: ${props.rawData?.length > 0 ? props.rawData[0].Sensor : 'Unknown'}`,
-      //   data: props.rawData
-
-      //     ? props.rawData.map<Point>((v) => {
-      //         return {
-      //           x: v.Timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
-      //           y: v.Data.SensorFlag,
-      //         }
-      //       })
-      //     : [],
-      // },
     ],
   }
 })
@@ -163,7 +134,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
 
 <template>
   <Line
-    v-if="rawData.length > 0 && rawDataGraph?.datasets.length > 0"
+    v-if="displayData.length > 0 && rawDataGraph?.datasets.length > 0"
     class="graph-custom-wrapper"
     :options="chartOptions"
     :data="rawDataGraph"

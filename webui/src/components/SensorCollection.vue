@@ -23,7 +23,7 @@
                         <div v-if="data">
                           <!-- {{ data[0] }} -->
                           <TimeseriesGraph
-                            :rawData="data"
+                            :displayData="data"
                             emptyLabel="No data available for this sensor"
                             yAxisUnit="mm"
                           />
@@ -49,7 +49,7 @@ import { CCard, CCardBody, CCardTitle } from '@coreui/vue'
 import AsyncWrapper from './AsyncWrapper.vue'
 import { computed, ref } from 'vue'
 
-import TimeseriesGraph from './TimeseriesGraph.vue'
+import TimeseriesGraph, { type DisplayPoint } from './TimeseriesGraph.vue'
 import axios from 'axios'
 import type { RawData } from '@/models/Data'
 import type { Sensor } from '@/models/Sensor'
@@ -60,12 +60,24 @@ const sensorCollection = useSensorStore()
 
 const sensors = computed<Sensor[]>(() => sensorCollection.sensors)
 
-const pullSensorsRawDataFn = async (sensor: Sensor): Promise<RawData[]> => {
+const pullSensorsRawDataFn = async (sensor: Sensor): Promise<DisplayPoint[]> => {
   try {
     const response = await axios.get<RawData[]>(
       `${BASE_URL}/api/sensors/${sensor.Id}/data/raw_data`,
     )
-    return response.data ? response.data : []
+
+    const convertedData: DisplayPoint[] = response.data
+      .filter((d: RawData) => {
+        return d?.Valid === false
+      })
+      .map<DisplayPoint>((d: RawData) => {
+        return {
+          timestamp: d.Timestamp as unknown as number, // TODO: fix
+          value: d.Data.Distance.split(' ')[0] as unknown as number,
+        }
+      })
+
+    return convertedData
   } catch (e) {
     console.warn(e)
     return []
