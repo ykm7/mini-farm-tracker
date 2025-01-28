@@ -68,6 +68,7 @@ type MongoCollection[T any] interface {
 	Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) ([]T, error)
 	UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 	Watch(ctx context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
+	DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
 }
 
 type MongoDatabaseImpl struct {
@@ -107,8 +108,8 @@ func getTypedCollection[T any](mongoDb MongoDatabase, collectionName string) Mon
 		return c
 	case *MongoCollectionWrapper[any]:
 		return &MongoCollectionWrapper[T]{col: c.col}
-	case MongoCollection[any]:
-		return &MockMongoCollectionWrapper[T]{col: c}
+	// case MongoCollection[any]:
+	// 	return &MockMongoCollectionWrapper[T]{col: c}
 	default:
 		panic(fmt.Sprintf("Unexpected collection type: %T", anyCollection))
 	}
@@ -172,4 +173,8 @@ func (m *MongoCollectionWrapper[T]) UpdateOne(ctx context.Context, filter interf
 
 func (m *MongoCollectionWrapper[T]) Watch(ctx context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error) {
 	return m.col.Watch(ctx, pipeline, opts...)
+}
+
+func (m *MongoCollectionWrapper[T]) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
+	return m.col.DeleteMany(ctx, filter, opts...)
 }

@@ -182,9 +182,9 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 	switch sensor.Model {
 	case LDDS45:
 		// "LDDS45" is aware it is an volume related Sensor type.
-		var data *LDDS45RawData
+		data := &LDDS45RawData{}
 		err = json.Unmarshal(jsonData, &data)
-		if err != nil {
+		if err != nil || data == nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v to expected data type for: %s", jsonData, LDDS45),
 			})
