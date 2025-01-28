@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Quite a few of these functions should be moved to a common location. No need to worry about it until we have more tests.
@@ -95,6 +96,15 @@ func Ptr[T any](value T) *T {
 	return &value
 }
 
+func mockConvertTimeStringToMongoTime(s string) primitive.DateTime {
+	receivedAt, err := convertTimeStringToMongoTime(s)
+	if err != nil {
+		panic(err)
+	}
+
+	return receivedAt
+}
+
 func setupMockCollections[T RawDataType](mongoDb MongoDatabase, cw *CollectionToData[T]) {
 	cw.sensors.collection = GetSensorCollection(mongoDb)
 	cw.rawData.collection = GetRawDataCollection[T](mongoDb)
@@ -103,7 +113,7 @@ func setupMockCollections[T RawDataType](mongoDb MongoDatabase, cw *CollectionTo
 	cw.assets.collection = GetAssetsCollection(mongoDb)
 }
 
-func InsertData[T RawDataType](cw *CollectionToData[T]) {
+func insertMockData[T RawDataType](cw *CollectionToData[T]) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -128,12 +138,25 @@ func InsertData[T RawDataType](cw *CollectionToData[T]) {
 	}
 }
 
-func ClearCollections[T RawDataType](dbWrap *MongoDatabaseImpl, cw *CollectionToData[T]) {
+func validateDataExistingsWithinMockDb[T RawDataType](t *testing.T, expected *DateExpectedToFind[T], cw *CollectionToData[T]) {
+	ctx := context.Background()
+	if expected.rawData != nil {
+		results, err := cw.rawData.collection.Find(ctx, nil)
+		if err != nil {
+			panic(err)
+		}
+
+		// ignoreFields := cmpopts.IgnoreFields(RawData{}, "FieldToIgnore1", "FieldToIgnore2")
+
+		assert.ElementsMatch(t, expected.rawData, results)
+	}
+}
+
+func clearMockCollections[T RawDataType](dbWrap *MongoDatabaseImpl, cw *CollectionToData[T]) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// Additional Sanity check
-
 	testMongoName := dbWrap.Db.Name()
 	if testMongoName != "test_db" {
 		log.Panicln("While clearing up test mongo collections, database name is NOT 'test_db'")
@@ -151,12 +174,25 @@ type CollectionWrapper[T any] struct {
 	data       []T
 }
 
+// type DateExpectedToFind[T any] struct {
+// 	collectionName DB_COLLECTIONS
+// 	data           []T
+// }
+
 type CollectionToData[T RawDataType] struct {
 	sensors              CollectionWrapper[Sensor]
 	rawData              CollectionWrapper[RawData[T]]
 	sensorConfigurations CollectionWrapper[SensorConfiguration]
 	calibratedData       CollectionWrapper[CalibratedData]
 	assets               CollectionWrapper[Asset]
+}
+
+type DateExpectedToFind[T RawDataType] struct {
+	sensors              []Sensor
+	rawData              []RawData[T]
+	sensorConfigurations []SensorConfiguration
+	calibratedData       []CalibratedData
+	assets               []Asset
 }
 
 func Test_handleWebhook(t *testing.T) {
@@ -188,16 +224,18 @@ func Test_handleWebhook(t *testing.T) {
 	type expected struct {
 		code     int
 		message  map[string]string
-		postData CollectionToData[LDDS45RawData]
+		postData DateExpectedToFind[LDDS45RawData]
 	}
 
 	tests := []struct {
 		name     string
+		runTest  bool
 		args     args
 		expected expected
 	}{
 		{
-			name: "In-valid 'LDDS45RawData' data",
+			name:    "In-valid 'LDDS45RawData' data",
+			runTest: true,
 			args: args{
 				additionalHeaders: http.Header{
 					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
@@ -227,6 +265,22 @@ func Test_handleWebhook(t *testing.T) {
 				code: http.StatusOK,
 				message: map[string]string{
 					"message": "Webhook received successfully",
+				},
+				postData: DateExpectedToFind[LDDS45RawData]{
+					rawData: []RawData[LDDS45RawData]{
+						{
+							Timestamp: mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
+							Sensor:    &MOCK_SENSOR_ID,
+							Valid:     true,
+							Data: LDDS45RawData{
+								Battery:      3.413,
+								Distance:     "1404 mm",
+								InterruptPin: 0,
+								Temperature:  "0.00",
+								SensorFlag:   1,
+							},
+						},
+					},
 				},
 			},
 		},
@@ -258,12 +312,17 @@ func Test_handleWebhook(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if !tt.runTest {
+				t.Skipf("Skipping: %s\n", tt.name)
+			}
+
 			// TODO: mongo setup ? - no enforced schema or anything so limited scope here.
 			// TODO: mongo collection/data tear down after the test is completed.
 
-			defer ClearCollections(mongoDb, &tt.args.preData)
+			defer clearMockCollections(mongoDb, &tt.args.preData)
 
 			setupMockCollections(mongoDb, &tt.args.preData)
+			insertMockData(&tt.args.preData)
 
 			w := httptest.NewRecorder()
 			mockCtx := MockGinContext(w)
@@ -289,6 +348,7 @@ func Test_handleWebhook(t *testing.T) {
 			assert.Equal(t, expectedJson, w.Body.String())
 
 			// Check that the data is valid
+			validateDataExistingsWithinMockDb(t, &tt.expected.postData, &tt.args.preData)
 		})
 	}
 }
