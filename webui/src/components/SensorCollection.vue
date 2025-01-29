@@ -15,7 +15,6 @@
             <div class="group-section">
               <AsyncWrapper :promise="sensorToData.get(sensor.Id)!">
                 <template v-slot="{ data }">
-                  <!-- <div> -->
                     <TimeseriesGraph
                       :item="sensor"
                       @update-starting-date="handleUpdateStartingTimeEvent"
@@ -25,7 +24,6 @@
                       lineLabel="Distance"
                       title="Distance measured by sensor"
                     />
-                  <!-- </div> -->
                 </template>
               </AsyncWrapper>
             </div>
@@ -39,7 +37,7 @@
 <script setup lang="ts">
 import { CCard, CCardBody, CCardTitle } from '@coreui/vue'
 import AsyncWrapper from './AsyncWrapper.vue'
-import { computed, ref, toRaw, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import TimeseriesGraph from './TimeseriesGraph.vue'
 import axios from 'axios'

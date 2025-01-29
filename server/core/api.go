@@ -49,39 +49,6 @@ func handleWithSensorID(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusNotImplemented, nil)
 }
 
-/*
-*
-Last day:
-
-	{
-	  sensor: "a840418241843281",
-	  timestamp: {
-	    $gte: new Date(
-	      new Date().setDate(new Date().getDate() - 1)
-	    ),
-	    $lt: new Date()
-	  }
-	}
-
-Last hour:
-
-		{
-		  sensor: "a840418241843281",
-		  timestamp: {
-		    $gte: new Date(
-		      new Date().setHours(
-		        new Date().getHours() - 1
-		      )
-		    ),
-		    $lt: new Date()
-		  }
-		}
-
-		timestamp: {
-	    $gte: ISODate("2025-01-28T23:57:58.763Z"),
-	    $lt: ISODate("2025-01-29T00:57:58.763Z")
-	}
-*/
 func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache map[string]Sensor) {
 	sensorID := c.Param(SENSOR_ID_PARAM)
 
@@ -158,6 +125,24 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache m
 func getCalibratedDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache map[string]Sensor) {
 	sensorID := c.Param(SENSOR_ID_PARAM)
 
+	now := time.Now()
+	// default to 7 days
+	startDate := c.DefaultQuery(START_DATE, now.AddDate(0, 0, -7).Format(time.RFC3339))
+	// should be "now"
+	endDate := c.DefaultQuery(END_DATE, now.Format(time.RFC3339))
+
+	start, err := time.Parse(time.RFC3339, startDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start time format"})
+		return
+	}
+
+	end, err := time.Parse(time.RFC3339, endDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end time format"})
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -173,7 +158,13 @@ func getCalibratedDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensor
 	case LDDS45:
 		results, err := GetCalibratedDataCollection(mongoDb).Find(
 			ctx,
-			bson.D{{Key: "sensor", Value: sensor.Id}},
+			bson.D{
+				{Key: "sensor", Value: sensor.Id},
+				{Key: "timestamp", Value: bson.D{
+					{Key: "$gte", Value: primitive.NewDateTimeFromTime(start)},
+					{Key: "$lt", Value: primitive.NewDateTimeFromTime(end)},
+				}},
+			},
 			options.Find().SetProjection(
 				bson.D{
 					{

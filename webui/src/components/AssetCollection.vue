@@ -23,29 +23,21 @@
         </div>
         <div class="card-graph">
           <div class="group-section">
-            <Suspense>
-              <template #default>
-                <div>
-                  <AsyncWrapper :promise="pullCalibratedDataFn(asset)">
-                    <template v-slot="{ data }">
-                      <div v-if="data">
-                        <TimeseriesGraph
-                          :item="asset"
-                          :displayData="data"
-                          emptyLabel="No calibrated data available for this asset"
-                          yAxisUnit="L"
-                          lineLabel="Litres"
-                          title="Water in tank"
-                        />
-                      </div>
-                    </template>
-                  </AsyncWrapper>
+            <AsyncWrapper :promise="assetToData.get(asset.Id)!">
+              <template v-slot="{ data }">
+                <div v-if="data">
+                  <TimeseriesGraph
+                    :item="asset"
+                    @update-starting-date="handleUpdateStartingTimeEvent"
+                    :displayData="data"
+                    emptyLabel="No calibrated data available for this asset"
+                    yAxisUnit="L"
+                    lineLabel="Litres"
+                    title="Water in tank"
+                  />
                 </div>
               </template>
-              <template #fallback>
-                <div>Loading...</div>
-              </template>
-            </Suspense>
+            </AsyncWrapper>
           </div>
         </div>
       </CCard>
@@ -58,31 +50,81 @@ import type { Asset } from '@/models/Asset'
 import { useAssetStore } from '@/stores/asset'
 import TimeseriesGraph from './TimeseriesGraph.vue'
 import AsyncWrapper from './AsyncWrapper.vue'
-import { computed } from 'vue'
-import {
-  CCard,
-  CCardBody,
-  CCardTitle,
-  CCardSubtitle,
-  CListGroup,
-  CListGroupItem,
-} from '@coreui/vue'
+import { computed, ref, watch } from 'vue'
+import { CCard, CCardBody, CCardTitle, CListGroup, CListGroupItem } from '@coreui/vue'
 import axios from 'axios'
 import type { CalibratedData } from '@/models/Data'
 import type { DisplayPoint } from '@/types/GraphRelated'
+import type { ObjectId } from '@/types/ObjectId'
 
 const BASE_URL: string = import.meta.env.VITE_BASE_URL
 const assetCollection = useAssetStore()
 
 const assets = computed<Asset[]>(() => assetCollection.assets)
+const assetIdToStarting = ref<Map<ObjectId, number>>(new Map())
+const assetToData = ref<Map<ObjectId, Promise<DisplayPoint[]>>>(new Map())
 
-const pullCalibratedDataFn = async (asset: Asset): Promise<DisplayPoint[]> => {
+function handleUpdateStartingTimeEvent(asset: Asset, startingOffset: number) {
+  const newMap = new Map(assetIdToStarting.value)
+  newMap.set(asset.Id, startingOffset)
+  assetIdToStarting.value = newMap
+}
+
+watch(
+  assets,
+  (newAssets, _) => {
+    newAssets.forEach((a) => {
+      assetToData.value.set(a.Id, Promise.resolve([]))
+    })
+  },
+  { immediate: true },
+)
+
+const firstMapSet = ref<boolean>(true)
+watch(
+  assetIdToStarting,
+  (newMap, oldMap) => {
+    // Iterate through the new map to find changes
+    newMap.forEach((newValue, key) => {
+      const oldValue = oldMap.get(key)
+      // TODO: Have to re-visit this otherwise each time ANY time trigger is updated ALL arrays are updated
+      if (!oldValue || newValue !== oldValue) {
+        assetToData.value.set(
+          key,
+          pullCalibratedDataFn(
+            assets.value.find((a) => a.Id.toString() === key.toString())!,
+            newValue,
+          ),
+        )
+        firstMapSet.value = false
+      }
+    })
+        
+  },
+  { deep: true },
+)
+
+const pullCalibratedDataFn = async (
+  asset: Asset,
+  startOffset: number,
+  endOffset: number = 0,
+): Promise<DisplayPoint[]> => {
+  const now = new Date()
+  const start = new Date(now.getTime() - startOffset)
+  const end = new Date(now.getTime() - endOffset)
+
+  const params = new URLSearchParams({
+    start: start.toISOString(),
+    end: end.toISOString(),
+  })
+
   if (!(asset.Sensors && asset.Sensors?.length > 0)) {
     return []
   }
   try {
+    // TODO: Handle multiple sensors on a asset
     const response = await axios.get<CalibratedData[]>(
-      `${BASE_URL}/api/sensors/${asset.Sensors[0]}/data/calibrated_data`,
+      `${BASE_URL}/api/sensors/${asset.Sensors[0]}/data/calibrated_data?${params.toString()}`,
     )
 
     const convertedData: DisplayPoint[] = response.data.map<DisplayPoint>((c: CalibratedData) => {
