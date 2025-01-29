@@ -204,6 +204,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
     justify-content: space-between;
 
     button {
+      flex: auto;
       background-color: #42b883;
       color: #ffffff;
       border: none;
@@ -212,6 +213,12 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
       border-radius: 4px;
       font-size: 14px;
       transition: background-color 0.3s ease;
+    }
+
+    @media (max-width: 1024px) {
+      button {
+        padding: 5px 7px;
+      }
     }
 
     button:hover {
@@ -227,6 +234,9 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
 
   .graph-wrapper {
     flex-grow: 1;
+    flex-shrink: 1;
+    max-width: 100%;
+    min-width: 0;
 
     .graph-custom-wrapper {
       display: flex;
