@@ -91,7 +91,7 @@ onMounted(() => {
   //   counter++
   // }, 5000)
   // emit('update-starting-date', props.item, ONE_WEEK)
-  // selectTimePeriod(ONE_WEEK)
+  selectTimePeriod(ONE_WEEK)
 })
 
 const selectTimePeriod = (period: number) => {

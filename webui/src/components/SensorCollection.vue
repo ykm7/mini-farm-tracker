@@ -15,7 +15,7 @@
             <div class="group-section">
               <AsyncWrapper :promise="sensorToData.get(sensor.Id)!">
                 <template v-slot="{ data }">
-                  <div>
+                  <!-- <div> -->
                     <TimeseriesGraph
                       :item="sensor"
                       @update-starting-date="handleUpdateStartingTimeEvent"
@@ -25,7 +25,7 @@
                       lineLabel="Distance"
                       title="Distance measured by sensor"
                     />
-                  </div>
+                  <!-- </div> -->
                 </template>
               </AsyncWrapper>
             </div>

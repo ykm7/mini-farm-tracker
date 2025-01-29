@@ -22,7 +22,5 @@ watchEffect(async () => {
 </script>
 
 <template>
-  <div v-if="loading">Loading...</div>
-  <div v-else-if="error">Error: {{ error.message }}</div>
-  <slot v-else :data="data"></slot>
+  <slot :data="data"></slot>
 </template>
