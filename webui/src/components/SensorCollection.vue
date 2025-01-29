@@ -13,28 +13,21 @@
           </div>
           <div class="card-graph">
             <div class="group-section">
-              <Suspense>
-                <template #default>
+              <AsyncWrapper :promise="sensorToData.get(sensor.Id)!">
+                <template v-slot="{ data }">
                   <div>
-                    <AsyncWrapper :promise="pullSensorsRawDataFn(sensor)">
-                      <template v-slot="{ data }">
-                        <div v-if="data">
-                          <TimeseriesGraph
-                            :displayData="data"
-                            emptyLabel="No data available for this sensor"
-                            yAxisUnit="mm"
-                            lineLabel="Distance"
-                            title="Distance measured by sensor"
-                          />
-                        </div>
-                      </template>
-                    </AsyncWrapper>
+                    <TimeseriesGraph
+                      :item="sensor"
+                      @update-starting-date="handleUpdateStartingTimeEvent"
+                      :displayData="data ? data : []"
+                      emptyLabel="No data available for this sensor"
+                      yAxisUnit="mm"
+                      lineLabel="Distance"
+                      title="Distance measured by sensor"
+                    />
                   </div>
                 </template>
-                <template #fallback>
-                  <div>Loading...</div>
-                </template>
-              </Suspense>
+              </AsyncWrapper>
             </div>
           </div>
         </CCard>
@@ -46,29 +39,83 @@
 <script setup lang="ts">
 import { CCard, CCardBody, CCardTitle } from '@coreui/vue'
 import AsyncWrapper from './AsyncWrapper.vue'
-import { computed, ref } from 'vue'
+import { computed, ref, toRaw, watch } from 'vue'
 
-import TimeseriesGraph, { type DisplayPoint } from './TimeseriesGraph.vue'
+import TimeseriesGraph from './TimeseriesGraph.vue'
 import axios from 'axios'
 import type { RawData } from '@/models/Data'
 import type { Sensor } from '@/models/Sensor'
 import { useSensorStore } from '@/stores/sensor'
+import type { DisplayPoint } from '@/types/GraphRelated'
 
 const BASE_URL: string = import.meta.env.VITE_BASE_URL
 const sensorCollection = useSensorStore()
-
 const sensors = computed<Sensor[]>(() => sensorCollection.sensors)
+const sensorIdToStarting = ref<Map<string, number>>(new Map())
+const sensorToData = ref<Map<string, Promise<DisplayPoint[]>>>(new Map())
 
-const pullSensorsRawDataFn = async (sensor: Sensor): Promise<DisplayPoint[]> => {
+function handleUpdateStartingTimeEvent(sensor: Sensor, startingOffset: number) {
+  const newMap = new Map(sensorIdToStarting.value)
+  newMap.set(sensor.Id, startingOffset)
+  sensorIdToStarting.value = newMap
+}
+
+watch(
+  sensors,
+  (newSensors, _) => {
+    newSensors.forEach((s) => {
+      sensorToData.value.set(s.Id, Promise.resolve([]))
+    })
+  },
+  { immediate: true },
+)
+
+const firstMapSet = ref<boolean>(true)
+watch(
+  sensorIdToStarting,
+  (newMap, oldMap) => {
+    // Iterate through the new map to find changes
+    newMap.forEach((newValue, key) => {
+      const oldValue = oldMap.get(key)
+      // TODO: Have to re-visit this otherwise each time ANY time trigger is updated ALL arrays are updated
+      if (!oldValue || newValue !== oldValue) {
+        sensorToData.value.set(
+          key,
+          pullSensorData(sensors.value.find((s) => s.Id === key)!, newValue),
+        )
+
+        firstMapSet.value = false
+      }
+      // }
+    })
+  },
+  { deep: true },
+)
+
+const pullSensorData = async (
+  sensor: Sensor,
+  startOffset: number,
+  endOffset: number = 0,
+): Promise<DisplayPoint[]> => {
+  const now = new Date()
+  const start = new Date(now.getTime() - startOffset)
+  const end = new Date(now.getTime() - endOffset)
+
+  const params = new URLSearchParams({
+    start: start.toISOString(),
+    end: end.toISOString(),
+  })
+
   try {
     const response = await axios.get<RawData[]>(
-      `${BASE_URL}/api/sensors/${sensor.Id}/data/raw_data`,
+      `${BASE_URL}/api/sensors/${sensor.Id}/data/raw_data?${params.toString()}`,
     )
 
     const convertedData: DisplayPoint[] = response.data
-      .filter((d: RawData) => {
-        return d?.Valid === false
-      })
+      // TODO: We only care to remove this filtered value WHEN looking at the raw output. Things like battery are still valid
+      // .filter((d: RawData) => {
+      //   return d?.Valid !== false
+      // })
       .map<DisplayPoint>((d: RawData) => {
         return {
           timestamp: d.Timestamp,

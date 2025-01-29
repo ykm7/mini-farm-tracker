@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -64,20 +65,43 @@ Last day:
 
 Last hour:
 
-	{
-	  sensor: "a840418241843281",
-	  timestamp: {
-	    $gte: new Date(
-	      new Date().setHours(
-	        new Date().getHours() - 1
-	      )
-	    ),
-	    $lt: new Date()
-	  }
+		{
+		  sensor: "a840418241843281",
+		  timestamp: {
+		    $gte: new Date(
+		      new Date().setHours(
+		        new Date().getHours() - 1
+		      )
+		    ),
+		    $lt: new Date()
+		  }
+		}
+
+		timestamp: {
+	    $gte: ISODate("2025-01-28T23:57:58.763Z"),
+	    $lt: ISODate("2025-01-29T00:57:58.763Z")
 	}
 */
 func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache map[string]Sensor) {
-	sensorID := c.Param("SENSOR_ID")
+	sensorID := c.Param(SENSOR_ID_PARAM)
+
+	now := time.Now()
+	// default to 7 days
+	startDate := c.DefaultQuery(START_DATE, now.AddDate(0, 0, -7).Format(time.RFC3339))
+	// should be "now"
+	endDate := c.DefaultQuery(END_DATE, now.Format(time.RFC3339))
+
+	start, err := time.Parse(time.RFC3339, startDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start time format"})
+		return
+	}
+
+	end, err := time.Parse(time.RFC3339, endDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end time format"})
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -94,7 +118,13 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache m
 	case LDDS45:
 		results, err := GetRawDataCollection[LDDS45RawData](mongoDb).Find(
 			ctx,
-			bson.D{{Key: "sensor", Value: sensor.Id}},
+			bson.D{
+				{Key: "sensor", Value: sensor.Id},
+				{Key: "timestamp", Value: bson.D{
+					{Key: "$gte", Value: primitive.NewDateTimeFromTime(start)},
+					{Key: "$lt", Value: primitive.NewDateTimeFromTime(end)},
+				}},
+			},
 			options.Find().SetProjection(
 				bson.D{
 					{
@@ -126,7 +156,7 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache m
 }
 
 func getCalibratedDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache map[string]Sensor) {
-	sensorID := c.Param("SENSOR_ID")
+	sensorID := c.Param(SENSOR_ID_PARAM)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

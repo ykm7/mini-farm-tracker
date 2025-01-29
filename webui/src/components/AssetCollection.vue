@@ -30,6 +30,7 @@
                     <template v-slot="{ data }">
                       <div v-if="data">
                         <TimeseriesGraph
+                          :item="asset"
                           :displayData="data"
                           emptyLabel="No calibrated data available for this asset"
                           yAxisUnit="L"
@@ -55,7 +56,7 @@
 <script setup lang="ts">
 import type { Asset } from '@/models/Asset'
 import { useAssetStore } from '@/stores/asset'
-import TimeseriesGraph, { type DisplayPoint } from './TimeseriesGraph.vue'
+import TimeseriesGraph from './TimeseriesGraph.vue'
 import AsyncWrapper from './AsyncWrapper.vue'
 import { computed } from 'vue'
 import {
@@ -68,6 +69,7 @@ import {
 } from '@coreui/vue'
 import axios from 'axios'
 import type { CalibratedData } from '@/models/Data'
+import type { DisplayPoint } from '@/types/GraphRelated'
 
 const BASE_URL: string = import.meta.env.VITE_BASE_URL
 const assetCollection = useAssetStore()
@@ -82,12 +84,11 @@ const pullCalibratedDataFn = async (asset: Asset): Promise<DisplayPoint[]> => {
     const response = await axios.get<CalibratedData[]>(
       `${BASE_URL}/api/sensors/${asset.Sensors[0]}/data/calibrated_data`,
     )
-    
-    const convertedData: DisplayPoint[] = response.data
-    .map<DisplayPoint>((c: CalibratedData) => {
+
+    const convertedData: DisplayPoint[] = response.data.map<DisplayPoint>((c: CalibratedData) => {
       return {
         timestamp: c.Timestamp,
-        value: c.Data
+        value: c.Data,
       }
     })
 

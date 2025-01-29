@@ -96,7 +96,6 @@ type RawDataType interface {
 }
 
 type RawData[T RawDataType] struct {
-	// Id        *primitive.ObjectID `bson:"_id,omitempty"`
 	Timestamp primitive.DateTime `bson:"timestamp"`
 	Sensor    *string            `bson:"sensor,omitempty"`
 	Valid     bool               `bson:"valid,omitempty"`
@@ -133,7 +132,6 @@ type RandomRawData struct {
 }
 
 type CalibratedData struct {
-	// Id        primitive.ObjectID `bson:"_id,omitempty"`
 	Timestamp primitive.DateTime `bson:"timestamp"`
 	Sensor    string             `bson:"sensor"`
 	Data      float64            `bson:"data"`

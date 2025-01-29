@@ -10,7 +10,9 @@ import (
 )
 
 const HEALTH_ENDPOINT = "/health"
-const SENSOR_ID_PARAM = "SENSOR_ID"
+const SENSOR_ID_PARAM = "sensor_id"
+const START_DATE = "start"
+const END_DATE = "end"
 
 func CustomLogger() gin.HandlerFunc {
 	return gin.LoggerWithConfig(gin.LoggerConfig{
