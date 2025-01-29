@@ -48,6 +48,34 @@ func handleWithSensorID(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusNotImplemented, nil)
 }
 
+/*
+*
+Last day:
+
+	{
+	  sensor: "a840418241843281",
+	  timestamp: {
+	    $gte: new Date(
+	      new Date().setDate(new Date().getDate() - 1)
+	    ),
+	    $lt: new Date()
+	  }
+	}
+
+Last hour:
+
+	{
+	  sensor: "a840418241843281",
+	  timestamp: {
+	    $gte: new Date(
+	      new Date().setHours(
+	        new Date().getHours() - 1
+	      )
+	    ),
+	    $lt: new Date()
+	  }
+	}
+*/
 func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache map[string]Sensor) {
 	sensorID := c.Param("SENSOR_ID")
 

@@ -150,7 +150,7 @@ func validateDataExistingsWithinMockDb[T RawDataType](t *testing.T, expected *Da
 		}
 
 		if diff := cmp.Diff(expected.sensors, results, cmpopts.SortSlices(func(a, b Asset) bool {
-			return a.Name < b.Name // Assuming there's an ID field for sorting
+			return a.Name < b.Name
 		})); diff != "" {
 			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
 		}
@@ -162,9 +162,7 @@ func validateDataExistingsWithinMockDb[T RawDataType](t *testing.T, expected *Da
 			panic(err)
 		}
 
-		ignoreFields := cmpopts.IgnoreFields(RawData[T]{}, "Id")
-
-		if diff := cmp.Diff(expected.rawData, results, ignoreFields, cmpopts.SortSlices(func(a, b RawData[T]) bool {
+		if diff := cmp.Diff(expected.rawData, results, cmpopts.SortSlices(func(a, b RawData[T]) bool {
 			return a.Timestamp < b.Timestamp
 		})); diff != "" {
 			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
@@ -178,7 +176,7 @@ func validateDataExistingsWithinMockDb[T RawDataType](t *testing.T, expected *Da
 		}
 
 		if diff := cmp.Diff(expected.sensorConfigurations, results, cmpopts.SortSlices(func(a, b Asset) bool {
-			return a.Name < b.Name // Assuming there's an ID field for sorting
+			return a.Name < b.Name
 		})); diff != "" {
 			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
 		}
@@ -190,9 +188,7 @@ func validateDataExistingsWithinMockDb[T RawDataType](t *testing.T, expected *Da
 			panic(err)
 		}
 
-		ignoreFields := cmpopts.IgnoreFields(CalibratedData{}, "Id")
-
-		if diff := cmp.Diff(expected.calibratedData, results, ignoreFields, cmpopts.SortSlices(func(a, b Asset) bool {
+		if diff := cmp.Diff(expected.calibratedData, results, cmpopts.SortSlices(func(a, b Asset) bool {
 			return a.Name < b.Name // Assuming there's an ID field for sorting
 		})); diff != "" {
 			t.Errorf("Slices mismatch (-want +got):\n%s", diff)

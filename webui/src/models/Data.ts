@@ -1,7 +1,5 @@
-import type { ObjectId } from '@/types/ObjectId'
-
 interface Data {
-  Id?: ObjectId // no need to be provided
+  // Id?: ObjectId // no need to be provided
   Sensor?: string // no need to be provided
   Timestamp: string
   Data: any

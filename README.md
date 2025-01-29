@@ -23,6 +23,11 @@ Using Golang
 
 Primary motivation is I have done similar in Python multiple times (Flask, Quart) and while I have created microservices within Golang, I have not used it for web API hosting.
 
+## MongoDB Consideration
+
+Both `RawData` and `CalibratedData` schemas within MongoDB are configured as timeseries collections.
+Both use `sensor` and `timestamp` as compound indexes and are intended to function as covering indexes for all associated queries.
+
 # Diagrams
 
 ## Data Flow of data into the system
@@ -64,7 +69,6 @@ flowchart TD
 
 ## gateway - LPS8v2 Indoor LoRaWAN Multichannel Gateway
 
-
 ## Water tank - water levels - Dragino LDDS45
 
 [Decoder](https://github.com/dragino/dragino-end-node-decoder)
@@ -73,7 +77,7 @@ flowchart TD
 
 [User Manual](https://wiki.dragino.com/xwiki/bin/view/Main/User%20Manual%20for%20LoRaWAN%20End%20Nodes/LDDS45%20-%20LoRaWAN%20Distance%20Detection%20Sensor%20User%20Manual/)
 
-# Hosting:
+# Hosting
 
 ## WebUI
 
@@ -82,12 +86,13 @@ Hosted on: <b>[vercel](https://vercel.com)</b>
 vercel CLI is used to deploy when required.
 
 ### Environment variables
+
 Once updated via the vercel dashboard, it is important to pull them locally.
 
 This will pull the "production" environment fields to test local development against the production server.
 > vercel env pull --environment=production .env.production
 
-From here can use the vercel deploy steps within the `package.json` file. 
+From here can use the vercel deploy steps within the `package.json` file.
 
 ## Server
 
@@ -129,7 +134,8 @@ SSL certificate (Let's Encrypt) created on domain bought from namecheap.
 
 NOTE: testContainer can use cloud resources however prefer to run locally.
 
-#### TODO:
+#### TODO
+
 Implement what I have done previously; allowing for initial, expected post data per collection to be tested after each test run.
 
 #### Test result generation
@@ -140,8 +146,8 @@ Implement what I have done previously; allowing for initial, expected post data 
 > go tool cover -html coverage -o coverage.html
 
 Requires:
-* Docker Desktop
-* [testContainer](https://app.testcontainers.cloud/accounts/14403/dashboard/install?target=windows-desktop)
+- Docker Desktop
+- [testContainer](https://app.testcontainers.cloud/accounts/14403/dashboard/install?target=windows-desktop)
 
 With my environment, I have problems with the embedded testContainers cleanup logic.
 
@@ -149,36 +155,37 @@ Following [configuration path](https://golang.testcontainers.org/features/config
 
 > ryuk.disabled=true
 
-
-# Rough TODO:
+# Rough TODO
 
 ### WebUI
+
 - [] Graphs
-    - Initial HW will allow for 2 sensors; one for each tank.
+  - Initial HW will allow for 2 sensors; one for each tank.
 - [ ] V2 will have auth, although as part of the purpose of this is a demo project, putting it behind a auth "wall" is counter productive initially.
 
 ### Server
+
 - [x] Investigate HTTP servers - SSL secured and CORs established
-    - Currently implmented with [gin](https://github.com/gin-gonic/gin)
+  - Currently implmented with [gin](https://github.com/gin-gonic/gin)
 - [x] Investigate Containerisation options.
-    - Initial version is simply running binary.
-    - solutions such as k8/docker (compose) are viable however k8 atleast is likely an overkill. All I want really want is crash/restart tolerance.
-    - [x] For now a solution found using the App Platform within DigitalOcean. Allows:
-        - [x] Health endpoints
-        - [x] HA (defaults to 2x containers)
-        - [x] Auto-deploy from git commit
-        - [x] Automatic handling of SSLs.
+  - Initial version is simply running binary.
+  - solutions such as k8/docker (compose) are viable however k8 atleast is likely an overkill. All I want really want is crash/restart tolerance.
+  - [x] For now a solution found using the App Platform within DigitalOcean. Allows:
+    - [x] Health endpoints
+    - [x] HA (defaults to 2x containers)
+    - [x] Auto-deploy from git commit
+    - [x] Automatic handling of SSLs.
 
 ### General
 
 - [x] Connect MongoDB
-    - [x] Account Created
-    - The ideal is to try the Timeseries support. Historically not been MongoDB strong suite but have never personally tried it and apparently improved in v8.
-    - [x] Schema definitions - Some additional information is diagram (./data structure.drawio.png)
-        - [ ] Not all defined - enough for E2E functionality to be possible
+  - [x] Account Created
+  - The ideal is to try the Timeseries support. Historically not been MongoDB strong suite but have never personally tried it and apparently improved in v8.
+  - [x] Schema definitions - Some additional information is diagram (./data structure.drawio.png)
+    - [ ] Not all defined - enough for E2E functionality to be possible
 
 - [x] Connect The Things Stack
-    - [x] Account Created
-    - Hardware provided
-    - [x] Gateway
-    - [x] 2x ultrasonic sensors to measure depth in tanks.
+  - [x] Account Created
+  - Hardware provided
+  - [x] Gateway
+  - [x] 2x ultrasonic sensors to measure depth in tanks.
