@@ -67,29 +67,54 @@ import "testing"
 
 func TestLDDS45RawData_DetermineValid(t *testing.T) {
 	tests := []struct {
-		name          string
-		lDDS45RawData *LDDS45RawData
-		want          bool
+		name       string
+		sensorData SensorData
+		want       struct {
+			valid bool
+			err   error
+		}
 	}{
 		{
 			name: "Testing raw LDDS45RawData data metric which should be valid",
-			lDDS45RawData: &LDDS45RawData{
-				Distance: "2205 mm",
+			sensorData: SensorData{
+				LDDS45: &LDDS45RawData{
+					Distance: "2205 mm",
+				},
 			},
-			want: true,
+			want: struct {
+				valid bool
+				err   error
+			}{
+				valid: true,
+				err:   nil,
+			},
 		},
 		{
 			name: "Testing raw LDDS45RawData data metric which should be not valid",
-			lDDS45RawData: &LDDS45RawData{
-				Distance: "no value",
+			sensorData: SensorData{
+				LDDS45: &LDDS45RawData{
+					Distance: "no value",
+				},
 			},
-			want: false,
+			want: struct {
+				valid bool
+				err   error
+			}{
+				valid: false,
+				err:   nil,
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.lDDS45RawData.DetermineValid(); got != tt.want {
-				t.Errorf("LDDS45RawData.DetermineValid() = %v, want %v", got, tt.want)
+			valid, err := tt.sensorData.DetermineValid()
+
+			if err != tt.want.err {
+				t.Errorf("LDDS45RawData.DetermineValid() = %v, want %v", err, tt.want.err)
+			}
+
+			if valid != tt.want.valid {
+				t.Errorf("LDDS45RawData.DetermineValid() = %v, want %v", valid, tt.want.valid)
 			}
 		})
 	}

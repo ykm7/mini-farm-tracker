@@ -107,15 +107,15 @@ func mockConvertTimeStringToMongoTime(s string) primitive.DateTime {
 	return receivedAt
 }
 
-func setupMockCollections[T RawDataType](mongoDb MongoDatabase, cw *CollectionToData[T]) {
+func setupMockCollections(mongoDb MongoDatabase, cw *CollectionToData) {
 	cw.sensors.collection = GetSensorCollection(mongoDb)
-	cw.rawData.collection = GetRawDataCollection[T](mongoDb)
+	cw.rawData.collection = GetRawDataCollection(mongoDb)
 	cw.sensorConfigurations.collection = GetSensorConfigurationCollection(mongoDb)
 	cw.calibratedData.collection = GetCalibratedDataCollection(mongoDb)
 	cw.assets.collection = GetAssetsCollection(mongoDb)
 }
 
-func insertMockData[T RawDataType](cw *CollectionToData[T]) {
+func insertMockData(cw *CollectionToData) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -140,7 +140,7 @@ func insertMockData[T RawDataType](cw *CollectionToData[T]) {
 	}
 }
 
-func validateDataExistingsWithinMockDb[T RawDataType](t *testing.T, expected *DateExpectedToFind[T], cw *CollectionToData[T]) {
+func validateDataExistingsWithinMockDb(t *testing.T, expected *DateExpectedToFind, cw *CollectionToData) {
 	ctx := context.Background()
 
 	if expected.sensors != nil {
@@ -162,7 +162,7 @@ func validateDataExistingsWithinMockDb[T RawDataType](t *testing.T, expected *Da
 			panic(err)
 		}
 
-		if diff := cmp.Diff(expected.rawData, results, cmpopts.SortSlices(func(a, b RawData[T]) bool {
+		if diff := cmp.Diff(expected.rawData, results, cmpopts.SortSlices(func(a, b RawData) bool {
 			return a.Timestamp < b.Timestamp
 		})); diff != "" {
 			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
@@ -209,7 +209,7 @@ func validateDataExistingsWithinMockDb[T RawDataType](t *testing.T, expected *Da
 	}
 }
 
-func clearMockCollections[T RawDataType](dbWrap *MongoDatabaseImpl, cw *CollectionToData[T]) {
+func clearMockCollections(dbWrap *MongoDatabaseImpl, cw *CollectionToData) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -236,17 +236,17 @@ type CollectionWrapper[T any] struct {
 // 	data           []T
 // }
 
-type CollectionToData[T RawDataType] struct {
+type CollectionToData struct {
 	sensors              CollectionWrapper[Sensor]
-	rawData              CollectionWrapper[RawData[T]]
+	rawData              CollectionWrapper[RawData]
 	sensorConfigurations CollectionWrapper[SensorConfiguration]
 	calibratedData       CollectionWrapper[CalibratedData]
 	assets               CollectionWrapper[Asset]
 }
 
-type DateExpectedToFind[T RawDataType] struct {
+type DateExpectedToFind struct {
 	sensors              []Sensor
-	rawData              []RawData[T]
+	rawData              []RawData
 	sensorConfigurations []SensorConfiguration
 	calibratedData       []CalibratedData
 	assets               []Asset
@@ -277,12 +277,12 @@ func Test_handleWebhook(t *testing.T) {
 		additionalHeaders http.Header
 		envs              *environmentVariables
 		sensorCache       map[string]Sensor
-		preData           CollectionToData[LDDS45RawData]
+		preData           CollectionToData
 	}
 	type expected struct {
 		code     int
 		message  map[string]string
-		postData DateExpectedToFind[LDDS45RawData]
+		postData DateExpectedToFind
 	}
 
 	tests := []struct {
@@ -318,7 +318,7 @@ func Test_handleWebhook(t *testing.T) {
 						Model: LDDS45,
 					},
 				},
-				preData: CollectionToData[LDDS45RawData]{
+				preData: CollectionToData{
 					sensorConfigurations: CollectionWrapper[SensorConfiguration]{
 						data: []SensorConfiguration{
 							{
@@ -362,18 +362,20 @@ func Test_handleWebhook(t *testing.T) {
 				message: map[string]string{
 					"message": "Webhook received successfully",
 				},
-				postData: DateExpectedToFind[LDDS45RawData]{
-					rawData: []RawData[LDDS45RawData]{
+				postData: DateExpectedToFind{
+					rawData: []RawData{
 						{
 							Timestamp: mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
 							Sensor:    &MOCK_SENSOR_ID,
 							Valid:     true,
-							Data: LDDS45RawData{
-								Battery:      3.413,
-								Distance:     "1404 mm",
-								InterruptPin: 0,
-								Temperature:  "0.00",
-								SensorFlag:   1,
+							Data: SensorData{
+								LDDS45: &LDDS45RawData{
+									Battery:      3.413,
+									Distance:     "1404 mm",
+									InterruptPin: 0,
+									Temperature:  "0.00",
+									SensorFlag:   1,
+								},
 							},
 						},
 					},

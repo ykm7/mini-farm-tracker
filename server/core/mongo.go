@@ -84,19 +84,6 @@ func (m *MongoDatabaseImpl) Collection(name string, opts ...*options.CollectionO
 	return &MongoCollectionWrapper[any]{col: m.Db.Collection(name, opts...)}
 }
 
-// func getTypedCollection[T any](mongoDb MongoDatabase, collectionName string) MongoCollection[T] {
-// 	anyCollection := mongoDb.Collection(collectionName)
-
-// 	switch c := anyCollection.(type) {
-// 	case MongoCollection[T]:
-// 		return c
-// 	case *MongoCollectionWrapper[any]:
-// 		return &MongoCollectionWrapper[T]{col: c.col}
-// 	default:
-// 		panic(fmt.Sprintf("Unexpected collection type: %T", anyCollection))
-// 	}
-// }
-
 /*
 Not ideal as mocking logic is now within the core code path. TODO: revisit - however functional and allows tests
 */
@@ -119,8 +106,8 @@ func GetSensorCollection(mongoDb MongoDatabase) MongoCollection[Sensor] {
 	return getTypedCollection[Sensor](mongoDb, string(SENSORS_COLLECTION))
 }
 
-func GetRawDataCollection[T RawDataType](mongoDb MongoDatabase) MongoCollection[RawData[T]] {
-	return getTypedCollection[RawData[T]](mongoDb, string(RAW_DATA_COLLECTION))
+func GetRawDataCollection(mongoDb MongoDatabase) MongoCollection[RawData] {
+	return getTypedCollection[RawData](mongoDb, string(RAW_DATA_COLLECTION))
 }
 
 func GetSensorConfigurationCollection(mongoDb MongoDatabase) MongoCollection[SensorConfiguration] {

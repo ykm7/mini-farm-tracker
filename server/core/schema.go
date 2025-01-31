@@ -91,15 +91,28 @@ type Sensor struct {
 	Model       SENSOR_MODELS `bson:"model"`
 }
 
-type RawDataType interface {
-	LDDS45RawData | RandomRawData
+// type RawDataType interface {
+// 	LDDS45RawData | RandomRawData
+// }
+
+type SensorData struct {
+	LDDS45 *LDDS45RawData `bson:"LDDS45"`
+	// further various sensor data types
 }
 
-type RawData[T RawDataType] struct {
+func (s *SensorData) DetermineValid() (bool, error) {
+	if s.LDDS45 != nil {
+		return s.LDDS45.determineValid(), nil
+	}
+
+	return false, fmt.Errorf("unknown sensor data to perform 'determineValid' on %v", s)
+}
+
+type RawData struct {
 	Timestamp primitive.DateTime `bson:"timestamp"`
 	Sensor    *string            `bson:"sensor,omitempty"`
 	Valid     bool               `bson:"valid,omitempty"`
-	Data      T                  `bson:"data"`
+	Data      SensorData         `bson:"data"`
 }
 
 type RawDataFns interface {
@@ -119,7 +132,7 @@ type LDDS45RawData struct {
 	SensorFlag   uint8   `json:"Sensor_flag"`
 }
 
-func (lDDS45RawData *LDDS45RawData) DetermineValid() bool {
+func (lDDS45RawData *LDDS45RawData) determineValid() bool {
 	distanceSplit := strings.Split(lDDS45RawData.Distance, " ")
 	_, units := distanceSplit[0], distanceSplit[1]
 

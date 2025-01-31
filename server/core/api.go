@@ -83,7 +83,7 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache m
 
 	switch sensor.Model {
 	case LDDS45:
-		results, err := GetRawDataCollection[LDDS45RawData](mongoDb).Find(
+		results, err := GetRawDataCollection(mongoDb).Find(
 			ctx,
 			bson.D{
 				{Key: "sensor", Value: sensor.Id},

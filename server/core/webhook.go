@@ -20,46 +20,6 @@ import (
 /*
 https://www.thethingsindustries.com/docs/the-things-stack/concepts/data-formats/#uplink-messages
 */
-// type UplinkMessage struct {
-// 	EndDeviceIDs struct {
-// 		DeviceID       string `json:"device_id"`
-// 		ApplicationIDs struct {
-// 			ApplicationID string `json:"application_id"`
-// 		} `json:"application_ids"`
-// 		// // DevEUI of the end device (eg: 0004A30B001C0530)
-// 		DevEui string `json:"dev_eui"`
-// 	} `json:"end_device_ids"`
-// 	// // ISO 8601 UTC timestamp at which the message has been received by the Application Server (eg: "2020-02-12T15:15...")
-// 	ReceivedAt    string `json:"received_at"`
-// 	UplinkMessage struct {
-// 		FPort uint32 `json:"f_port"`
-// 		// // Frame payload (Base64)
-// 		FrmPayload []byte `json:"frm_payload"`
-// 		// Decoded payload object, decoded by the device payload formatter
-// 		DecodedPayload map[string]interface{} `json:"decoded_payload"`
-// 		RxMetadata     []struct {
-// 			GatewayIDs struct {
-// 				GatewayID string `json:"gateway_id"`
-// 				EUI       string `json:"eui"`
-// 			} `json:"gateway_ids"`
-// 			// ISO 8601 UTC timestamp at which the uplink has been received by the gateway (et: "2020-02-12T15:15:45.787Z")
-// 			Time         string  `json:"time"`
-// 			Timestamp    int64   `json:"timestamp"`
-// 			RSSI         int     `json:"rssi"`
-// 			ChannelRSSI  int     `json:"channel_rssi"`
-// 			SNR          float64 `json:"snr"`
-// 			UplinkToken  string  `json:"uplink_token"`
-// 			ChannelIndex int     `json:"channel_index"`
-// 			Location     struct {
-// 				Latitude  float64 `json:"latitude"`
-// 				Longitude float64 `json:"longitude"`
-// 				Altitude  int     `json:"altitude"`
-// 				Source    string  `json:"source"`
-// 			} `json:"location"`
-// 		} `json:"rx_metadata"`
-// 	} `json:"uplink_message"`
-// }
-
 type UplinkMessage struct {
 	EndDeviceIDs struct {
 		DeviceID       *string `json:"device_id,omitempty"`
@@ -183,23 +143,32 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 	switch sensor.Model {
 	case LDDS45:
 		// "LDDS45" is aware it is an volume related Sensor type.
-		data := &LDDS45RawData{}
-		err = json.Unmarshal(jsonData, &data)
-		if err != nil || data == nil {
+		data := SensorData{
+			LDDS45: &LDDS45RawData{},
+		}
+		err = json.Unmarshal(jsonData, &data.LDDS45)
+		if err != nil || data.LDDS45 == nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v to expected data type for: %s", jsonData, LDDS45),
 			})
 			return
 		}
 
-		valid := data.DetermineValid()
-		dataPayload := RawData[LDDS45RawData]{
+		var valid bool
+		if valid, err = data.DetermineValid(); err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"status": fmt.Sprintf("On webhook for %s\n", err),
+			})
+			return
+		}
+
+		dataPayload := RawData{
 			Timestamp: receivedAtTime,
 			Sensor:    &sensor.Id,
-			Data:      *data,
+			Data:      data,
 			Valid:     valid,
 		}
-		_, err := GetRawDataCollection[LDDS45RawData](mongoDb).InsertOne(ctx, dataPayload)
+		_, err := GetRawDataCollection(mongoDb).InsertOne(ctx, dataPayload)
 
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -209,7 +178,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 		}
 
 		if valid {
-			storeLDDS45CalibratedData(ctx, mongoDb, sensor.Id, data, receivedAtTime)
+			storeLDDS45CalibratedData(ctx, mongoDb, sensor.Id, data.LDDS45, receivedAtTime)
 		}
 	default:
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
