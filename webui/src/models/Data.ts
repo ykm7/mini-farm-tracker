@@ -12,9 +12,13 @@ interface LDDS45RawData {
   Sensor_flag: number
 }
 
+export interface SensorData {
+  LDDS45?: LDDS45RawData
+}
+
 export interface RawData extends Data {
   Valid?: boolean
-  Data: LDDS45RawData // TODO: RawData should be able to take various
+  Data: SensorData // TODO: RawData should be able to take various
 }
 
 export interface CalibratedData extends Data {}

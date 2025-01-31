@@ -91,10 +91,6 @@ type Sensor struct {
 	Model       SENSOR_MODELS `bson:"model"`
 }
 
-// type RawDataType interface {
-// 	LDDS45RawData | RandomRawData
-// }
-
 type SensorData struct {
 	LDDS45 *LDDS45RawData `bson:"LDDS45"`
 	// further various sensor data types

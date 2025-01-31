@@ -15,15 +15,15 @@
             <div class="group-section">
               <AsyncWrapper :promise="sensorToData.get(sensor.Id)!">
                 <template v-slot="{ data }">
-                    <TimeseriesGraph
-                      :item="sensor"
-                      @update-starting-date="handleUpdateStartingTimeEvent"
-                      :displayData="data ? data : []"
-                      emptyLabel="No data available for this sensor"
-                      yAxisUnit="mm"
-                      lineLabel="Distance"
-                      title="Distance measured by sensor"
-                    />
+                  <TimeseriesGraph
+                    :item="sensor"
+                    @update-starting-date="handleUpdateStartingTimeEvent"
+                    :displayData="data ? data : []"
+                    emptyLabel="No data available for this sensor"
+                    yAxisUnit="mm"
+                    lineLabel="Distance"
+                    title="Distance measured by sensor"
+                  />
                 </template>
               </AsyncWrapper>
             </div>
@@ -114,10 +114,25 @@ const pullSensorData = async (
       // .filter((d: RawData) => {
       //   return d?.Valid !== false
       // })
+      .filter(d => {
+        if (d.Data.LDDS45) {
+          return true
+        } else {
+          return false
+        }
+      })
       .map<DisplayPoint>((d: RawData) => {
-        return {
-          timestamp: d.Timestamp,
-          value: d.Data.Distance.split(' ')[0] as unknown as number,
+        if (d.Data.LDDS45) {
+          return {
+            timestamp: d.Timestamp,
+            value: d.Data.LDDS45.Distance.split(' ')[0] as unknown as number,
+          }
+        } else {
+          // Shouldn't need/care about this as the filter should catch all
+          return {
+            timestamp: "0",
+            value: 0
+          }
         }
       })
 
