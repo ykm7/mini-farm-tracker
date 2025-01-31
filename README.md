@@ -181,7 +181,7 @@ Following [configuration path](https://golang.testcontainers.org/features/config
 - [x] Connect MongoDB
   - [x] Account Created
   - The ideal is to try the Timeseries support. Historically not been MongoDB strong suite but have never personally tried it and apparently improved in v8.
-  - [x] Schema definitions - Some additional information is diagram (./data structure.drawio.png)
+  - [x] Schema definitions - Primary outlined in the `schema.go` file.
     - [ ] Not all defined - enough for E2E functionality to be possible
 
 - [x] Connect The Things Stack
