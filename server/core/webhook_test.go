@@ -275,8 +275,7 @@ func Test_handleWebhook(t *testing.T) {
 	type args struct {
 		uplinkMessage     UplinkMessage
 		additionalHeaders http.Header
-		envs              *environmentVariables
-		sensorCache       map[string]Sensor
+		server            *Server
 		preData           CollectionToData
 	}
 	type expected struct {
@@ -298,8 +297,18 @@ func Test_handleWebhook(t *testing.T) {
 				additionalHeaders: http.Header{
 					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
 				},
-				envs: &environmentVariables{
-					ttn_webhhook_api: "RANDOM_TEST_KEY",
+				server: &Server{
+					Envs: &environmentVariables{
+						ttn_webhhook_api: "RANDOM_TEST_KEY",
+					},
+					Sensors: &syncStruct[string, Sensor]{
+						cache: map[string]Sensor{
+							MOCK_DEVICE_ID: {
+								Id:    MOCK_SENSOR_ID,
+								Model: LDDS45,
+							},
+						},
+					},
 				},
 				uplinkMessage: createMockUplinkMessage(
 					MOCK_DEVICE_ID,
@@ -312,12 +321,6 @@ func Test_handleWebhook(t *testing.T) {
 						"TempC_DS18B20":  "0.00",
 					},
 				),
-				sensorCache: map[string]Sensor{
-					MOCK_DEVICE_ID: {
-						Id:    MOCK_SENSOR_ID,
-						Model: LDDS45,
-					},
-				},
 				preData: CollectionToData{
 					sensorConfigurations: CollectionWrapper[SensorConfiguration]{
 						data: []SensorConfiguration{
@@ -344,7 +347,7 @@ func Test_handleWebhook(t *testing.T) {
 					},
 					assets: CollectionWrapper[Asset]{
 						data: []Asset{
-							Asset{
+							{
 								Id: MOCK_ASSET_ID,
 								Metrics: &AssetMetrics{
 									Volume: &AssetMetricsCylinderVolume{
@@ -393,7 +396,9 @@ func Test_handleWebhook(t *testing.T) {
 		{
 			name:    "No 'X-Downlink-Apikey' header provided",
 			runTest: true,
-			args:    args{},
+			args: args{
+				server: &Server{},
+			},
 			expected: expected{
 				code: http.StatusBadRequest,
 				message: map[string]string{
@@ -408,7 +413,9 @@ func Test_handleWebhook(t *testing.T) {
 				additionalHeaders: http.Header{
 					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
 				},
-				envs: &environmentVariables{},
+				server: &Server{
+					Envs: &environmentVariables{},
+				},
 			},
 			expected: expected{
 				code: http.StatusBadRequest,
@@ -426,6 +433,8 @@ func Test_handleWebhook(t *testing.T) {
 
 			// TODO: mongo setup ? - no enforced schema or anything so limited scope here.
 			// TODO: mongo collection/data tear down after the test is completed.
+
+			tt.args.server.MongoDb = mongoDb
 
 			defer clearMockCollections(mongoDb, &tt.args.preData)
 
@@ -447,7 +456,7 @@ func Test_handleWebhook(t *testing.T) {
 			MockJsonPost(mockCtx, tt.args.uplinkMessage)
 			MockContextAdd(mockCtx, tt.args.additionalHeaders.Clone())
 
-			handleWebhook(mockCtx, tt.args.envs, mongoDb, tt.args.sensorCache)
+			handleWebhook(mockCtx, tt.args.server)
 
 			assert.Equal(t, tt.expected.code, w.Code)
 

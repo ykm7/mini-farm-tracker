@@ -27,14 +27,17 @@ func main() {
 
 	mongoDb := &core.MongoDatabaseImpl{Db: database}
 
-	// The idea is to keep a cache of the sensor information to prevent constant polling.
-	// Also as I haven't used it directly myself.
-	// TODO: race condition lock access
-	sensorCache := map[string]core.Sensor{}
+	server := &core.Server{
+		Envs:        envs,
+		MongoDb:     mongoDb,
+		Sensors:     core.NewSyncStruct[string, core.Sensor](),
+		ExitContext: innerCtx,
+		ExitChan:    exitChan,
+	}
 
-	core.ListenToSensors(innerCtx, mongoDb, sensorCache, exitChan)
+	core.ListenToSensors(server)
 
-	r := core.SetupRouter(envs, mongoDb, sensorCache)
+	r := core.SetupRouter(server)
 
 	srv := &http.Server{
 		// port defaults 8080 but for clarify, declaring

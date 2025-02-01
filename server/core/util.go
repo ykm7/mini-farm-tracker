@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,59 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+type Server struct {
+	Envs        *environmentVariables
+	MongoDb     *MongoDatabaseImpl
+	Sensors     *syncStruct[string, Sensor]
+	ExitContext context.Context
+	ExitChan    chan struct{}
+}
+
+func NewSyncStruct[K comparable, V any]() *syncStruct[K, V] {
+	return &syncStruct[K, V]{
+		cache: make(map[K]V),
+	}
+}
+
+type syncStruct[K comparable, V any] struct {
+	cache map[K]V
+	mu    sync.RWMutex
+}
+
+func (s *syncStruct[K, V]) Get(key K) (V, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	v, ok := s.cache[key]
+	return v, ok
+}
+
+func (s *syncStruct[K, V]) ToList() []V {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return mapToList(s.cache)
+}
+
+func (s *syncStruct[K, V]) Update(key K, v V) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.cache == nil {
+		s.cache = make(map[K]V)
+	}
+	s.cache[key] = v
+}
+
+func (s *syncStruct[K, V]) Delete(key K) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.cache == nil {
+		delete(s.cache, key)
+	}
+}
 
 type environmentVariables struct {
 	ttn_webhhook_api string
@@ -65,12 +119,13 @@ func convertTimeStringToMongoTime(timeStr string) (primitive.DateTime, error) {
 
 /*
 TODO: Move the "Watch" function to within the wrapper functionality to be the same as .Find etc
-Fair bit of TODOs here. propagate cancellation context. Examine retry... I believe it retries one automatically
+Fair bit of TODOs here. propagate cancellation context. Examine retry... I believe it retries once automatically
 */
-func ListenToSensors(ctx context.Context, mongoDb MongoDatabase, sensorCache map[string]Sensor, exitChan chan struct{}) {
-	results, err := GetSensorCollection(mongoDb).Find(ctx, nil)
+func ListenToSensors(server *Server) {
+	results, err := GetSensorCollection(server.MongoDb).Find(server.ExitContext, nil)
 	for _, r := range results {
-		sensorCache[r.Id] = r
+		server.Sensors.Update(r.Id, r)
+		// sensorCache[r.Id] = r
 	}
 	if err != nil {
 		panic(err)
@@ -79,14 +134,13 @@ func ListenToSensors(ctx context.Context, mongoDb MongoDatabase, sensorCache map
 	// 'UpdateLookup' Do to include the full document on insert, update and replace.
 	//
 	opts := options.ChangeStream().SetFullDocument(options.UpdateLookup).SetFullDocumentBeforeChange(options.Required)
-	sensorStream, err := mongoDb.Collection(string(SENSORS_COLLECTION)).Watch(ctx, mongo.Pipeline{}, opts)
+	sensorStream, err := server.MongoDb.Collection(string(SENSORS_COLLECTION)).Watch(server.ExitContext, mongo.Pipeline{}, opts)
 	if err != nil {
 		panic(err)
 	}
 
 	go func(routineCtx context.Context, stream *mongo.ChangeStream) {
 		defer stream.Close(routineCtx)
-		// defer waitGroup.Done()
 
 		for stream.Next(routineCtx) {
 			fmt.Println("Stream listener on the 'sensors' collection started...")
@@ -112,7 +166,8 @@ func ListenToSensors(ctx context.Context, mongoDb MongoDatabase, sensorCache map
 						log.Printf("Error unmarshaling full document: %v", err)
 						continue
 					}
-					sensorCache[sensor.Id] = sensor
+					server.Sensors.Update(sensor.Id, sensor)
+					// sensorCache[sensor.Id] = sensor
 					fmt.Printf("Sensor 'inserted', 'updated' or 'replaced': %+v\n", sensor)
 				}
 
@@ -128,16 +183,17 @@ func ListenToSensors(ctx context.Context, mongoDb MongoDatabase, sensorCache map
 						continue
 					}
 					fmt.Printf("Sensor deleted: %+v\n", sensor)
-					delete(sensorCache, sensor.Id)
+					server.Sensors.Delete(sensor.Id)
+					// delete(sensorCache, sensor.Id)
 				}
 			}
 		}
 
 		if err := sensorStream.Err(); err != nil {
 			log.Printf("Stream error: %v", err)
-			exitChan <- struct{}{}
+			server.ExitChan <- struct{}{}
 		}
-	}(ctx, sensorStream)
+	}(server.ExitContext, sensorStream)
 }
 
 /*
@@ -146,8 +202,8 @@ Alternative
 import "golang.org/x/exp/maps"
 values := maps.Values(myMap)
 */
-func mapToList[T any](m map[string]T) []T {
-	result := make([]T, 0, len(m))
+func mapToList[K comparable, V any](m map[K]V) []V {
+	result := make([]V, 0, len(m))
 	for _, value := range m {
 		result = append(result, value)
 	}

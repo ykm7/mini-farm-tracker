@@ -20,7 +20,7 @@ func CustomLogger() gin.HandlerFunc {
 	})
 }
 
-func SetupRouter(envs *environmentVariables, db MongoDatabase, sensorCache map[string]Sensor) *gin.Engine {
+func SetupRouter(server *Server) *gin.Engine {
 	r := gin.New()
 	r.Use(CustomLogger())
 	r.Use(gin.Recovery())
@@ -40,17 +40,17 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase, sensorCache map[s
 		sensorApi := api.Group("/sensors")
 		{
 			sensorApi.GET("", func(c *gin.Context) {
-				handleWithoutSensorID(c, sensorCache)
+				handleWithoutSensorID(c, server)
 			})
 			sensorApi.GET(fmt.Sprintf(":%s", SENSOR_ID_PARAM), handleWithSensorID)
 
 			sensorDataApi := sensorApi.Group(fmt.Sprintf(":%s/data", SENSOR_ID_PARAM))
 			{
 				sensorDataApi.GET("/raw_data", func(c *gin.Context) {
-					getRawDataWithSensorId(c, db, sensorCache)
+					getRawDataWithSensorId(c, server)
 				})
 				sensorDataApi.GET("/calibrated_data", func(ctx *gin.Context) {
-					getCalibratedDataWithSensorId(ctx, db, sensorCache)
+					getCalibratedDataWithSensorId(ctx, server)
 				})
 			}
 		}
@@ -58,7 +58,7 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase, sensorCache map[s
 		assetsApi := api.Group("/assets")
 		{
 			assetsApi.GET("", func(ctx *gin.Context) {
-				handleAssetsWithoutId(ctx, db)
+				handleAssetsWithoutId(ctx, server)
 			})
 		}
 	}
@@ -70,7 +70,7 @@ func SetupRouter(envs *environmentVariables, db MongoDatabase, sensorCache map[s
 	})
 
 	r.POST("/webhook", func(c *gin.Context) {
-		handleWebhook(c, envs, db, sensorCache)
+		handleWebhook(c, server)
 	})
 
 	log.Printf("Endpoint: %s not logged\n", HEALTH_ENDPOINT)

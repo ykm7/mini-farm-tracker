@@ -24,7 +24,12 @@ func TestSetupRouter(t *testing.T) {
 
 	mongoDb := &MongoDatabaseImpl{Db: db}
 
-	router := SetupRouter(&environmentVariables{}, mongoDb, map[string]Sensor{})
+	server := &Server{
+		MongoDb: mongoDb,
+		Sensors: NewSyncStruct[string, Sensor](),
+	}
+
+	router := SetupRouter(server)
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/ping", nil)

@@ -93,7 +93,7 @@ type UplinkMessage struct {
 	} `json:"uplink_message"`
 }
 
-func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoDatabase, sensorCache map[string]Sensor) {
+func handleWebhook(c *gin.Context, server *Server) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -104,7 +104,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 	}
 
 	// Verify API Sign
-	if apiKey != envs.ttn_webhhook_api {
+	if apiKey != server.Envs.ttn_webhhook_api {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Webhook env is invalid"})
 		return
 	}
@@ -115,7 +115,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 		return
 	}
 
-	sensor, exists := sensorCache[*uplinkMessage.EndDeviceIDs.DeviceID]
+	sensor, exists := server.Sensors.Get(*uplinkMessage.EndDeviceIDs.DeviceID)
 	if !exists {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"status": fmt.Sprintf("A gateway with the TTN deviceId of %s was not found", *uplinkMessage.EndDeviceIDs.DeviceID),
@@ -168,7 +168,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 			Data:      data,
 			Valid:     valid,
 		}
-		_, err := GetRawDataCollection(mongoDb).InsertOne(ctx, dataPayload)
+		_, err := GetRawDataCollection(server.MongoDb).InsertOne(ctx, dataPayload)
 
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -178,7 +178,7 @@ func handleWebhook(c *gin.Context, envs *environmentVariables, mongoDb MongoData
 		}
 
 		if valid {
-			storeLDDS45CalibratedData(ctx, mongoDb, sensor.Id, data.LDDS45, receivedAtTime)
+			storeLDDS45CalibratedData(ctx, server.MongoDb, sensor.Id, data.LDDS45, receivedAtTime)
 		}
 	default:
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{

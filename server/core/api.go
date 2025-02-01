@@ -13,25 +13,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func handleWithoutSensorID(c *gin.Context, sensorCache map[string]Sensor) {
-	// ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	// defer cancel()
-	// results, err := GetSensorCollection(mongoDb).Find(ctx, nil)
-	// if err != nil {
-	// 	// Handle error
-	// 	c.JSON(http.StatusInternalServerError, gin.H{
-	// 		"status": "ok",
-	// 	})
-	// 	return
-	// }
-
-	c.JSON(http.StatusOK, mapToList(sensorCache))
+func handleWithoutSensorID(c *gin.Context, server *Server) {
+	c.JSON(http.StatusOK, server.Sensors.ToList())
 }
 
-func handleAssetsWithoutId(c *gin.Context, mongoDb MongoDatabase) {
+func handleAssetsWithoutId(c *gin.Context, server *Server) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	results, err := GetAssetsCollection(mongoDb).Find(ctx, nil)
+	results, err := GetAssetsCollection(server.MongoDb).Find(ctx, nil)
 	if err != nil {
 		// Handle error
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -44,12 +33,10 @@ func handleAssetsWithoutId(c *gin.Context, mongoDb MongoDatabase) {
 }
 
 func handleWithSensorID(c *gin.Context) {
-	// sensorID := c.Param("SENSOR_ID")
-
 	c.AbortWithStatusJSON(http.StatusNotImplemented, nil)
 }
 
-func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache map[string]Sensor) {
+func getRawDataWithSensorId(c *gin.Context, server *Server) {
 	sensorID := c.Param(SENSOR_ID_PARAM)
 
 	now := time.Now()
@@ -73,7 +60,7 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache m
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	sensor, exists := sensorCache[sensorID]
+	sensor, exists := server.Sensors.Get(sensorID)
 	if !exists {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"status": fmt.Sprintf("Unable to find sensor: %s", sensorID),
@@ -83,7 +70,7 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache m
 
 	switch sensor.Model {
 	case LDDS45:
-		results, err := GetRawDataCollection(mongoDb).Find(
+		results, err := GetRawDataCollection(server.MongoDb).Find(
 			ctx,
 			bson.D{
 				{Key: "sensor", Value: sensor.Id},
@@ -122,7 +109,7 @@ func getRawDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache m
 	}
 }
 
-func getCalibratedDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensorCache map[string]Sensor) {
+func getCalibratedDataWithSensorId(c *gin.Context, server *Server) {
 	sensorID := c.Param(SENSOR_ID_PARAM)
 
 	now := time.Now()
@@ -146,7 +133,7 @@ func getCalibratedDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensor
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	sensor, exists := sensorCache[sensorID]
+	sensor, exists := server.Sensors.Get(sensorID)
 	if !exists {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"status": fmt.Sprintf("Unable to find sensor: %s", sensorID),
@@ -156,7 +143,7 @@ func getCalibratedDataWithSensorId(c *gin.Context, mongoDb MongoDatabase, sensor
 
 	switch sensor.Model {
 	case LDDS45:
-		results, err := GetCalibratedDataCollection(mongoDb).Find(
+		results, err := GetCalibratedDataCollection(server.MongoDb).Find(
 			ctx,
 			bson.D{
 				{Key: "sensor", Value: sensor.Id},
