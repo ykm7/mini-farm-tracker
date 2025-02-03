@@ -180,6 +180,9 @@ func handleWebhook(c *gin.Context, server *Server) {
 		if valid {
 			storeLDDS45CalibratedData(ctx, server.MongoDb, sensor.Id, data.LDDS45, receivedAtTime)
 		}
+
+	case S2120:
+		// TODO:
 	default:
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"status": fmt.Sprintf("For sensor: %s unknown model type to handle: %s\n", sensor.Id, sensor.Model),
@@ -189,6 +192,11 @@ func handleWebhook(c *gin.Context, server *Server) {
 
 	// Respond with a success status
 	c.JSON(http.StatusOK, gin.H{"message": "Webhook received successfully"})
+}
+
+func storeS2120CalibratedData() error {
+
+	return nil
 }
 
 func storeLDDS45CalibratedData(

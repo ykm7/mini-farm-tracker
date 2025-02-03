@@ -14,6 +14,7 @@ type SENSOR_MODELS string
 
 const (
 	LDDS45 SENSOR_MODELS = "LDDS45"
+	S2120  SENSOR_MODELS = "S2120"
 )
 
 type DB_COLLECTIONS string
@@ -94,6 +95,7 @@ type Sensor struct {
 type SensorData struct {
 	LDDS45 *LDDS45RawData `bson:"LDDS45"`
 	// further various sensor data types
+	S2120 *S2120RawData `bson:"S2120"`
 }
 
 func (s *SensorData) DetermineValid() (bool, error) {
@@ -136,8 +138,71 @@ func (lDDS45RawData *LDDS45RawData) determineValid() bool {
 	return ok == nil
 }
 
-// Just to test the generics
-type RandomRawData struct {
+/*
+*
+Based on decoder from:
+https://github.com/Seeed-Solution/TTN-Payload-Decoder/blob/master/SenseCAP_S2120_Weather_Station_Decoder.js#L110
+*/
+type S2120RawData struct {
+	Err      int                          `json:"err"`
+	Payload  string                       `json:"payload"`
+	Valid    bool                         `json:"valid"`
+	Messages *[]S2120RawDataAvailableMsgs `json:"messages"`
+}
+
+type S2120RawDataAvailableMsgs interface{}
+
+type S2120RawDataMeasurementType string
+
+const (
+	AirTemperature      S2120RawDataMeasurementType = "Air Temperature"
+	AirHumidity         S2120RawDataMeasurementType = "Air Humidity"
+	LightIntensity      S2120RawDataMeasurementType = "Light Intensity"
+	UVIndex             S2120RawDataMeasurementType = "UV Index"
+	WindSpeed           S2120RawDataMeasurementType = "Wind Speed"
+	WindDirectionSensor S2120RawDataMeasurementType = "Wind Direction Sensor"
+	RainGauge           S2120RawDataMeasurementType = "Rain Gauge"
+	BarometricPressure  S2120RawDataMeasurementType = "Barometric Pressure"
+)
+
+type S2120RawDataMeasurementError string
+
+const (
+	SensorErrorEvent S2120RawDataMeasurementError = "sensor_error_event"
+)
+
+type S2120RawDataMeasurement struct {
+	MeasurementValue any                         `json:"measurementValue"`
+	MeasurementId    string                      `json:"measurementId"`
+	Type             S2120RawDataMeasurementType `json:"type"`
+}
+
+type S2120RawDataStatus struct {
+	/**
+	string|number
+	*/
+	BatteryPercent  *any    `json:"Battery(%),omitempty"`
+	HardwareVersion *string `json:"Hardware Version,omitempty"`
+	FirmwareVersion *string `json:"Firmware Version,omitempty"`
+	MeasureInterval *int    `json:"measureInterval,omitempty"`
+	GpsInterval     *int    `json:"gpsInterval,omitempty"`
+}
+
+/*
+Based on the error message:
+
+	messages = [{
+		measurementId: '4101', type: 'sensor_error_event', errCode: errorCode, descZh
+	}]
+*/
+type S2120RawDataError struct {
+	MeasurementValue any                          `json:"measurementValue"`
+	MeasurementId    string                       `json:"measurementId"`
+	Type             S2120RawDataMeasurementError `json:"type"`
+	ErrCode          [2]int                       `json:"errCode"`
+}
+
+type S2120RawDataStatusMsg struct {
 }
 
 type CalibratedData struct {
