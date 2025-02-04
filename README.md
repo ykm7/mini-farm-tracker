@@ -113,6 +113,11 @@ Domain established within DigitalOcean directing to droplet:
 
 DNS Records are configured within DigitalOcean to allow for vercel website to be sued.
 
+## Weather
+
+https://openweathermap.org/price
+
+
 ### Development
 
 #### WebUI
