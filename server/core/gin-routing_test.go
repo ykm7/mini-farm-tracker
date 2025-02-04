@@ -26,7 +26,7 @@ func TestSetupRouter(t *testing.T) {
 
 	server := &Server{
 		MongoDb: mongoDb,
-		Sensors: NewSyncStruct[string, Sensor](),
+		Sensors: NewSyncCache[string, Sensor](),
 	}
 
 	router := SetupRouter(server)

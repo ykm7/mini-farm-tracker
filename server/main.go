@@ -30,7 +30,7 @@ func main() {
 	server := &core.Server{
 		Envs:        envs,
 		MongoDb:     mongoDb,
-		Sensors:     core.NewSyncStruct[string, core.Sensor](),
+		Sensors:     core.NewSyncCache[string, core.Sensor](),
 		ExitContext: innerCtx,
 		ExitChan:    exitChan,
 	}
