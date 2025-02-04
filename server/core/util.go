@@ -18,24 +18,31 @@ import (
 
 type Server struct {
 	Envs        *environmentVariables
-	MongoDb     *MongoDatabaseImpl
-	Sensors     *syncStruct[string, Sensor]
+	MongoDb     MongoDatabase
+	Sensors     SyncCache[string, Sensor]
 	ExitContext context.Context
 	ExitChan    chan struct{}
 }
 
-func NewSyncStruct[K comparable, V any]() *syncStruct[K, V] {
-	return &syncStruct[K, V]{
+func NewSyncCache[K comparable, V any]() *syncCacheImpl[K, V] {
+	return &syncCacheImpl[K, V]{
 		cache: make(map[K]V),
 	}
 }
 
-type syncStruct[K comparable, V any] struct {
+type SyncCache[K comparable, V any] interface {
+	Get(key K) (V, bool)
+	ToList() []V
+	Update(key K, v V)
+	Delete(key K)
+}
+
+type syncCacheImpl[K comparable, V any] struct {
 	cache map[K]V
 	mu    sync.RWMutex
 }
 
-func (s *syncStruct[K, V]) Get(key K) (V, bool) {
+func (s *syncCacheImpl[K, V]) Get(key K) (V, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -43,14 +50,14 @@ func (s *syncStruct[K, V]) Get(key K) (V, bool) {
 	return v, ok
 }
 
-func (s *syncStruct[K, V]) ToList() []V {
+func (s *syncCacheImpl[K, V]) ToList() []V {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	return mapToList(s.cache)
 }
 
-func (s *syncStruct[K, V]) Update(key K, v V) {
+func (s *syncCacheImpl[K, V]) Update(key K, v V) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -60,7 +67,7 @@ func (s *syncStruct[K, V]) Update(key K, v V) {
 	s.cache[key] = v
 }
 
-func (s *syncStruct[K, V]) Delete(key K) {
+func (s *syncCacheImpl[K, V]) Delete(key K) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

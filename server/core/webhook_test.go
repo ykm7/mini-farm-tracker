@@ -301,7 +301,7 @@ func Test_handleWebhook(t *testing.T) {
 					Envs: &environmentVariables{
 						ttn_webhhook_api: "RANDOM_TEST_KEY",
 					},
-					Sensors: &syncStruct[string, Sensor]{
+					Sensors: &syncCacheImpl[string, Sensor]{
 						cache: map[string]Sensor{
 							MOCK_DEVICE_ID: {
 								Id:    MOCK_SENSOR_ID,
