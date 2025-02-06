@@ -54,7 +54,7 @@ import { computed, ref, watch } from 'vue'
 import { CCard, CCardBody, CCardTitle, CListGroup, CListGroupItem } from '@coreui/vue'
 import axios from 'axios'
 import type { CalibratedData } from '@/models/Data'
-import type { DisplayPoint } from '@/types/GraphRelated'
+import type { DisplayPoint, Unit } from '@/types/GraphRelated'
 import type { ObjectId } from '@/types/ObjectId'
 
 const BASE_URL: string = import.meta.env.VITE_BASE_URL
@@ -136,6 +136,7 @@ const pullCalibratedDataFn = async (
       return {
         timestamp: c.Timestamp,
         value: c.DataPoints.Volume?.Data!,
+        unit: c.DataPoints.Volume?.Unit! as Unit
       }
     })
     

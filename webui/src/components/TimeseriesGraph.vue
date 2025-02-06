@@ -64,7 +64,7 @@ import {
 } from 'chart.js'
 import 'chartjs-adapter-moment'
 import { ONE_DAY, ONE_HOUR, ONE_MONTH, ONE_WEEK, ONE_YEAR, ALL_YEARS } from '@/helper'
-import type { DisplayPoint } from '@/types/GraphRelated'
+import type { DisplayPoint, Unit } from '@/types/GraphRelated'
 
 Chart.register(TimeScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
@@ -74,7 +74,7 @@ const props = defineProps<{
   lineLabel: string
   emptyLabel: string
   title: string
-  yAxisUnit: 'mm' | 'cm' | 'm' | 'm³' | 'L'
+  yAxisUnit: Unit
 }>()
 
 const emit = defineEmits<{
