@@ -18,7 +18,7 @@ func SetupMongo(envs *environmentVariables) (db *mongo.Database, deferFn func())
 	defer cancel()
 
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().ApplyURI(envs.mongo_conn).SetServerAPIOptions(serverAPI)
+	opts := options.Client().ApplyURI(envs.Mongo_conn).SetServerAPIOptions(serverAPI)
 	// Create a new client and connect to the server
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {

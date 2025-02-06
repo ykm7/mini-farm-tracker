@@ -299,7 +299,7 @@ func Test_handleWebhook(t *testing.T) {
 				},
 				server: &Server{
 					Envs: &environmentVariables{
-						ttn_webhhook_api: "RANDOM_TEST_KEY",
+						Ttn_webhhook_api: "RANDOM_TEST_KEY",
 					},
 					Sensors: &syncCacheImpl[string, Sensor]{
 						cache: map[string]Sensor{

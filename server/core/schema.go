@@ -205,6 +205,10 @@ type S2120RawDataError struct {
 type S2120RawDataStatusMsg struct {
 }
 
+type CalibratedDataVolume struct {
+	Data float64
+}
+
 type CalibratedData struct {
 	Timestamp primitive.DateTime `bson:"timestamp"`
 	Sensor    string             `bson:"sensor"`
@@ -228,4 +232,80 @@ type SensorConfiguration struct {
 			Units UNITS `bson:"units"`
 		} `bson:"distance"`
 	} `bson:"Offset,omitempty"`
+}
+
+/*
+https://www.thethingsindustries.com/docs/the-things-stack/concepts/data-formats/#uplink-messages
+*/
+type UplinkMessage struct {
+	EndDeviceIDs struct {
+		DeviceID       *string `json:"device_id,omitempty"`
+		ApplicationIDs struct {
+			ApplicationID *string `json:"application_id,omitempty"`
+		} `json:"application_ids"`
+		DevEUI  *string `json:"dev_eui,omitempty"`
+		JoinEUI *string `json:"join_eui,omitempty"`
+		DevAddr *string `json:"dev_addr,omitempty"`
+	} `json:"end_device_ids"`
+	CorrelationIDs *[]string `json:"correlation_ids,omitempty"`
+	ReceivedAt     *string   `json:"received_at,omitempty"`
+	UplinkMessage  struct {
+		SessionKeyID   *string                `json:"session_key_id,omitempty"`
+		FCount         *int                   `json:"f_cnt,omitempty"`
+		FPort          *int                   `json:"f_port,omitempty"`
+		FrmPayload     *string                `json:"frm_payload,omitempty"`
+		DecodedPayload map[string]interface{} `json:"decoded_payload,omitempty"`
+		RxMetadata     []struct {
+			GatewayIDs struct {
+				GatewayID *string `json:"gateway_id,omitempty"`
+				EUI       *string `json:"eui,omitempty"`
+			} `json:"gateway_ids"`
+			Time         *string  `json:"time,omitempty"`
+			Timestamp    *int64   `json:"timestamp,omitempty"`
+			RSSI         *int     `json:"rssi,omitempty"`
+			ChannelRSSI  *int     `json:"channel_rssi,omitempty"`
+			SNR          *float64 `json:"snr,omitempty"`
+			UplinkToken  *string  `json:"uplink_token,omitempty"`
+			ChannelIndex *int     `json:"channel_index,omitempty"`
+			Location     struct {
+				Latitude  *float64 `json:"latitude,omitempty"`
+				Longitude *float64 `json:"longitude,omitempty"`
+				Altitude  *int     `json:"altitude,omitempty"`
+				Source    *string  `json:"source,omitempty"`
+			} `json:"location"`
+		} `json:"rx_metadata,omitempty"`
+		Settings struct {
+			DataRate struct {
+				Lora struct {
+					Bandwidth       *int `json:"bandwidth,omitempty"`
+					SpreadingFactor *int `json:"spreading_factor,omitempty"`
+				} `json:"lora"`
+			} `json:"data_rate"`
+			CodingRate *string `json:"coding_rate,omitempty"`
+			Frequency  *string `json:"frequency,omitempty"`
+			Timestamp  *int64  `json:"timestamp,omitempty"`
+			Time       *string `json:"time,omitempty"`
+		} `json:"settings"`
+		ReceivedAt      *string `json:"received_at,omitempty"`
+		ConsumedAirtime *string `json:"consumed_airtime,omitempty"`
+		Locations       map[string]struct {
+			Latitude  *float64 `json:"latitude,omitempty"`
+			Longitude *float64 `json:"longitude,omitempty"`
+			Altitude  *int     `json:"altitude,omitempty"`
+			Source    *string  `json:"source,omitempty"`
+		} `json:"locations,omitempty"`
+		VersionIDs struct {
+			BrandID         *string `json:"brand_id,omitempty"`
+			ModelID         *string `json:"model_id,omitempty"`
+			HardwareVersion *string `json:"hardware_version,omitempty"`
+			FirmwareVersion *string `json:"firmware_version,omitempty"`
+			BandID          *string `json:"band_id,omitempty"`
+		} `json:"version_ids"`
+		NetworkIDs struct {
+			NetID     *string `json:"net_id,omitempty"`
+			TenantID  *string `json:"tenant_id,omitempty"`
+			ClusterID *string `json:"cluster_id,omitempty"`
+		} `json:"network_ids"`
+		Simulated bool `json:"simulated"` // Keep as is since bool can't be nil
+	} `json:"uplink_message"`
 }
