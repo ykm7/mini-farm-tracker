@@ -291,6 +291,118 @@ func Test_handleWebhook(t *testing.T) {
 		expected expected
 	}{
 		{
+			name:    "Valid 'S2120RawData' data",
+			runTest: true,
+			args: args{
+				additionalHeaders: http.Header{
+					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
+				},
+				server: &Server{
+					Envs: &environmentVariables{
+						Ttn_webhhook_api: "RANDOM_TEST_KEY",
+					},
+					Sensors: &syncCacheImpl[string, Sensor]{
+						cache: map[string]Sensor{
+							MOCK_DEVICE_ID: {
+								Id:    MOCK_SENSOR_ID,
+								Model: S2120,
+							},
+						},
+					},
+				},
+				uplinkMessage: createMockUplinkMessage(
+					MOCK_DEVICE_ID,
+					MOCK_RECEIVED_AT,
+					map[string]interface{}{
+						"err":     0,
+						"payload": "",
+						"valid":   true,
+						"messages": []map[string]interface{}{
+							map[string]interface{}{
+								"measurementValue": "",
+								"measurementId":    "",
+								"type":             string(RainGauge),
+							},
+						},
+					},
+				),
+				preData: CollectionToData{
+					sensorConfigurations: CollectionWrapper[SensorConfiguration]{
+						data: []SensorConfiguration{
+							{
+								Sensor:  MOCK_SENSOR_ID,
+								Asset:   MOCK_ASSET_ID,
+								Applied: mockConvertTimeStringToMongoTime("2025-01-26T13:35:18.467+00:00"),
+								Offset: &struct {
+									Distance *struct {
+										Distance float64 "bson:\"distance\""
+										Units    UNITS   "bson:\"units\""
+									} "bson:\"distance\""
+								}{
+									Distance: &struct {
+										Distance float64 "bson:\"distance\""
+										Units    UNITS   "bson:\"units\""
+									}{
+										Distance: 0,
+										Units:    METRES,
+									},
+								},
+							},
+						},
+					},
+					assets: CollectionWrapper[Asset]{
+						data: []Asset{
+							{
+								Id: MOCK_ASSET_ID,
+								Metrics: &AssetMetrics{
+									Volume: &AssetMetricsCylinderVolume{
+										Radius: float64(5),
+										Height: float64(2.2),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: expected{
+				code: http.StatusOK,
+				message: map[string]string{
+					"message": "Webhook received successfully",
+				},
+				postData: DateExpectedToFind{
+					rawData: []RawData{
+						{
+							Timestamp: mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
+							Sensor:    &MOCK_SENSOR_ID,
+							Valid:     true,
+							Data: SensorData{
+								LDDS45: &LDDS45RawData{
+									Battery:      3.413,
+									Distance:     "1404 mm",
+									InterruptPin: 0,
+									Temperature:  "0.00",
+									SensorFlag:   1,
+								},
+							},
+						},
+					},
+					calibratedData: []CalibratedData{
+						{
+							Timestamp: mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
+							Sensor:    MOCK_SENSOR_ID,
+							DataPoints: CalibratedDataPoints{
+								Volume: &CalibratedDataType{
+									Data:  float64(62517.69),
+									Units: METRES_CUBE,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name:    "Valid 'LDDS45RawData' data",
 			runTest: true,
 			args: args{
@@ -386,8 +498,12 @@ func Test_handleWebhook(t *testing.T) {
 						{
 							Timestamp: mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
 							Sensor:    MOCK_SENSOR_ID,
-							Data:      float64(62517.69),
-							Units:     METRES_CUBE,
+							DataPoints: CalibratedDataPoints{
+								Volume: &CalibratedDataType{
+									Data:  float64(62517.69),
+									Units: METRES_CUBE,
+								},
+							},
 						},
 					},
 				},

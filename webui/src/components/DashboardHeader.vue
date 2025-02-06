@@ -28,7 +28,6 @@
 </template>
 
 <script setup lang="ts">
-import 'vue3-open-weather-widget/style.css'
 </script>
 
 <style scoped>

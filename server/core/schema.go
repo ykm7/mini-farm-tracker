@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"strings"
@@ -30,11 +31,16 @@ const (
 type UNITS string
 
 const (
+	UV_INDEX    UNITS = ""
 	MM_METRE    UNITS = "mm"
 	CM_METRE    UNITS = "cm"
 	METRES      UNITS = "m"
 	METRES_CUBE UNITS = "m³"
 	LITRES      UNITS = "L"
+	MM_PER_HOUR UNITS = "mm/hr"
+	M_PER_SEC   UNITS = "m/s"
+	DEGREE      UNITS = "°"
+	PRESSURE    UNITS = "Pa"
 )
 
 func StringToUnits(s string) (UNITS, error) {
@@ -144,13 +150,48 @@ Based on decoder from:
 https://github.com/Seeed-Solution/TTN-Payload-Decoder/blob/master/SenseCAP_S2120_Weather_Station_Decoder.js#L110
 */
 type S2120RawData struct {
-	Err      int                          `json:"err"`
-	Payload  string                       `json:"payload"`
-	Valid    bool                         `json:"valid"`
-	Messages *[]S2120RawDataAvailableMsgs `json:"messages"`
+	Err      int               `json:"err"`
+	Payload  string            `json:"payload"`
+	Valid    bool              `json:"valid"`
+	Messages []S2120RawDataMsg `json:"messages"`
 }
 
-type S2120RawDataAvailableMsgs interface{}
+func (s *S2120RawData) Unmarshal(data []byte) error {
+	type Alias S2120RawData
+	aux := &struct {
+		Messages []json.RawMessage `json:"messages"`
+		*Alias
+	}{
+		Alias: (*Alias)(s),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	s.Messages = make([]S2120RawDataMsg, len(aux.Messages))
+	for idx, raw := range aux.Messages {
+		var rawMeasurement *S2120RawDataMeasurement
+		if err := json.Unmarshal(raw, &rawMeasurement); err == nil {
+			s.Messages[idx] = rawMeasurement
+			continue
+		}
+
+		var rawStatus *S2120RawDataStatus
+		if err := json.Unmarshal(raw, &rawStatus); err == nil {
+			s.Messages[idx] = rawStatus
+			continue
+		}
+
+		return fmt.Errorf("unable to determine type for S2120RawData message %s", string(raw))
+	}
+
+	return nil
+}
+
+type S2120RawDataMsg interface {
+	is()
+}
 
 type S2120RawDataMeasurementType string
 
@@ -177,6 +218,8 @@ type S2120RawDataMeasurement struct {
 	Type             S2120RawDataMeasurementType `json:"type"`
 }
 
+func (s *S2120RawDataMeasurement) is() {}
+
 type S2120RawDataStatus struct {
 	/**
 	string|number
@@ -187,6 +230,8 @@ type S2120RawDataStatus struct {
 	MeasureInterval *int    `json:"measureInterval,omitempty"`
 	GpsInterval     *int    `json:"gpsInterval,omitempty"`
 }
+
+func (s *S2120RawDataStatus) is() {}
 
 /*
 Based on the error message:
@@ -205,15 +250,29 @@ type S2120RawDataError struct {
 type S2120RawDataStatusMsg struct {
 }
 
-type CalibratedDataVolume struct {
-	Data float64
+type CalibratedData struct {
+	Timestamp  primitive.DateTime   `bson:"timestamp"`
+	Sensor     string               `bson:"sensor"`
+	DataPoints CalibratedDataPoints `bson:"dataPoints"`
 }
 
-type CalibratedData struct {
-	Timestamp primitive.DateTime `bson:"timestamp"`
-	Sensor    string             `bson:"sensor"`
-	Data      float64            `bson:"data"`
-	Units     UNITS              `bson:"units"`
+/*
+*
+Available from the different:
+https://cdn.shopify.com/s/files/1/1386/3791/files/SenseCAP_S2120_LoRaWAN_8-in-1_Weather_Station_User_Guide.pdf?v=1662178525
+*/
+type CalibratedDataPoints struct {
+	Volume             *CalibratedDataType `bson:"volume,omitempty"`
+	UVIndex            *CalibratedDataType `bson:"uvIndex,omitempty"`
+	WindSpeed          *CalibratedDataType `bson:"windSpeed,omitempty"`
+	WindDirection      *CalibratedDataType `bson:"windDirection,omitempty"`
+	RainfallHourly     *CalibratedDataType `bson:"rainfallHourly,omitempty"`
+	BarometricPressure *CalibratedDataType `bson:"barometricPressure,omitempty"`
+}
+
+type CalibratedDataType struct {
+	Data  float64 `bson:"data"`
+	Units UNITS   `bson:"units"`
 }
 
 type SensorConfiguration struct {

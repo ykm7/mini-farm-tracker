@@ -50,7 +50,7 @@
 
 <script setup lang="ts" generic="T">
 import type { ChartData, ChartOptions, Point, ChartDataset } from 'chart.js'
-import { computed, defineEmits, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Line } from 'vue-chartjs'
 import {
   Chart,

@@ -1,7 +1,7 @@
 interface Data {
   Sensor?: string // no need to be provided
   Timestamp: string
-  Data: any
+  // Data: any
 }
 
 interface LDDS45RawData {
@@ -21,4 +21,23 @@ export interface RawData extends Data {
   Data: SensorData // TODO: RawData should be able to take various
 }
 
-export interface CalibratedData extends Data {}
+interface CalibratedDataPoints {
+  Volume?: CalibratedDataType;
+  UvIndex?: CalibratedDataType;
+  WindSpeed?: CalibratedDataType;
+  WindDirection?: CalibratedDataType;
+  RainfallHourly?: CalibratedDataType;
+  BarometricPressure?: CalibratedDataType;
+}
+
+interface CalibratedDataType {
+  // Define properties of CalibratedDataType here
+  // For example:
+  Data: number;
+  Unit: string;
+}
+
+
+export interface CalibratedData extends Data {
+  DataPoints: CalibratedDataPoints;
+}

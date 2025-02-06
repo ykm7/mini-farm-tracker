@@ -107,6 +107,42 @@ func handleWebhook(c *gin.Context, server *Server) {
 
 	case S2120:
 		// TODO:
+
+		data := SensorData{
+			S2120: &S2120RawData{},
+		}
+
+		err = data.S2120.Unmarshal(jsonData)
+
+		if err != nil {
+			fmt.Printf("For payload (as string) %s and expected sensor %s have error %v", string(jsonData), S2120, err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"status": fmt.Sprintf("Error casting the decoded json: %v (as string: %s) to expected data type for: %s", jsonData, string(jsonData), S2120),
+			})
+			return
+		}
+
+		// TODO: handle validity
+		valid := true
+		dataPayload := RawData{
+			Timestamp: receivedAtTime,
+			Sensor:    &sensor.Id,
+			Data:      data,
+			Valid:     valid,
+		}
+		_, err := GetRawDataCollection(server.MongoDb).InsertOne(ctx, dataPayload)
+
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"status": fmt.Sprintf("Error trying to insert raw data %s\n", err),
+			})
+			return
+		}
+
+		if valid {
+			storeLDDS45CalibratedData(ctx, server.MongoDb, sensor.Id, data.LDDS45, receivedAtTime)
+		}
+
 	default:
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"status": fmt.Sprintf("For sensor: %s unknown model type to handle: %s\n", sensor.Id, sensor.Model),
@@ -208,8 +244,12 @@ func storeLDDS45CalibratedData(
 			calibrated := CalibratedData{
 				Timestamp: receivedAtTime,
 				Sensor:    sensorId,
-				Data:      litres,
-				Units:     METRES_CUBE,
+				DataPoints: CalibratedDataPoints{
+					Volume: &CalibratedDataType{
+						Data:  litres,
+						Units: METRES_CUBE,
+					},
+				},
 			}
 
 			_, err = GetCalibratedDataCollection(mongoDb).InsertOne(ctx, calibrated)

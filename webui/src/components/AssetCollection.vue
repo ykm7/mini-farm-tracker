@@ -10,7 +10,7 @@
           <div>
             <a>Metrics:</a>
             <CListGroup flush v-for="metric in asset.Metrics">
-              <CListGroupItem><label>Volume:</label> {{ metric?.Volume }} litres</CListGroupItem>
+              <CListGroupItem v-if="metric?.Volume"><label>Volume:</label> {{ metric.Volume }} litres</CListGroupItem>
             </CListGroup>
           </div>
 
@@ -127,12 +127,18 @@ const pullCalibratedDataFn = async (
       `${BASE_URL}/api/sensors/${asset.Sensors[0]}/data/calibrated_data?${params.toString()}`,
     )
 
-    const convertedData: DisplayPoint[] = response.data.map<DisplayPoint>((c: CalibratedData) => {
+    const convertedData: DisplayPoint[] = response.data
+    .filter((c: CalibratedData) => {
+      return c.DataPoints.Volume
+    })
+    .map<DisplayPoint>((c: CalibratedData) => {
+      console.log("🚀 ~ c:", c)
       return {
         timestamp: c.Timestamp,
-        value: c.Data,
+        value: c.DataPoints.Volume?.Data!,
       }
     })
+    
 
     return convertedData
   } catch (e) {
