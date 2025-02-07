@@ -9,7 +9,9 @@
           <div class="card-details">
             <CCardTitle>{{ sensor.Id }}</CCardTitle>
             <!-- <CCardSubtitle class="mb-2 text-body-secondary">{{ asset.Id }}</CCardSubtitle> -->
-            <CCardBody>{{ sensor.Description }}</CCardBody>
+            <CCardBody
+              ><div>{{ sensor.Description }}</div></CCardBody
+            >
           </div>
           <div class="card-graph">
             <div class="group-section">
@@ -111,21 +113,19 @@ const pullSensorData = async (
       `${BASE_URL}/api/sensors/${sensor.Id}/data/raw_data?${params.toString()}`,
     )
 
-    response.data.forEach(d => {
+    response.data.forEach((d) => {
       if (d.Data.LDDS45) {
         if (graphData.Raw == null) {
           graphData.Raw = {
             unit: 'mm',
-            data: []
+            data: [],
           }
         }
 
-        graphData.Raw?.data.push(
-          {
-            value: d.Data.LDDS45.Distance.split(' ')[0] as unknown as number,
-            timestamp: d.Timestamp,
-          }
-        )
+        graphData.Raw?.data.push({
+          value: d.Data.LDDS45.Distance.split(' ')[0] as unknown as number,
+          timestamp: d.Timestamp,
+        })
       }
     })
 
@@ -138,6 +138,11 @@ const pullSensorData = async (
 </script>
 
 <style scoped>
+.card-title {
+  text-align: center;
+  margin-top: var(--cui-card-spacer-y);
+}
+
 table {
   width: 100%;
   background-color: rgba(255, 255, 255, 0.1);
