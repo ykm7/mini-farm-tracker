@@ -5,24 +5,26 @@
       <CCard class="card-holder" style="margin: 0.5rem 0">
         <div class="card-details">
           <CCardTitle>{{ asset.Name }}</CCardTitle>
-          <CCardBody>{{ asset.Description }}</CCardBody>
+          <CCardBody>
+            <div>{{ asset.Description }}</div>
+            <div>
+              <a>Metrics:</a>
+              <CListGroup flush v-for="metric in asset.Metrics">
+                <CListGroupItem v-if="metric?.Volume"
+                  ><label>Volume:</label> {{ metric.Volume }} litres</CListGroupItem
+                >
+              </CListGroup>
+            </div>
 
-          <div>
-            <a>Metrics:</a>
-            <CListGroup flush v-for="metric in asset.Metrics">
-              <CListGroupItem v-if="metric?.Volume"
-                ><label>Volume:</label> {{ metric.Volume }} litres</CListGroupItem
-              >
-            </CListGroup>
-          </div>
-
-          <div>
-            <a>Attached Sensors:</a>
-            <CListGroup flush v-for="sensor in asset.Sensors">
-              <CListGroupItem>{{ sensor }}</CListGroupItem>
-            </CListGroup>
-          </div>
+            <div>
+              <a>Attached Sensors:</a>
+              <CListGroup flush v-for="sensor in asset.Sensors">
+                <CListGroupItem>{{ sensor }}</CListGroupItem>
+              </CListGroup>
+            </div>
+          </CCardBody>
         </div>
+
         <div class="card-graph">
           <div class="group-section">
             <AsyncWrapper :promise="assetToData.get(asset.Id)!">
@@ -144,6 +146,20 @@ const pullCalibratedDataFn = async (
           timestamp: d.Timestamp,
         })
       }
+
+      if (d.DataPoints.AirTemperature) {
+        if (graphData.AirTemperature == null) {
+          graphData.AirTemperature = {
+            data: [],
+            unit: d.DataPoints.AirTemperature.Unit as Unit,
+          }
+        }
+
+        graphData.AirTemperature.data.push({
+          value: d.DataPoints.AirTemperature.Data,
+          timestamp: d.Timestamp,
+        })
+      }
     })
     console.log('🚀 ~ graphData:', graphData)
     return graphData
@@ -153,4 +169,9 @@ const pullCalibratedDataFn = async (
   }
 }
 </script>
-<style scoped></style>
+<style scoped>
+.card-title {
+  text-align: center;
+  margin-top: var(--cui-card-spacer-y);
+}
+</style>
