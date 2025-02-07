@@ -318,8 +318,8 @@ type S2120RawDataStatus struct {
 	BatteryPercent  *any    `json:"Battery(%),omitempty" bson:"Battery(%),omitempty"`
 	HardwareVersion *string `json:"Hardware Version,omitempty" bson:"Hardware Version,omitempty"`
 	FirmwareVersion *string `json:"Firmware Version,omitempty" bson:"Firmware Version,omitempty"`
-	MeasureInterval *int    `json:"measureInterval,omitempty" bson:"measureInterval,omitempty"`
-	GpsInterval     *int    `json:"gpsInterval,omitempty" bson:"gpsInterval,omitempty"`
+	MeasureInterval *int    `json:"MeasureInterval,omitempty" bson:"measureInterval,omitempty"`
+	GpsInterval     *int    `json:"GpsInterval,omitempty" bson:"gpsInterval,omitempty"`
 }
 
 func (s *S2120RawDataStatus) is() {}
@@ -353,15 +353,15 @@ Available from the different:
 https://cdn.shopify.com/s/files/1/1386/3791/files/SenseCAP_S2120_LoRaWAN_8-in-1_Weather_Station_User_Guide.pdf?v=1662178525
 */
 type CalibratedDataPoints struct {
-	Volume             *CalibratedDataType `bson:"volume,omitempty"`
-	AirTemperature     *CalibratedDataType `bson:"airTemperature,omitempty"`
-	AirHumidity        *CalibratedDataType `bson:"airHumidity,omitempty"`
-	LightIntensity     *CalibratedDataType `bson:"lightIntensity,omitempty"`
-	UVIndex            *CalibratedDataType `bson:"uvIndex,omitempty"`
-	WindSpeed          *CalibratedDataType `bson:"windSpeed,omitempty"`
-	WindDirection      *CalibratedDataType `bson:"windDirection,omitempty"`
-	RainfallHourly     *CalibratedDataType `bson:"rainfallHourly,omitempty"`
-	BarometricPressure *CalibratedDataType `bson:"barometricPressure,omitempty"`
+	Volume             *CalibratedDataType `json:"Volume,omitempty" bson:"volume,omitempty"`
+	AirTemperature     *CalibratedDataType `json:"AirTemperature,omitempty" bson:"airTemperature,omitempty"`
+	AirHumidity        *CalibratedDataType `json:"AirHumidity,omitempty" bson:"airHumidity,omitempty"`
+	LightIntensity     *CalibratedDataType `json:"LightIntensity,omitempty" bson:"lightIntensity,omitempty"`
+	UVIndex            *CalibratedDataType `json:"UvIndex,omitempty" bson:"uvIndex,omitempty"`
+	WindSpeed          *CalibratedDataType `json:"WindSpeed,omitempty" bson:"windSpeed,omitempty"`
+	WindDirection      *CalibratedDataType `json:"WindDirection,omitempty" bson:"windDirection,omitempty"`
+	RainfallHourly     *CalibratedDataType `json:"RainfallHourly,omitempty" bson:"rainfallHourly,omitempty"`
+	BarometricPressure *CalibratedDataType `json:"bBarometricPressure,omitempty" bson:"barometricPressure,omitempty"`
 }
 
 type CalibratedDataType struct {
