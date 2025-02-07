@@ -11,13 +11,24 @@
         <li><router-link to="/sensor">Sensors</router-link></li>
       </ul>
     </nav>
+    <div>
+      <!-- <h1>Weather Information</h1> -->
+      <!-- <WeatherWidget :lat="'-33.6668553'" :long="'115.0810599'" :openWeatherApiKey="'<YOUR-OPEN-WEATHER-API-KEY>'" /> -->
+      <!-- <vue-weather
+        api-key="<your-open-weather-map-api-key>"
+        units="uk"
+        latitude="24.8864"
+        longitude="91.8807"
+      /> -->
+    </div>
     <div class="user-info">
       <span class="username">Default User (Reader)</span>
     </div>
   </header>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+</script>
 
 <style scoped>
 .dashboard-header {

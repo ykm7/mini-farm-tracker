@@ -77,8 +77,9 @@ func (s *syncCacheImpl[K, V]) Delete(key K) {
 }
 
 type environmentVariables struct {
-	ttn_webhhook_api string
-	mongo_conn       string
+	Ttn_webhhook_api string
+	Mongo_conn       string
+	Open_weather_api string
 }
 
 func ContextWithQuitChannel(parent context.Context, quit <-chan struct{}) (context.Context, context.CancelFunc) {
@@ -102,8 +103,9 @@ func ReadEnvs() *environmentVariables {
 	}
 
 	return &environmentVariables{
-		ttn_webhhook_api: os.Getenv("TTN_WEBHOOK_API"),
-		mongo_conn:       os.Getenv("MONGO_CONN"),
+		Ttn_webhhook_api: os.Getenv("TTN_WEBHOOK_API"),
+		Mongo_conn:       os.Getenv("MONGO_CONN"),
+		Open_weather_api: os.Getenv("OPEN_WEATHER_API"),
 	}
 }
 

@@ -35,10 +35,12 @@
         ALL
       </button>
     </div>
-
     <div class="graph-wrapper">
+      <!-- <div>
+        {{  availableOptions }}
+      </div> -->
       <Line
-        v-if="displayData.length > 0 && rawDataGraph?.datasets.length > 0"
+        v-if="rawDataGraph?.datasets.length > 0"
         class="graph-custom-wrapper"
         :options="chartOptions"
         :data="rawDataGraph"
@@ -50,7 +52,7 @@
 
 <script setup lang="ts" generic="T">
 import type { ChartData, ChartOptions, Point, ChartDataset } from 'chart.js'
-import { computed, defineEmits, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import { Line } from 'vue-chartjs'
 import {
   Chart,
@@ -64,18 +66,19 @@ import {
 } from 'chart.js'
 import 'chartjs-adapter-moment'
 import { ONE_DAY, ONE_HOUR, ONE_MONTH, ONE_WEEK, ONE_YEAR, ALL_YEARS } from '@/helper'
-import type { DisplayPoint } from '@/types/GraphRelated'
+import type { DisplayPoint, GraphData, GraphDataType, KeyOf, Unit } from '@/types/GraphRelated'
 
 Chart.register(TimeScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 const props = defineProps<{
   item: T
-  displayData: DisplayPoint[]
+  displayData: GraphData
   lineLabel: string
   emptyLabel: string
   title: string
-  yAxisUnit: 'mm' | 'cm' | 'm' | 'm³' | 'L'
 }>()
+
+const computedDisplayData = computed(() => toRaw(props.displayData))
 
 const emit = defineEmits<{
   (e: 'update-starting-date', item: T, startingOffset: number): void
@@ -83,29 +86,72 @@ const emit = defineEmits<{
 
 const selectedPeriod = ref(0)
 
-onMounted(() => {
-  // Simply tester
-  // let counter = 1
-  // setInterval(() => {
-  //   emit('update-starting-date', props.item, ONE_DAY * counter)
-  //   counter++
-  // }, 5000)
-  // emit('update-starting-date', props.item, ONE_WEEK)
-  selectTimePeriod(ONE_WEEK)
+interface SelectedGraph {
+  key: KeyOf<GraphData>
+  value: GraphDataType
+}
+
+const availableOptions = computed<KeyOf<GraphData>[]>(() => {
+  const keys = Object.keys(props.displayData)
+  if (keys.length === 0) {
+    return []
+  } else {
+    return keys as KeyOf<GraphData>[]
+  }
 })
+
+const selectedGraphType = ref<SelectedGraph | undefined>()
+
+onMounted(() => {
+  selectTimePeriod(ONE_WEEK)
+  // setDefaultGraph(props.displayData)
+})
+
+watch(
+  computedDisplayData,
+  (newMap, oldMap) => {
+  // console.log("🚀 ~ oldMap:", oldMap)
+  // // console.log("🚀 ~ newMap, oldMap:", newMap, oldMap)
+
+  setDefaultGraph(newMap)
+
+}, {deep: true})
 
 const selectTimePeriod = (period: number) => {
   selectedPeriod.value = period
   emit('update-starting-date', props.item, period)
 }
 
+const setDefaultGraph = (displayData: GraphData) => {
+  // console.log("🚀 ~ setDefaultGraph ~ displayData:", displayData)
+  // If "raw" is set, that should be the only entry.
+
+  // TODO: Very brittle currently... only allowing for a single value to be available.
+  const singleOption = displayData[availableOptions.value[0]]
+
+  if (singleOption != null) {
+    selectedGraphType.value = {
+      key: "Raw",
+      value: singleOption
+    }
+  } 
+}
+
 const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
+  const current = selectedGraphType.value
+  // console.log("🚀 ~ current:", current)
+  if (current == null ) {
+    return {
+      datasets: []
+    }
+  }
+
   return {
     datasets: [
       {
         label: props.lineLabel,
         data: props.displayData
-          ? props.displayData.map<Point>((v) => {
+          ? current.value.data.map<Point>((v) => {
               return {
                 x: v.timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
                 y: v.value,
@@ -133,6 +179,11 @@ const dynamicTimeUnit = (dataPoints: DisplayPoint[]) => {
 }
 
 const chartOptions = computed<ChartOptions<'line'>>(() => {
+  const current = selectedGraphType.value
+  if (current == null ) {
+    return {}
+  }
+
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -141,7 +192,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
       x: {
         type: 'time',
         time: {
-          unit: rawDataGraph.value ? dynamicTimeUnit(props.displayData) : undefined,
+          unit: rawDataGraph.value ? dynamicTimeUnit(current.value.data) : undefined,
           displayFormats: {
             minute: 'HH:mm',
             hour: 'DD MMM HH:mm',
@@ -164,7 +215,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
       y: {
         title: {
           display: true,
-          text: `Value (${props.yAxisUnit})`,
+          text: `Value (${current.value.unit})`,
         },
         ticks: {
           color: 'black',

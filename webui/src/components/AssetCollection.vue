@@ -10,7 +10,9 @@
           <div>
             <a>Metrics:</a>
             <CListGroup flush v-for="metric in asset.Metrics">
-              <CListGroupItem><label>Volume:</label> {{ metric?.Volume }} litres</CListGroupItem>
+              <CListGroupItem v-if="metric?.Volume"
+                ><label>Volume:</label> {{ metric.Volume }} litres</CListGroupItem
+              >
             </CListGroup>
           </div>
 
@@ -54,7 +56,7 @@ import { computed, ref, watch } from 'vue'
 import { CCard, CCardBody, CCardTitle, CListGroup, CListGroupItem } from '@coreui/vue'
 import axios from 'axios'
 import type { CalibratedData } from '@/models/Data'
-import type { DisplayPoint } from '@/types/GraphRelated'
+import type { DisplayPoint, GraphData, Unit } from '@/types/GraphRelated'
 import type { ObjectId } from '@/types/ObjectId'
 
 const BASE_URL: string = import.meta.env.VITE_BASE_URL
@@ -62,7 +64,7 @@ const assetCollection = useAssetStore()
 
 const assets = computed<Asset[]>(() => assetCollection.assets)
 const assetIdToStarting = ref<Map<ObjectId, number>>(new Map())
-const assetToData = ref<Map<ObjectId, Promise<DisplayPoint[]>>>(new Map())
+const assetToData = ref<Map<ObjectId, Promise<GraphData>>>(new Map())
 
 function handleUpdateStartingTimeEvent(asset: Asset, startingOffset: number) {
   const newMap = new Map(assetIdToStarting.value)
@@ -74,13 +76,13 @@ watch(
   assets,
   (newAssets, _) => {
     newAssets.forEach((a) => {
-      assetToData.value.set(a.Id, Promise.resolve([]))
+      assetToData.value.set(a.Id, Promise.resolve({}))
     })
   },
   { immediate: true },
 )
 
-const firstMapSet = ref<boolean>(true)
+// const firstMapSet = ref<boolean>(true)
 watch(
   assetIdToStarting,
   (newMap, oldMap) => {
@@ -96,10 +98,9 @@ watch(
             newValue,
           ),
         )
-        firstMapSet.value = false
+        // firstMapSet.value = false
       }
     })
-        
   },
   { deep: true },
 )
@@ -108,7 +109,7 @@ const pullCalibratedDataFn = async (
   asset: Asset,
   startOffset: number,
   endOffset: number = 0,
-): Promise<DisplayPoint[]> => {
+): Promise<GraphData> => {
   const now = new Date()
   const start = new Date(now.getTime() - startOffset)
   const end = new Date(now.getTime() - endOffset)
@@ -118,8 +119,10 @@ const pullCalibratedDataFn = async (
     end: end.toISOString(),
   })
 
+  const graphData: GraphData = {}
+
   if (!(asset.Sensors && asset.Sensors?.length > 0)) {
-    return []
+    return graphData
   }
   try {
     // TODO: Handle multiple sensors on a asset
@@ -127,17 +130,26 @@ const pullCalibratedDataFn = async (
       `${BASE_URL}/api/sensors/${asset.Sensors[0]}/data/calibrated_data?${params.toString()}`,
     )
 
-    const convertedData: DisplayPoint[] = response.data.map<DisplayPoint>((c: CalibratedData) => {
-      return {
-        timestamp: c.Timestamp,
-        value: c.Data,
+    response.data.forEach((d: CalibratedData) => {
+      if (d.DataPoints.Volume) {
+        if (graphData.Volume == null) {
+          graphData.Volume = {
+            data: [],
+            unit: d.DataPoints.Volume.Unit as Unit,
+          }
+        }
+
+        graphData.Volume!.data.push({
+          value: d.DataPoints.Volume.Data,
+          timestamp: d.Timestamp,
+        })
       }
     })
-
-    return convertedData
+    console.log('🚀 ~ graphData:', graphData)
+    return graphData
   } catch (e) {
     console.warn(e)
-    return []
+    return {}
   }
 }
 </script>

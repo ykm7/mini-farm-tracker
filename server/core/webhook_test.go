@@ -291,6 +291,114 @@ func Test_handleWebhook(t *testing.T) {
 		expected expected
 	}{
 		{
+			name:    "Valid 'S2120RawData' data",
+			runTest: true,
+			args: args{
+				additionalHeaders: http.Header{
+					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
+				},
+				server: &Server{
+					Envs: &environmentVariables{
+						Ttn_webhhook_api: "RANDOM_TEST_KEY",
+					},
+					Sensors: &syncCacheImpl[string, Sensor]{
+						cache: map[string]Sensor{
+							MOCK_DEVICE_ID: {
+								Id:    MOCK_SENSOR_ID,
+								Model: S2120,
+							},
+						},
+					},
+				},
+				uplinkMessage: createMockUplinkMessage(
+					MOCK_DEVICE_ID,
+					MOCK_RECEIVED_AT,
+					map[string]interface{}{
+						"err":     0,
+						"payload": "",
+						"valid":   true,
+						"messages": []map[string]interface{}{
+							{
+								"measurementValue": 1.44,
+								"measurementId":    "555",
+								"type":             string(RainGauge),
+							},
+							{
+								"measurementValue": 0.5,
+								"measurementId":    "4104",
+								"type":             string(WindDirectionSensor),
+							},
+						},
+					},
+				),
+				preData: CollectionToData{
+					sensorConfigurations: CollectionWrapper[SensorConfiguration]{
+						data: []SensorConfiguration{
+							{
+								Sensor:  MOCK_SENSOR_ID,
+								Asset:   MOCK_ASSET_ID,
+								Applied: mockConvertTimeStringToMongoTime("2025-01-26T13:35:18.467+00:00"),
+							},
+						},
+					},
+					assets: CollectionWrapper[Asset]{
+						data: []Asset{
+							{
+								Id: MOCK_ASSET_ID,
+							},
+						},
+					},
+				},
+			},
+			expected: expected{
+				code: http.StatusOK,
+				message: map[string]string{
+					"message": "Webhook received successfully",
+				},
+				postData: DateExpectedToFind{
+					rawData: []RawData{
+						{
+							Timestamp: mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
+							Sensor:    &MOCK_SENSOR_ID,
+							Valid:     true,
+							Data: SensorData{
+								S2120: &S2120RawData{
+									Messages: []S2120RawDataMsg{
+										&S2120RawDataMeasurement{
+											MeasurementId:    "555",
+											MeasurementValue: 1.44,
+											Type:             RainGauge,
+										},
+										&S2120RawDataMeasurement{
+											MeasurementId:    "4104",
+											MeasurementValue: 0.5,
+											Type:             WindDirectionSensor,
+										},
+									},
+								},
+							},
+						},
+					},
+					calibratedData: []CalibratedData{
+						{
+							Timestamp: mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
+							Sensor:    MOCK_SENSOR_ID,
+							DataPoints: CalibratedDataPoints{
+								RainfallHourly: &CalibratedDataType{
+									Data:  1.44,
+									Units: MM_PER_HOUR,
+								},
+								WindDirection: &CalibratedDataType{
+									Data:  0.5,
+									Units: DEGREE,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name:    "Valid 'LDDS45RawData' data",
 			runTest: true,
 			args: args{
@@ -299,7 +407,7 @@ func Test_handleWebhook(t *testing.T) {
 				},
 				server: &Server{
 					Envs: &environmentVariables{
-						ttn_webhhook_api: "RANDOM_TEST_KEY",
+						Ttn_webhhook_api: "RANDOM_TEST_KEY",
 					},
 					Sensors: &syncCacheImpl[string, Sensor]{
 						cache: map[string]Sensor{
@@ -386,8 +494,12 @@ func Test_handleWebhook(t *testing.T) {
 						{
 							Timestamp: mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
 							Sensor:    MOCK_SENSOR_ID,
-							Data:      float64(62517.69),
-							Units:     METRES_CUBE,
+							DataPoints: CalibratedDataPoints{
+								Volume: &CalibratedDataType{
+									Data:  float64(62517.69),
+									Units: METRES_CUBE,
+								},
+							},
 						},
 					},
 				},

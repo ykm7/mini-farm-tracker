@@ -77,6 +77,14 @@ flowchart TD
 
 [User Manual](https://wiki.dragino.com/xwiki/bin/view/Main/User%20Manual%20for%20LoRaWAN%20End%20Nodes/LDDS45%20-%20LoRaWAN%20Distance%20Detection%20Sensor%20User%20Manual/)
 
+## Weather sensor - S2120 
+
+[Purchase Location](https://www.iot-store.com.au/products/sensecap-s2120-lorawn-weather-station)
+
+[Guide](https://cdn.shopify.com/s/files/1/1386/3791/files/SenseCAP_S2120_LoRaWAN_8-in-1_Weather_Station_User_Guide.pdf?v=1662178525)
+
+[Payload Decoding](https://github.com/Seeed-Solution/TTN-Payload-Decoder/blob/master/README.md)
+
 # Hosting
 
 ## WebUI
@@ -104,6 +112,11 @@ Domain established within DigitalOcean directing to droplet:
 `mini-farm-tracker.io`
 
 DNS Records are configured within DigitalOcean to allow for vercel website to be sued.
+
+## Weather
+
+https://openweathermap.org/price
+
 
 ### Development
 

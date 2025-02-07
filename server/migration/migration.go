@@ -52,6 +52,71 @@ func (lDDS45RawData *OldLDDS45RawData) DetermineValid() bool {
 type OldRandomRawData struct {
 }
 
+func V1OfCalibratedDataToV2(database *mongo.Database) {
+	// const batchSize = 1
+	calibratedCollectionName := string(core.CALIBRATED_DATA_COLLECTION)
+	tempcalibratedCollectionName := fmt.Sprintf("TEMP_%s", calibratedCollectionName)
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.D{{Key: "dataPoints", Value: bson.D{{Key: "$exists", Value: false}}}}}},
+		// Sort by timestamp
+		{{Key: "$sort", Value: bson.D{{Key: "timestamp", Value: 1}}}},
+		// Add limit. Partly so this can run efficently within a loop, however useful to test it works too.
+		// bson.D{{Key: "$limit", Value: batchSize}},
+		{{Key: "$addFields", Value: bson.D{
+			{Key: "dataPoints", Value: bson.D{
+				{Key: "volume", Value: bson.D{
+					{Key: "units", Value: "$units"},
+					{Key: "data", Value: "$data"},
+				},
+				},
+			}},
+		}}},
+		bson.D{{Key: "$unset", Value: bson.A{
+			"units",
+			"data",
+		}}},
+		{{Key: "$out", Value: tempcalibratedCollectionName}},
+	}
+
+	cursor, err := database.Collection(calibratedCollectionName).Aggregate(context.Background(), pipeline)
+
+	if err != nil {
+		panic(err)
+	}
+
+	var results []bson.M
+	if err = cursor.All(context.Background(), &results); err != nil {
+		log.Fatal(err)
+	}
+
+	batchCount := len(results)
+	fmt.Printf("Processed documents: %d\n", batchCount)
+
+	// Now, read from the temp collection and insert into the time series collection
+	tempCursor, err := database.Collection(tempcalibratedCollectionName).Find(context.Background(), bson.M{})
+	if err != nil {
+		panic(err)
+	}
+	defer tempCursor.Close(context.Background())
+
+	var documents []interface{}
+	for tempCursor.Next(context.Background()) {
+		var doc bson.M
+		if err := tempCursor.Decode(&doc); err != nil {
+			panic(err)
+		}
+		documents = append(documents, doc)
+	}
+
+	if len(documents) > 0 {
+		_, err = database.Collection(calibratedCollectionName).InsertMany(context.Background(), documents)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 /*
 *
 Due to the raw_data collection being a timeseries collection, I need to write the data to a temp collection
@@ -139,5 +204,5 @@ func main() {
 	// mongoDb := &core.MongoDatabaseImpl{Db: database}
 	defer mongoDeferFn()
 
-	V1OfRawDataToV2(database)
+	V1OfCalibratedDataToV2(database)
 }

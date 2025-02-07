@@ -18,7 +18,7 @@
                   <TimeseriesGraph
                     :item="sensor"
                     @update-starting-date="handleUpdateStartingTimeEvent"
-                    :displayData="data ? data : []"
+                    :displayData="data ? data : {}"
                     emptyLabel="No data available for this sensor"
                     yAxisUnit="mm"
                     lineLabel="Distance"
@@ -44,13 +44,13 @@ import axios from 'axios'
 import type { RawData } from '@/models/Data'
 import type { Sensor } from '@/models/Sensor'
 import { useSensorStore } from '@/stores/sensor'
-import type { DisplayPoint } from '@/types/GraphRelated'
+import type { GraphData } from '@/types/GraphRelated'
 
 const BASE_URL: string = import.meta.env.VITE_BASE_URL
 const sensorCollection = useSensorStore()
 const sensors = computed<Sensor[]>(() => sensorCollection.sensors)
 const sensorIdToStarting = ref<Map<string, number>>(new Map())
-const sensorToData = ref<Map<string, Promise<DisplayPoint[]>>>(new Map())
+const sensorToData = ref<Map<string, Promise<GraphData>>>(new Map())
 
 function handleUpdateStartingTimeEvent(sensor: Sensor, startingOffset: number) {
   const newMap = new Map(sensorIdToStarting.value)
@@ -62,13 +62,13 @@ watch(
   sensors,
   (newSensors, _) => {
     newSensors.forEach((s) => {
-      sensorToData.value.set(s.Id, Promise.resolve([]))
+      sensorToData.value.set(s.Id, Promise.resolve({}))
     })
   },
   { immediate: true },
 )
 
-const firstMapSet = ref<boolean>(true)
+// const firstMapSet = ref<boolean>(true)
 watch(
   sensorIdToStarting,
   (newMap, oldMap) => {
@@ -82,7 +82,7 @@ watch(
           pullSensorData(sensors.value.find((s) => s.Id === key)!, newValue),
         )
 
-        firstMapSet.value = false
+        // firstMapSet.value = false
       }
       // }
     })
@@ -94,10 +94,12 @@ const pullSensorData = async (
   sensor: Sensor,
   startOffset: number,
   endOffset: number = 0,
-): Promise<DisplayPoint[]> => {
+): Promise<GraphData> => {
   const now = new Date()
   const start = new Date(now.getTime() - startOffset)
   const end = new Date(now.getTime() - endOffset)
+
+  const graphData: GraphData = {}
 
   const params = new URLSearchParams({
     start: start.toISOString(),
@@ -109,37 +111,28 @@ const pullSensorData = async (
       `${BASE_URL}/api/sensors/${sensor.Id}/data/raw_data?${params.toString()}`,
     )
 
-    const convertedData: DisplayPoint[] = response.data
-      // TODO: We only care to remove this filtered value WHEN looking at the raw output. Things like battery are still valid
-      // .filter((d: RawData) => {
-      //   return d?.Valid !== false
-      // })
-      .filter(d => {
-        if (d.Data.LDDS45) {
-          return true
-        } else {
-          return false
-        }
-      })
-      .map<DisplayPoint>((d: RawData) => {
-        if (d.Data.LDDS45) {
-          return {
-            timestamp: d.Timestamp,
-            value: d.Data.LDDS45.Distance.split(' ')[0] as unknown as number,
-          }
-        } else {
-          // Shouldn't need/care about this as the filter should catch all
-          return {
-            timestamp: "0",
-            value: 0
+    response.data.forEach(d => {
+      if (d.Data.LDDS45) {
+        if (graphData.Raw == null) {
+          graphData.Raw = {
+            unit: 'mm',
+            data: []
           }
         }
-      })
 
-    return convertedData
+        graphData.Raw?.data.push(
+          {
+            value: d.Data.LDDS45.Distance.split(' ')[0] as unknown as number,
+            timestamp: d.Timestamp,
+          }
+        )
+      }
+    })
+
+    return graphData
   } catch (e) {
     console.warn(e)
-    return []
+    return {}
   }
 }
 </script>

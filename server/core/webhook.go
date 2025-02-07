@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -17,82 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-/*
-https://www.thethingsindustries.com/docs/the-things-stack/concepts/data-formats/#uplink-messages
-*/
-type UplinkMessage struct {
-	EndDeviceIDs struct {
-		DeviceID       *string `json:"device_id,omitempty"`
-		ApplicationIDs struct {
-			ApplicationID *string `json:"application_id,omitempty"`
-		} `json:"application_ids"`
-		DevEUI  *string `json:"dev_eui,omitempty"`
-		JoinEUI *string `json:"join_eui,omitempty"`
-		DevAddr *string `json:"dev_addr,omitempty"`
-	} `json:"end_device_ids"`
-	CorrelationIDs *[]string `json:"correlation_ids,omitempty"`
-	ReceivedAt     *string   `json:"received_at,omitempty"`
-	UplinkMessage  struct {
-		SessionKeyID   *string                `json:"session_key_id,omitempty"`
-		FCount         *int                   `json:"f_cnt,omitempty"`
-		FPort          *int                   `json:"f_port,omitempty"`
-		FrmPayload     *string                `json:"frm_payload,omitempty"`
-		DecodedPayload map[string]interface{} `json:"decoded_payload,omitempty"`
-		RxMetadata     []struct {
-			GatewayIDs struct {
-				GatewayID *string `json:"gateway_id,omitempty"`
-				EUI       *string `json:"eui,omitempty"`
-			} `json:"gateway_ids"`
-			Time         *string  `json:"time,omitempty"`
-			Timestamp    *int64   `json:"timestamp,omitempty"`
-			RSSI         *int     `json:"rssi,omitempty"`
-			ChannelRSSI  *int     `json:"channel_rssi,omitempty"`
-			SNR          *float64 `json:"snr,omitempty"`
-			UplinkToken  *string  `json:"uplink_token,omitempty"`
-			ChannelIndex *int     `json:"channel_index,omitempty"`
-			Location     struct {
-				Latitude  *float64 `json:"latitude,omitempty"`
-				Longitude *float64 `json:"longitude,omitempty"`
-				Altitude  *int     `json:"altitude,omitempty"`
-				Source    *string  `json:"source,omitempty"`
-			} `json:"location"`
-		} `json:"rx_metadata,omitempty"`
-		Settings struct {
-			DataRate struct {
-				Lora struct {
-					Bandwidth       *int `json:"bandwidth,omitempty"`
-					SpreadingFactor *int `json:"spreading_factor,omitempty"`
-				} `json:"lora"`
-			} `json:"data_rate"`
-			CodingRate *string `json:"coding_rate,omitempty"`
-			Frequency  *string `json:"frequency,omitempty"`
-			Timestamp  *int64  `json:"timestamp,omitempty"`
-			Time       *string `json:"time,omitempty"`
-		} `json:"settings"`
-		ReceivedAt      *string `json:"received_at,omitempty"`
-		ConsumedAirtime *string `json:"consumed_airtime,omitempty"`
-		Locations       map[string]struct {
-			Latitude  *float64 `json:"latitude,omitempty"`
-			Longitude *float64 `json:"longitude,omitempty"`
-			Altitude  *int     `json:"altitude,omitempty"`
-			Source    *string  `json:"source,omitempty"`
-		} `json:"locations,omitempty"`
-		VersionIDs struct {
-			BrandID         *string `json:"brand_id,omitempty"`
-			ModelID         *string `json:"model_id,omitempty"`
-			HardwareVersion *string `json:"hardware_version,omitempty"`
-			FirmwareVersion *string `json:"firmware_version,omitempty"`
-			BandID          *string `json:"band_id,omitempty"`
-		} `json:"version_ids"`
-		NetworkIDs struct {
-			NetID     *string `json:"net_id,omitempty"`
-			TenantID  *string `json:"tenant_id,omitempty"`
-			ClusterID *string `json:"cluster_id,omitempty"`
-		} `json:"network_ids"`
-		Simulated bool `json:"simulated"` // Keep as is since bool can't be nil
-	} `json:"uplink_message"`
-}
-
 func handleWebhook(c *gin.Context, server *Server) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -104,7 +27,7 @@ func handleWebhook(c *gin.Context, server *Server) {
 	}
 
 	// Verify API Sign
-	if apiKey != server.Envs.ttn_webhhook_api {
+	if apiKey != server.Envs.Ttn_webhhook_api {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Webhook env is invalid"})
 		return
 	}
@@ -178,8 +101,57 @@ func handleWebhook(c *gin.Context, server *Server) {
 		}
 
 		if valid {
-			storeLDDS45CalibratedData(ctx, server.MongoDb, sensor.Id, data.LDDS45, receivedAtTime)
+			if err := storeLDDS45CalibratedData(ctx, server.MongoDb, sensor.Id, data.LDDS45, receivedAtTime); err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+					"status": fmt.Sprintf("Error trying to process calibrated data for %s %s\n", sensor.Model, err),
+				})
+				return
+			}
 		}
+
+	case S2120:
+		data := SensorData{
+			S2120: &S2120RawData{},
+		}
+
+		err = json.Unmarshal(jsonData, &data.S2120)
+
+		// err = data.S2120.Unmarshal(jsonData)
+
+		if err != nil {
+			fmt.Printf("For payload (as string) %s and expected sensor %s have error %v", string(jsonData), S2120, err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"status": fmt.Sprintf("Error casting the decoded json: %v (as string: %s) to expected data type for: %s", jsonData, string(jsonData), S2120),
+			})
+			return
+		}
+
+		// TODO: handle validity
+		valid := true
+		dataPayload := RawData{
+			Timestamp: receivedAtTime,
+			Sensor:    &sensor.Id,
+			Data:      data,
+			Valid:     valid,
+		}
+		_, err := GetRawDataCollection(server.MongoDb).InsertOne(ctx, dataPayload)
+
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"status": fmt.Sprintf("Error trying to insert raw data %s\n", err),
+			})
+			return
+		}
+
+		if valid {
+			if err := storeS2120CalibratedData(ctx, server.MongoDb, sensor.Id, data.S2120, receivedAtTime); err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+					"status": fmt.Sprintf("Error trying to process calibrated data for %s %s\n", sensor.Model, err),
+				})
+				return
+			}
+		}
+
 	default:
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"status": fmt.Sprintf("For sensor: %s unknown model type to handle: %s\n", sensor.Id, sensor.Model),
@@ -189,6 +161,148 @@ func handleWebhook(c *gin.Context, server *Server) {
 
 	// Respond with a success status
 	c.JSON(http.StatusOK, gin.H{"message": "Webhook received successfully"})
+}
+
+func storeS2120CalibratedData(
+	ctx context.Context,
+	mongoDb MongoDatabase,
+	sensorId string,
+	data *S2120RawData,
+	receivedAtTime primitive.DateTime) error {
+	sensorConfig := SensorConfiguration{}
+	if err := GetSensorConfigurationCollection(mongoDb).FindOne(ctx, bson.M{
+		"sensor": sensorId,
+	}, &sensorConfig); err != nil {
+		// 404 is a successful return
+		if err == mongo.ErrNoDocuments {
+			return nil
+		}
+
+		return err
+	}
+
+	asset := Asset{}
+	if err := GetAssetsCollection(mongoDb).FindOne(ctx, bson.M{
+		"_id": sensorConfig.Asset,
+	}, &asset); err != nil {
+		// 404 is a successful return
+		if err == mongo.ErrNoDocuments {
+			return nil
+		}
+
+		return err
+	}
+
+	// Uniquely (atleast, in comparision to the LDDS45 sensor, there is no modification prior to storing the values)
+	// However, they are to be "flattened" to be accessible via a single flat struct instead of within the raw messages slices
+	parsingErr := fmt.Errorf("errors:\n")
+	additionalErrors := fmt.Errorf("")
+	dataPoint := CalibratedDataPoints{}
+	for _, msg := range data.Messages {
+		switch t := msg.(type) {
+		case *S2120RawDataMeasurement:
+			value := t.MeasurementValue
+
+			switch v := t.Type; v {
+			case AirTemperature:
+				if v, ok := value.(float64); ok {
+					dataPoint.AirTemperature = &CalibratedDataType{
+						Data:  v,
+						Units: DEGREE_C,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(AirTemperature), value)
+				}
+
+			case AirHumidity:
+				if v, ok := value.(int16); ok {
+					dataPoint.AirHumidity = &CalibratedDataType{
+						Data:  float64(v),
+						Units: AIR_HUMIDITY,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (int16)\n", additionalErrors, string(AirHumidity), value)
+				}
+
+			case LightIntensity:
+				if v, ok := value.(int16); ok {
+					dataPoint.LightIntensity = &CalibratedDataType{
+						Data:  float64(v),
+						Units: LUX,
+					}
+
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (int16)\n", additionalErrors, string(LightIntensity), value)
+				}
+
+			case UVIndex:
+				if v, ok := value.(float64); ok {
+					dataPoint.UVIndex = &CalibratedDataType{
+						Data:  v,
+						Units: UV_INDEX,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(UVIndex), value)
+				}
+			case WindSpeed:
+				if v, ok := value.(float64); ok {
+					dataPoint.WindSpeed = &CalibratedDataType{
+						Data:  v,
+						Units: M_PER_SEC,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(WindSpeed), value)
+				}
+
+			case WindDirectionSensor:
+				if v, ok := value.(float64); ok {
+					dataPoint.WindDirection = &CalibratedDataType{
+						Data:  v,
+						Units: DEGREE,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(WindDirectionSensor), value)
+				}
+
+			case RainGauge:
+				if v, ok := value.(float64); ok {
+					dataPoint.RainfallHourly = &CalibratedDataType{
+						Data:  v,
+						Units: MM_PER_HOUR,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(RainGauge), value)
+				}
+
+			case BarometricPressure:
+				if v, ok := value.(int16); ok {
+					dataPoint.BarometricPressure = &CalibratedDataType{
+						Data:  float64(v),
+						Units: PRESSURE,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (int16)\n", additionalErrors, string(BarometricPressure), value)
+				}
+			}
+		}
+	}
+
+	if additionalErrors.Error() != "" {
+		return fmt.Errorf("%w %w", parsingErr, additionalErrors)
+	}
+
+	calibrated := CalibratedData{
+		Timestamp:  receivedAtTime,
+		Sensor:     sensorId,
+		DataPoints: dataPoint,
+	}
+
+	_, err := GetCalibratedDataCollection(mongoDb).InsertOne(ctx, calibrated)
+	if err != nil {
+		return fmt.Errorf("Error trying to insert calibrated data %w\n", err)
+	}
+
+	return nil
 }
 
 func storeLDDS45CalibratedData(
@@ -212,9 +326,6 @@ func storeLDDS45CalibratedData(
 
 		return err
 	}
-
-	log.Printf("Sensor configuration: %s found\n", sensorConfig.Id)
-	// find the asset attached.
 
 	asset := Asset{}
 	if err := GetAssetsCollection(mongoDb).FindOne(ctx, bson.M{
@@ -276,8 +387,12 @@ func storeLDDS45CalibratedData(
 			calibrated := CalibratedData{
 				Timestamp: receivedAtTime,
 				Sensor:    sensorId,
-				Data:      litres,
-				Units:     METRES_CUBE,
+				DataPoints: CalibratedDataPoints{
+					Volume: &CalibratedDataType{
+						Data:  litres,
+						Units: METRES_CUBE,
+					},
+				},
 			}
 
 			_, err = GetCalibratedDataCollection(mongoDb).InsertOne(ctx, calibrated)
