@@ -35,9 +35,6 @@
                     @update-starting-date="handleUpdateStartingTimeEvent"
                     :displayData="data"
                     emptyLabel="No calibrated data available for this asset"
-                    yAxisUnit="L"
-                    lineLabel="Litres"
-                    title="Water in tank"
                   />
                 </div>
               </template>
