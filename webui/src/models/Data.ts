@@ -4,7 +4,7 @@ interface Data {
   // Data: any
 }
 
-interface LDDS45RawData {
+export interface LDDS45RawData {
   Bat: number
   Distance: string
   Interrupt_flag: number
@@ -23,6 +23,9 @@ export interface RawData extends Data {
 
 interface CalibratedDataPoints {
   Volume?: CalibratedDataType;
+  AirTemperature?: CalibratedDataType;
+  AirHumidity?: CalibratedDataType;
+  LightIntensity?: CalibratedDataType;
   UvIndex?: CalibratedDataType;
   WindSpeed?: CalibratedDataType;
   WindDirection?: CalibratedDataType;
