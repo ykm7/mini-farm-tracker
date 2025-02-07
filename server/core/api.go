@@ -69,7 +69,7 @@ func getRawDataWithSensorId(c *gin.Context, server *Server) {
 	}
 
 	switch sensor.Model {
-	case LDDS45:
+	case LDDS45, S2120:
 		results, err := GetRawDataCollection(server.MongoDb).Find(
 			ctx,
 			bson.D{
@@ -142,7 +142,7 @@ func getCalibratedDataWithSensorId(c *gin.Context, server *Server) {
 	}
 
 	switch sensor.Model {
-	case LDDS45:
+	case LDDS45, S2120:
 		results, err := GetCalibratedDataCollection(server.MongoDb).Find(
 			ctx,
 			bson.D{
