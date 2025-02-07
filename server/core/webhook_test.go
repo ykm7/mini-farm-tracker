@@ -318,10 +318,15 @@ func Test_handleWebhook(t *testing.T) {
 						"payload": "",
 						"valid":   true,
 						"messages": []map[string]interface{}{
-							map[string]interface{}{
-								"measurementValue": "",
-								"measurementId":    "",
+							{
+								"measurementValue": 1.44,
+								"measurementId":    "555",
 								"type":             string(RainGauge),
+							},
+							{
+								"measurementValue": 0.5,
+								"measurementId":    "4104",
+								"type":             string(WindDirectionSensor),
 							},
 						},
 					},
@@ -333,20 +338,6 @@ func Test_handleWebhook(t *testing.T) {
 								Sensor:  MOCK_SENSOR_ID,
 								Asset:   MOCK_ASSET_ID,
 								Applied: mockConvertTimeStringToMongoTime("2025-01-26T13:35:18.467+00:00"),
-								Offset: &struct {
-									Distance *struct {
-										Distance float64 "bson:\"distance\""
-										Units    UNITS   "bson:\"units\""
-									} "bson:\"distance\""
-								}{
-									Distance: &struct {
-										Distance float64 "bson:\"distance\""
-										Units    UNITS   "bson:\"units\""
-									}{
-										Distance: 0,
-										Units:    METRES,
-									},
-								},
 							},
 						},
 					},
@@ -354,12 +345,6 @@ func Test_handleWebhook(t *testing.T) {
 						data: []Asset{
 							{
 								Id: MOCK_ASSET_ID,
-								Metrics: &AssetMetrics{
-									Volume: &AssetMetricsCylinderVolume{
-										Radius: float64(5),
-										Height: float64(2.2),
-									},
-								},
 							},
 						},
 					},
@@ -377,12 +362,19 @@ func Test_handleWebhook(t *testing.T) {
 							Sensor:    &MOCK_SENSOR_ID,
 							Valid:     true,
 							Data: SensorData{
-								LDDS45: &LDDS45RawData{
-									Battery:      3.413,
-									Distance:     "1404 mm",
-									InterruptPin: 0,
-									Temperature:  "0.00",
-									SensorFlag:   1,
+								S2120: &S2120RawData{
+									Messages: []S2120RawDataMsg{
+										&S2120RawDataMeasurement{
+											MeasurementId:    "555",
+											MeasurementValue: 1.44,
+											Type:             RainGauge,
+										},
+										&S2120RawDataMeasurement{
+											MeasurementId:    "4104",
+											MeasurementValue: 0.5,
+											Type:             WindDirectionSensor,
+										},
+									},
 								},
 							},
 						},
@@ -392,9 +384,13 @@ func Test_handleWebhook(t *testing.T) {
 							Timestamp: mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
 							Sensor:    MOCK_SENSOR_ID,
 							DataPoints: CalibratedDataPoints{
-								Volume: &CalibratedDataType{
-									Data:  float64(62517.69),
-									Units: METRES_CUBE,
+								RainfallHourly: &CalibratedDataType{
+									Data:  1.44,
+									Units: MM_PER_HOUR,
+								},
+								WindDirection: &CalibratedDataType{
+									Data:  0.5,
+									Units: DEGREE,
 								},
 							},
 						},

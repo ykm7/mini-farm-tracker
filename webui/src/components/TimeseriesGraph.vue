@@ -84,13 +84,6 @@ const emit = defineEmits<{
 const selectedPeriod = ref(0)
 
 onMounted(() => {
-  // Simply tester
-  // let counter = 1
-  // setInterval(() => {
-  //   emit('update-starting-date', props.item, ONE_DAY * counter)
-  //   counter++
-  // }, 5000)
-  // emit('update-starting-date', props.item, ONE_WEEK)
   selectTimePeriod(ONE_WEEK)
 })
 

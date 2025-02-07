@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -102,17 +101,22 @@ func handleWebhook(c *gin.Context, server *Server) {
 		}
 
 		if valid {
-			storeLDDS45CalibratedData(ctx, server.MongoDb, sensor.Id, data.LDDS45, receivedAtTime)
+			if err := storeLDDS45CalibratedData(ctx, server.MongoDb, sensor.Id, data.LDDS45, receivedAtTime); err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+					"status": fmt.Sprintf("Error trying to process calibrated data for %s %s\n", sensor.Model, err),
+				})
+				return
+			}
 		}
 
 	case S2120:
-		// TODO:
-
 		data := SensorData{
 			S2120: &S2120RawData{},
 		}
 
-		err = data.S2120.Unmarshal(jsonData)
+		err = json.Unmarshal(jsonData, &data.S2120)
+
+		// err = data.S2120.Unmarshal(jsonData)
 
 		if err != nil {
 			fmt.Printf("For payload (as string) %s and expected sensor %s have error %v", string(jsonData), S2120, err)
@@ -140,7 +144,12 @@ func handleWebhook(c *gin.Context, server *Server) {
 		}
 
 		if valid {
-			storeLDDS45CalibratedData(ctx, server.MongoDb, sensor.Id, data.LDDS45, receivedAtTime)
+			if err := storeS2120CalibratedData(ctx, server.MongoDb, sensor.Id, data.S2120, receivedAtTime); err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+					"status": fmt.Sprintf("Error trying to process calibrated data for %s %s\n", sensor.Model, err),
+				})
+				return
+			}
 		}
 
 	default:
@@ -154,7 +163,144 @@ func handleWebhook(c *gin.Context, server *Server) {
 	c.JSON(http.StatusOK, gin.H{"message": "Webhook received successfully"})
 }
 
-func storeS2120CalibratedData() error {
+func storeS2120CalibratedData(
+	ctx context.Context,
+	mongoDb MongoDatabase,
+	sensorId string,
+	data *S2120RawData,
+	receivedAtTime primitive.DateTime) error {
+	sensorConfig := SensorConfiguration{}
+	if err := GetSensorConfigurationCollection(mongoDb).FindOne(ctx, bson.M{
+		"sensor": sensorId,
+	}, &sensorConfig); err != nil {
+		// 404 is a successful return
+		if err == mongo.ErrNoDocuments {
+			return nil
+		}
+
+		return err
+	}
+
+	asset := Asset{}
+	if err := GetAssetsCollection(mongoDb).FindOne(ctx, bson.M{
+		"_id": sensorConfig.Asset,
+	}, &asset); err != nil {
+		// 404 is a successful return
+		if err == mongo.ErrNoDocuments {
+			return nil
+		}
+
+		return err
+	}
+
+	// Uniquely (atleast, in comparision to the LDDS45 sensor, there is no modification prior to storing the values)
+	// However, they are to be "flattened" to be accessible via a single flat struct instead of within the raw messages slices
+	parsingErr := fmt.Errorf("errors:\n")
+	additionalErrors := fmt.Errorf("")
+	dataPoint := CalibratedDataPoints{}
+	for _, msg := range data.Messages {
+		switch t := msg.(type) {
+		case *S2120RawDataMeasurement:
+			value := t.MeasurementValue
+
+			switch v := t.Type; v {
+			case AirTemperature:
+				if v, ok := value.(float64); ok {
+					dataPoint.AirTemperature = &CalibratedDataType{
+						Data:  v,
+						Units: DEGREE_C,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(AirTemperature), value)
+				}
+
+			case AirHumidity:
+				if v, ok := value.(int16); ok {
+					dataPoint.AirHumidity = &CalibratedDataType{
+						Data:  float64(v),
+						Units: AIR_HUMIDITY,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (int16)\n", additionalErrors, string(AirHumidity), value)
+				}
+
+			case LightIntensity:
+				if v, ok := value.(int16); ok {
+					dataPoint.LightIntensity = &CalibratedDataType{
+						Data:  float64(v),
+						Units: LUX,
+					}
+
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (int16)\n", additionalErrors, string(LightIntensity), value)
+				}
+
+			case UVIndex:
+				if v, ok := value.(float64); ok {
+					dataPoint.UVIndex = &CalibratedDataType{
+						Data:  v,
+						Units: UV_INDEX,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(UVIndex), value)
+				}
+			case WindSpeed:
+				if v, ok := value.(float64); ok {
+					dataPoint.WindSpeed = &CalibratedDataType{
+						Data:  v,
+						Units: M_PER_SEC,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(WindSpeed), value)
+				}
+
+			case WindDirectionSensor:
+				if v, ok := value.(float64); ok {
+					dataPoint.WindDirection = &CalibratedDataType{
+						Data:  v,
+						Units: DEGREE,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(WindDirectionSensor), value)
+				}
+
+			case RainGauge:
+				if v, ok := value.(float64); ok {
+					dataPoint.RainfallHourly = &CalibratedDataType{
+						Data:  v,
+						Units: MM_PER_HOUR,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(RainGauge), value)
+				}
+
+			case BarometricPressure:
+				if v, ok := value.(int16); ok {
+					dataPoint.BarometricPressure = &CalibratedDataType{
+						Data:  float64(v),
+						Units: PRESSURE,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (int16)\n", additionalErrors, string(BarometricPressure), value)
+				}
+			}
+		}
+	}
+
+	if additionalErrors.Error() != "" {
+		return fmt.Errorf("%w %w", parsingErr, additionalErrors)
+	}
+
+	calibrated := CalibratedData{
+		Timestamp:  receivedAtTime,
+		Sensor:     sensorId,
+		DataPoints: dataPoint,
+	}
+
+	_, err := GetCalibratedDataCollection(mongoDb).InsertOne(ctx, calibrated)
+	if err != nil {
+		return fmt.Errorf("Error trying to insert calibrated data %w\n", err)
+	}
 
 	return nil
 }
@@ -180,9 +326,6 @@ func storeLDDS45CalibratedData(
 
 		return err
 	}
-
-	log.Printf("Sensor configuration: %s found\n", sensorConfig.Id)
-	// find the asset attached.
 
 	asset := Asset{}
 	if err := GetAssetsCollection(mongoDb).FindOne(ctx, bson.M{

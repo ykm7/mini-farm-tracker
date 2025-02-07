@@ -6,6 +6,7 @@ import (
 	"math"
 	"strings"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -31,16 +32,19 @@ const (
 type UNITS string
 
 const (
-	UV_INDEX    UNITS = ""
-	MM_METRE    UNITS = "mm"
-	CM_METRE    UNITS = "cm"
-	METRES      UNITS = "m"
-	METRES_CUBE UNITS = "m³"
-	LITRES      UNITS = "L"
-	MM_PER_HOUR UNITS = "mm/hr"
-	M_PER_SEC   UNITS = "m/s"
-	DEGREE      UNITS = "°"
-	PRESSURE    UNITS = "Pa"
+	UV_INDEX     UNITS = ""
+	MM_METRE     UNITS = "mm"
+	CM_METRE     UNITS = "cm"
+	METRES       UNITS = "m"
+	METRES_CUBE  UNITS = "m³"
+	LITRES       UNITS = "L"
+	MM_PER_HOUR  UNITS = "mm/hr"
+	M_PER_SEC    UNITS = "m/s"
+	DEGREE_C     UNITS = "℃"
+	DEGREE       UNITS = "℃"
+	PRESSURE     UNITS = "Pa"
+	AIR_HUMIDITY UNITS = "%RH"
+	LUX          UNITS = "Lux"
 )
 
 func StringToUnits(s string) (UNITS, error) {
@@ -127,13 +131,24 @@ type RawDataFns interface {
 Raw result from within the TTN payload. [mini-farm-tracker-server] [2025-01-21 07:14:44] 2025/01/21 07:14:44 'Decoded' payload: map[Bat:3.402 Distance:1752 mm Interrupt_flag:0 Sensor_flag:1 TempC_DS18B20:0.00]
 
 Uplink formatter added to within the TTN when selecting the device from the repository.
+
+TODO: Correct this in the future
+JSON parsing for extracting from webhook
+BSON for internal (and API)
+Keeping the field names consistent for now. Need to migrate data.
+
+Battery      float64 `json:"Bat" bson:"battery"`       // units are 'mv'
+Distance     string  `json:"Distance" bson:"Distance"` // units are 'mm'
+InterruptPin uint8   `json:"Interrupt_flag" bson:"interruptPin"`
+Temperature  string  `json:"TempC_DS18B20" bson:"temperature"` // units are 'c'
+SensorFlag   uint8   `json:"Sensor_flag" bson:"sensorFlag"`
 */
 type LDDS45RawData struct {
-	Battery      float64 `json:"Bat"`      // units are 'mv'
-	Distance     string  `json:"Distance"` // units are 'mm'
-	InterruptPin uint8   `json:"Interrupt_flag"`
-	Temperature  string  `json:"TempC_DS18B20"` // units are 'c'
-	SensorFlag   uint8   `json:"Sensor_flag"`
+	Battery      float64 `json:"Bat" bson:"battery"`       // units are 'mv'
+	Distance     string  `json:"Distance" bson:"distance"` // units are 'mm'
+	InterruptPin uint8   `json:"Interrupt_flag" bson:"interrupt_flag"`
+	Temperature  string  `json:"TempC_DS18B20" bson:"tempC_DS18B20"` // units are 'c'
+	SensorFlag   uint8   `json:"Sensor_flag" bson:"sensor_flag"`
 }
 
 func (lDDS45RawData *LDDS45RawData) determineValid() bool {
@@ -150,13 +165,13 @@ Based on decoder from:
 https://github.com/Seeed-Solution/TTN-Payload-Decoder/blob/master/SenseCAP_S2120_Weather_Station_Decoder.js#L110
 */
 type S2120RawData struct {
-	Err      int               `json:"err"`
-	Payload  string            `json:"payload"`
-	Valid    bool              `json:"valid"`
-	Messages []S2120RawDataMsg `json:"messages"`
+	Err      int               `json:"err" bson:"err"`
+	Payload  string            `json:"payload" bson:"payload"`
+	Valid    bool              `json:"valid" bson:"valid"`
+	Messages []S2120RawDataMsg `json:"messages" bson:"messages"`
 }
 
-func (s *S2120RawData) Unmarshal(data []byte) error {
+func (s *S2120RawData) UnmarshalJSON(data []byte) error {
 	type Alias S2120RawData
 	aux := &struct {
 		Messages []json.RawMessage `json:"messages"`
@@ -171,15 +186,15 @@ func (s *S2120RawData) Unmarshal(data []byte) error {
 
 	s.Messages = make([]S2120RawDataMsg, len(aux.Messages))
 	for idx, raw := range aux.Messages {
-		var rawMeasurement *S2120RawDataMeasurement
+		var rawMeasurement S2120RawDataMeasurement
 		if err := json.Unmarshal(raw, &rawMeasurement); err == nil {
-			s.Messages[idx] = rawMeasurement
+			s.Messages[idx] = &rawMeasurement
 			continue
 		}
 
-		var rawStatus *S2120RawDataStatus
+		var rawStatus S2120RawDataStatus
 		if err := json.Unmarshal(raw, &rawStatus); err == nil {
-			s.Messages[idx] = rawStatus
+			s.Messages[idx] = &rawStatus
 			continue
 		}
 
@@ -188,6 +203,82 @@ func (s *S2120RawData) Unmarshal(data []byte) error {
 
 	return nil
 }
+
+func (s *S2120RawData) UnmarshalBSON(data []byte) error {
+	type Alias S2120RawData
+	aux := &struct {
+		Messages []bson.Raw `bson:"messages"`
+		*Alias
+	}{
+		Alias: (*Alias)(s),
+	}
+
+	if err := bson.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	s.Messages = make([]S2120RawDataMsg, len(aux.Messages))
+	for idx, raw := range aux.Messages {
+		var rawMeasurement S2120RawDataMeasurement
+		if err := bson.Unmarshal(raw, &rawMeasurement); err == nil {
+			s.Messages[idx] = &rawMeasurement
+			continue
+		}
+
+		var rawStatus S2120RawDataStatus
+		if err := bson.Unmarshal(raw, &rawStatus); err == nil {
+			s.Messages[idx] = &rawStatus
+			continue
+		}
+
+		return fmt.Errorf("unable to determine type for S2120RawData message %s", string(raw))
+	}
+
+	return nil
+}
+
+// func (s S2120RawData) MarshalBSON() ([]byte, error) {
+// 	type Alias S2120RawData
+// 	return bson.Marshal(&struct {
+// 		Messages []bson.Raw `bson:"messages"`
+// 		*Alias
+// 	}{
+// 		Alias: (*Alias)(&s),
+// 	})
+// }
+
+// func (s *S2120RawData) Unmarshal(data []byte) error {
+// 	type Alias S2120RawData
+// 	aux := &struct {
+// 		Messages []json.RawMessage `bson:"messages"`
+// 		*Alias
+// 	}{
+// 		Alias: (*Alias)(s),
+// 	}
+
+// 	if err := json.Unmarshal(data, &aux); err != nil {
+// 		return err
+// 	}
+
+// 	s.Messages = make([]S2120RawDataMsg, len(aux.Messages))
+// 	for idx, raw := range aux.Messages {
+// 		var rawMeasurement *S2120RawDataMeasurement
+// 		if err := json.Unmarshal(raw, &rawMeasurement); err == nil {
+// 			s.Messages[idx] = rawMeasurement
+// 			continue
+// 		}
+
+// 		var rawStatus *S2120RawDataStatus
+// 		if err := json.Unmarshal(raw, &rawStatus); err == nil {
+// 			s.Messages[idx] = rawStatus
+// 			continue
+// 		}
+
+// 		return fmt.Errorf("unable to determine type for S2120RawData message %s", string(raw))
+// 	}
+
+// 	return nil
+// }
 
 type S2120RawDataMsg interface {
 	is()
@@ -213,9 +304,9 @@ const (
 )
 
 type S2120RawDataMeasurement struct {
-	MeasurementValue any                         `json:"measurementValue"`
-	MeasurementId    string                      `json:"measurementId"`
-	Type             S2120RawDataMeasurementType `json:"type"`
+	MeasurementValue any                         `json:"measurementValue" bson:"measurementValue"`
+	MeasurementId    string                      `json:"measurementId" bson:"measurementId"`
+	Type             S2120RawDataMeasurementType `json:"type" bson:"type"`
 }
 
 func (s *S2120RawDataMeasurement) is() {}
@@ -224,11 +315,11 @@ type S2120RawDataStatus struct {
 	/**
 	string|number
 	*/
-	BatteryPercent  *any    `json:"Battery(%),omitempty"`
-	HardwareVersion *string `json:"Hardware Version,omitempty"`
-	FirmwareVersion *string `json:"Firmware Version,omitempty"`
-	MeasureInterval *int    `json:"measureInterval,omitempty"`
-	GpsInterval     *int    `json:"gpsInterval,omitempty"`
+	BatteryPercent  *any    `json:"Battery(%),omitempty" bson:"Battery(%),omitempty"`
+	HardwareVersion *string `json:"Hardware Version,omitempty" bson:"Hardware Version,omitempty"`
+	FirmwareVersion *string `json:"Firmware Version,omitempty" bson:"Firmware Version,omitempty"`
+	MeasureInterval *int    `json:"measureInterval,omitempty" bson:"measureInterval,omitempty"`
+	GpsInterval     *int    `json:"gpsInterval,omitempty" bson:"gpsInterval,omitempty"`
 }
 
 func (s *S2120RawDataStatus) is() {}
@@ -241,10 +332,10 @@ Based on the error message:
 	}]
 */
 type S2120RawDataError struct {
-	MeasurementValue any                          `json:"measurementValue"`
-	MeasurementId    string                       `json:"measurementId"`
-	Type             S2120RawDataMeasurementError `json:"type"`
-	ErrCode          [2]int                       `json:"errCode"`
+	MeasurementValue any                          `bson:"measurementValue"`
+	MeasurementId    string                       `bson:"measurementId"`
+	Type             S2120RawDataMeasurementError `bson:"type"`
+	ErrCode          [2]int                       `bson:"errCode"`
 }
 
 type S2120RawDataStatusMsg struct {
@@ -263,6 +354,9 @@ https://cdn.shopify.com/s/files/1/1386/3791/files/SenseCAP_S2120_LoRaWAN_8-in-1_
 */
 type CalibratedDataPoints struct {
 	Volume             *CalibratedDataType `bson:"volume,omitempty"`
+	AirTemperature     *CalibratedDataType `bson:"airTemperature,omitempty"`
+	AirHumidity        *CalibratedDataType `bson:"airHumidity,omitempty"`
+	LightIntensity     *CalibratedDataType `bson:"lightIntensity,omitempty"`
 	UVIndex            *CalibratedDataType `bson:"uvIndex,omitempty"`
 	WindSpeed          *CalibratedDataType `bson:"windSpeed,omitempty"`
 	WindDirection      *CalibratedDataType `bson:"windDirection,omitempty"`
