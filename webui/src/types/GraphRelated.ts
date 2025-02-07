@@ -24,7 +24,7 @@ export interface GraphDataType {
 
 export type KeyOf<T> = keyof T;
 
-export interface GraphData {
+export class GraphData {
   Raw?: GraphDataType; // Maybe??
   Volume?: GraphDataType;
   AirTemperature?: GraphDataType;
@@ -37,8 +37,8 @@ export interface GraphData {
   BarometricPressure?: GraphDataType;
 }
 
-// export const createGraphData = (): GraphData => {
-//   return {
+export const createGraphData = (): GraphData => {
+  return {
 
-//   }
-// }
+  }
+}

@@ -35,8 +35,10 @@
         ALL
       </button>
     </div>
-
     <div class="graph-wrapper">
+      <!-- <div>
+        {{  availableOptions }}
+      </div> -->
       <Line
         v-if="rawDataGraph?.datasets.length > 0"
         class="graph-custom-wrapper"
@@ -89,6 +91,15 @@ interface SelectedGraph {
   value: GraphDataType
 }
 
+const availableOptions = computed<KeyOf<GraphData>[]>(() => {
+  const keys = Object.keys(props.displayData)
+  if (keys.length === 0) {
+    return []
+  } else {
+    return keys as KeyOf<GraphData>[]
+  }
+})
+
 const selectedGraphType = ref<SelectedGraph | undefined>()
 
 onMounted(() => {
@@ -99,8 +110,8 @@ onMounted(() => {
 watch(
   computedDisplayData,
   (newMap, oldMap) => {
-  console.log("🚀 ~ oldMap:", oldMap)
-  // console.log("🚀 ~ newMap, oldMap:", newMap, oldMap)
+  // console.log("🚀 ~ oldMap:", oldMap)
+  // // console.log("🚀 ~ newMap, oldMap:", newMap, oldMap)
 
   setDefaultGraph(newMap)
 
@@ -112,19 +123,23 @@ const selectTimePeriod = (period: number) => {
 }
 
 const setDefaultGraph = (displayData: GraphData) => {
-  console.log("🚀 ~ setDefaultGraph ~ displayData:", displayData)
+  // console.log("🚀 ~ setDefaultGraph ~ displayData:", displayData)
   // If "raw" is set, that should be the only entry.
-  if (displayData.Raw != null) {
+
+  // TODO: Very brittle currently... only allowing for a single value to be available.
+  const singleOption = displayData[availableOptions.value[0]]
+
+  if (singleOption != null) {
     selectedGraphType.value = {
       key: "Raw",
-      value: displayData.Raw
+      value: singleOption
     }
   } 
 }
 
 const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
   const current = selectedGraphType.value
-  console.log("🚀 ~ current:", current)
+  // console.log("🚀 ~ current:", current)
   if (current == null ) {
     return {
       datasets: []

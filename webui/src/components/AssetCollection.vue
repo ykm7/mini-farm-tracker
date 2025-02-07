@@ -10,7 +10,9 @@
           <div>
             <a>Metrics:</a>
             <CListGroup flush v-for="metric in asset.Metrics">
-              <CListGroupItem v-if="metric?.Volume"><label>Volume:</label> {{ metric.Volume }} litres</CListGroupItem>
+              <CListGroupItem v-if="metric?.Volume"
+                ><label>Volume:</label> {{ metric.Volume }} litres</CListGroupItem
+              >
             </CListGroup>
           </div>
 
@@ -99,7 +101,6 @@ watch(
         // firstMapSet.value = false
       }
     })
-        
   },
   { deep: true },
 )
@@ -131,22 +132,20 @@ const pullCalibratedDataFn = async (
 
     response.data.forEach((d: CalibratedData) => {
       if (d.DataPoints.Volume) {
-        if (graphData.Volume != null) {
+        if (graphData.Volume == null) {
           graphData.Volume = {
             data: [],
-            unit: d.DataPoints.Volume.Unit as Unit
+            unit: d.DataPoints.Volume.Unit as Unit,
           }
         }
 
-        graphData.Volume?.data.push(
-          {
-            value: d.DataPoints.Volume.Data,
-            timestamp: d.Timestamp
-          }
-        )
+        graphData.Volume!.data.push({
+          value: d.DataPoints.Volume.Data,
+          timestamp: d.Timestamp,
+        })
       }
     })
-
+    console.log('🚀 ~ graphData:', graphData)
     return graphData
   } catch (e) {
     console.warn(e)
