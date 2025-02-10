@@ -25,7 +25,7 @@ function decodeUplink (input, port) {
     let dataId = item.dataId
     let dataValue = item.dataValue
     let messages = dataIdAndDataValueJudge(dataId, dataValue)
-    decoderArray.push(messages)
+    decoderArray.push(...messages)
   }
   result.messages = decoderArray
   return { data: result }
@@ -457,7 +457,7 @@ function bytes2HexString (arrBytes) {
 
 
 import { Decoder, hexStringToDecoderFormat } from "./custom.js";
-const raw = "4A0118300001C2754C00104B00360000000026C44C001C00000000";
+const raw = "4A01342C0001BF3858000C4B00360000000026BF4C001E00000000";
 
 // My own ones parsed from the S2120 device
 var sample = decodeUplink(Decoder(hexStringToDecoderFormat(raw), null));
