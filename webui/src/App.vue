@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterView } from 'vue-router'
 import { SpeedInsights } from '@vercel/speed-insights/vue';
+import { Analytics } from '@vercel/analytics/vue';
 </script>
 
 <template>
   <SpeedInsights />
+  <Analytics mode="production" />
   
   <RouterView />
 </template>
