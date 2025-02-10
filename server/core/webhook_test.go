@@ -253,17 +253,10 @@ type DateExpectedToFind struct {
 }
 
 func Test_handleWebhook(t *testing.T) {
-
-	// initEnvironmentVariables := &environmentVariables{}
-	// TODO: if the cache was queried multiple times within the function possible to open
-	// it up to race conditions. Worth being aware of when adding the configuration stuff in the future
-	// initsensorCache := map[string]Sensor{}
-
 	db, deferFn := MockSetupMongo(context.TODO())
 	mongoDb := &MongoDatabaseImpl{Db: db}
 	defer deferFn()
 
-	MOCK_DEVICE_ID := "MOCK_DEVICE_ID"
 	MOCK_SENSOR_ID := "112233445566778899"
 	MOCK_RECEIVED_AT := "2025-01-28T03:14:25.480959673Z"
 	MOCK_ASSET_ID := primitive.NewObjectID()
@@ -303,7 +296,7 @@ func Test_handleWebhook(t *testing.T) {
 					},
 					Sensors: &syncCacheImpl[string, Sensor]{
 						cache: map[string]Sensor{
-							MOCK_DEVICE_ID: {
+							MOCK_SENSOR_ID: {
 								Id:    MOCK_SENSOR_ID,
 								Model: S2120,
 							},
@@ -311,7 +304,7 @@ func Test_handleWebhook(t *testing.T) {
 					},
 				},
 				uplinkMessage: createMockUplinkMessage(
-					MOCK_DEVICE_ID,
+					MOCK_SENSOR_ID,
 					MOCK_RECEIVED_AT,
 					map[string]interface{}{
 						"err":     0,
@@ -411,7 +404,7 @@ func Test_handleWebhook(t *testing.T) {
 					},
 					Sensors: &syncCacheImpl[string, Sensor]{
 						cache: map[string]Sensor{
-							MOCK_DEVICE_ID: {
+							MOCK_SENSOR_ID: {
 								Id:    MOCK_SENSOR_ID,
 								Model: S2120,
 							},
@@ -419,7 +412,7 @@ func Test_handleWebhook(t *testing.T) {
 					},
 				},
 				uplinkMessage: createMockUplinkMessage(
-					MOCK_DEVICE_ID,
+					MOCK_SENSOR_ID,
 					MOCK_RECEIVED_AT,
 					map[string]interface{}{
 						"err":      0,
@@ -488,7 +481,7 @@ func Test_handleWebhook(t *testing.T) {
 					},
 					Sensors: &syncCacheImpl[string, Sensor]{
 						cache: map[string]Sensor{
-							MOCK_DEVICE_ID: {
+							MOCK_SENSOR_ID: {
 								Id:    MOCK_SENSOR_ID,
 								Model: S2120,
 							},
@@ -496,7 +489,7 @@ func Test_handleWebhook(t *testing.T) {
 					},
 				},
 				uplinkMessage: createMockUplinkMessage(
-					MOCK_DEVICE_ID,
+					MOCK_SENSOR_ID,
 					MOCK_RECEIVED_AT,
 					map[string]interface{}{},
 				),
@@ -540,7 +533,7 @@ func Test_handleWebhook(t *testing.T) {
 					},
 					Sensors: &syncCacheImpl[string, Sensor]{
 						cache: map[string]Sensor{
-							MOCK_DEVICE_ID: {
+							MOCK_SENSOR_ID: {
 								Id:    MOCK_SENSOR_ID,
 								Model: LDDS45,
 							},
@@ -548,7 +541,7 @@ func Test_handleWebhook(t *testing.T) {
 					},
 				},
 				uplinkMessage: createMockUplinkMessage(
-					MOCK_DEVICE_ID,
+					MOCK_SENSOR_ID,
 					MOCK_RECEIVED_AT,
 					map[string]interface{}{
 						"Bat":            3.413,
@@ -707,6 +700,21 @@ func Test_handleWebhook(t *testing.T) {
 
 			// Check that the data is valid
 			validateDataExistingsWithinMockDb(t, &tt.expected.postData, &tt.args.preData)
+
+			// TODO: Raw data
+
+			// calibrated data
+			// w = httptest.NewRecorder()
+			// mockCtx = MockGinContext(w)
+
+			// // mockCtx.Request.URL.RawPath = "api/sensors/2cf7f1c0613006fe/data/raw_data"
+
+			// MockJsonGet(mockCtx, gin.Params{{Key: SENSOR_ID_PARAM, Value: MOCK_SENSOR_ID}}, url.Values{})
+
+			// getCalibratedDataWithSensorId(mockCtx, tt.args.server)
+
+			// assert.Equal(t, tt.expected.code, w.Code)
+			// fmt.Println(w.Body.String())
 		})
 	}
 }
