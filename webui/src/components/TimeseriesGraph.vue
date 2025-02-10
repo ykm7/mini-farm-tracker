@@ -45,7 +45,7 @@
           <button
             @click="selectGraphOption(option)"
             :class="{ selected: selectedGraphType?.key === option }"
-            v-for="option in availableOptions"
+            v-for="option in availableOptions" :key="option"
           >
             {{ option }}
           </button>
@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts" generic="T">
-import type { ChartData, ChartOptions, Point, ChartDataset } from 'chart.js'
+import type { ChartData, ChartOptions, Point } from 'chart.js'
 import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import { Line } from 'vue-chartjs'
 import {
@@ -74,9 +74,14 @@ import {
 } from 'chart.js'
 import 'chartjs-adapter-moment'
 import { ONE_DAY, ONE_HOUR, ONE_MONTH, ONE_WEEK, ONE_YEAR, ALL_YEARS } from '@/helper'
-import type { DisplayPoint, GraphData, GraphDataType, KeyOf, Unit } from '@/types/GraphRelated'
+import type { DisplayPoint, GraphData, GraphDataType, KeyOf } from '@/types/GraphRelated'
 
 Chart.register(TimeScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
+
+interface SelectedGraph {
+  key: KeyOf<GraphData>
+  value: GraphDataType
+}
 
 interface ChartVisualSettings {
   title: string
@@ -89,19 +94,29 @@ const props = defineProps<{
   displayData: GraphData
 }>()
 
+const selectedGraphType = ref<SelectedGraph | undefined>()
+const selectedPeriod = ref(0)
+
 const computedDisplayData = computed(() => toRaw(props.displayData))
 
 const computedChartVisualSettings = computed<ChartVisualSettings>(() => {
   const currentData = toRaw(selectedGraphType.value)
-  if (currentData == null) {
-    return {
+  
+  const EMPTY = {
       emptyLabel: 'LABEL UNKNOWN',
       title: 'TITLE UNKNOWN',
       lineLabel: 'LINE LABEL UNKNOWN',
     }
+  
+  if (currentData == null) {
+    return EMPTY
   }
 
   const key = currentData.key
+  if (key == null) {
+    return EMPTY
+  }
+
   const lineLabel = currentData.value.unit
 
   switch (key) {
@@ -181,16 +196,8 @@ const emit = defineEmits<{
   (e: 'update-starting-date', item: T, startingOffset: number): void
 }>()
 
-const selectedPeriod = ref(0)
-
-interface SelectedGraph {
-  key: KeyOf<GraphData>
-  value: GraphDataType
-}
-
 const availableOptions = computed<KeyOf<GraphData>[]>(() => {
   const keys = Object.keys(props.displayData)
-  console.log('🚀 ~ keys:', keys)
   if (keys.length === 0) {
     return []
   } else {
@@ -198,16 +205,13 @@ const availableOptions = computed<KeyOf<GraphData>[]>(() => {
   }
 })
 
-const selectedGraphType = ref<SelectedGraph | undefined>()
-
 onMounted(() => {
   selectTimePeriod(ONE_WEEK)
-  // setDefaultGraph(props.displayData)
 })
 
 watch(
   computedDisplayData,
-  (newMap, oldMap) => {
+  (newMap, _) => {
     setDefaultGraph(newMap)
   },
   { deep: true },
@@ -234,7 +238,6 @@ const setDefaultGraph = (displayData: GraphData) => {
 
 const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
   const current = toRaw(selectedGraphType.value)
-  // console.log("🚀 ~ current:", current)
   if (current == null) {
     return {
       datasets: [],
@@ -281,7 +284,6 @@ const dynamicTimeUnit = (dataPoints: DisplayPoint[]) => {
 
 const chartOptions = computed<ChartOptions<'line'>>(() => {
   const current = selectedGraphType.value
-  console.log('🚀 ~ current:', current)
   if (current == null) {
     return {}
   }

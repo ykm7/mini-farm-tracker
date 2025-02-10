@@ -124,7 +124,6 @@ const pullCalibratedDataFn = async (
     return graphData
   }
   try {
-    // TODO: Handle multiple sensors on a asset
     const response = await axios.get<CalibratedData[]>(
       `${BASE_URL}/api/sensors/${asset.Sensors[0]}/data/calibrated_data?${params.toString()}`,
     )
