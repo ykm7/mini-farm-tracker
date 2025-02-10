@@ -22,5 +22,5 @@ watchEffect(async () => {
 </script>
 
 <template>
-  <slot v-if="data" :data="data"></slot>
+  <slot :data="data"></slot>
 </template>

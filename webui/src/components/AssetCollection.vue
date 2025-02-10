@@ -55,7 +55,7 @@ import { computed, ref, watch } from 'vue'
 import { CCard, CCardBody, CCardTitle, CListGroup, CListGroupItem } from '@coreui/vue'
 import axios from 'axios'
 import type { CalibratedData } from '@/models/Data'
-import type { DisplayPoint, GraphData, Unit } from '@/types/GraphRelated'
+import type { GraphData, Unit } from '@/types/GraphRelated'
 import type { ObjectId } from '@/types/ObjectId'
 
 const BASE_URL: string = import.meta.env.VITE_BASE_URL
@@ -81,7 +81,6 @@ watch(
   { immediate: true },
 )
 
-// const firstMapSet = ref<boolean>(true)
 watch(
   assetIdToStarting,
   (newMap, oldMap) => {
@@ -97,7 +96,6 @@ watch(
             newValue,
           ),
         )
-        // firstMapSet.value = false
       }
     })
   },
@@ -254,7 +252,7 @@ const pullCalibratedDataFn = async (
           timestamp: d.Timestamp,
         })
       }
-    })   
+    })
     return graphData
   } catch (e) {
     console.warn(e)

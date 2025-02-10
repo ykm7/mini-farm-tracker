@@ -44,7 +44,7 @@
         <div class="available-graph-data-options">
           <button
             @click="selectGraphOption(option)"
-            :class="{ selected: selectedGraphType?.key === option }"
+            :class="{ selected: selectedGraphType && selectedGraphType.key === option }"
             v-for="option in availableOptions" :key="option"
           >
             {{ option }}
@@ -94,7 +94,7 @@ const props = defineProps<{
   displayData: GraphData
 }>()
 
-const selectedGraphType = ref<SelectedGraph | undefined>()
+const selectedGraphType = ref<SelectedGraph | undefined>(undefined)
 const selectedPeriod = ref(0)
 
 const computedDisplayData = computed(() => toRaw(props.displayData))
@@ -225,7 +225,7 @@ const selectTimePeriod = (period: number) => {
 const selectGraphOption = (option: keyof GraphData) => {
   selectedGraphType.value = {
     key: option,
-    value: props.displayData[option]!,
+    value: toRaw(props.displayData[option]!),
   }
 }
 
@@ -238,7 +238,9 @@ const setDefaultGraph = (displayData: GraphData) => {
 
 const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
   const current = toRaw(selectedGraphType.value)
-  if (current == null) {
+  
+  // TODO: Figure out why I need the .key check
+  if (current == null || current.key == null) {
     return {
       datasets: [],
     }
@@ -254,7 +256,7 @@ const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
     datasets: [
       {
         label: computedChartVisualSettings.value.lineLabel,
-        data: props.displayData
+        data: props.displayData && current.value
           ? current.value.data.map<Point>((v) => {
               return {
                 x: v.timestamp as unknown as number, // TODO: FIX! I should be able to use the explicit casting above but this causes the 'Line' component to have issues
@@ -283,7 +285,7 @@ const dynamicTimeUnit = (dataPoints: DisplayPoint[]) => {
 }
 
 const chartOptions = computed<ChartOptions<'line'>>(() => {
-  const current = selectedGraphType.value
+  const current = toRaw(selectedGraphType.value)
   if (current == null) {
     return {}
   }
@@ -296,7 +298,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
       x: {
         type: 'time',
         time: {
-          unit: rawDataGraph.value ? dynamicTimeUnit(current.value.data) : undefined,
+          unit: rawDataGraph.value != null ? dynamicTimeUnit(current.value.data) : undefined,
           displayFormats: {
             minute: 'HH:mm',
             hour: 'DD MMM HH:mm',

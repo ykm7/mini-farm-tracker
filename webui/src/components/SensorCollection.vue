@@ -66,7 +66,6 @@ watch(
   { immediate: true },
 )
 
-// const firstMapSet = ref<boolean>(true)
 watch(
   sensorIdToStarting,
   (newMap, oldMap) => {
@@ -79,10 +78,7 @@ watch(
           key,
           pullSensorData(sensors.value.find((s) => s.Id === key)!, newValue),
         )
-
-        // firstMapSet.value = false
       }
-      // }
     })
   },
   { deep: true },
@@ -109,7 +105,7 @@ const pullSensorData = async (
       `${BASE_URL}/api/sensors/${sensor.Id}/data/raw_data?${params.toString()}`,
     )
 
-    response.data.forEach((d) => {
+    response.data.forEach((d: RawData) => {
       if (d.Data.LDDS45) {
         if (graphData.Raw == null) {
           graphData.Raw = {
