@@ -92,7 +92,7 @@ const props = defineProps<{
 const computedDisplayData = computed(() => toRaw(props.displayData))
 
 const computedChartVisualSettings = computed<ChartVisualSettings>(() => {
-  const currentData = computedDisplayData.value
+  const currentData = toRaw(selectedGraphType.value)
   if (currentData == null) {
     return {
       emptyLabel: 'LABEL UNKNOWN',
@@ -100,75 +100,80 @@ const computedChartVisualSettings = computed<ChartVisualSettings>(() => {
       lineLabel: 'LINE LABEL UNKNOWN',
     }
   }
-  
-  console.log("🚀 ~ currentData:", currentData)
 
-  if (currentData.Raw) {
-    return {
-      title: 'Distance measured by sensor',
-      emptyLabel: 'No data available for this sensor',
-      lineLabel: 'Distance',
-    }
-  } else if (currentData.Volume) {
-    return {
-      title: 'Water in tank',
-      emptyLabel: 'No calibrated data available for this sensor',
-      lineLabel: currentData.Volume.unit,
-    }
-  } else if (currentData.AirTemperature) {
-    return {
-      title: 'Current air temperature',
-      emptyLabel: 'No calibrated data available for this sensor',
-      lineLabel: currentData.AirTemperature.unit,
-    }
-  } else if (currentData.AirHumidity) {
-    return {
-      title: 'Current air humidity',
-      emptyLabel: 'No calibrated data available for this sensor',
-      lineLabel: currentData.AirHumidity.unit,
-    }
-  } else if (currentData.LightIntensity) {
-    return {
-      title: 'Current light intensity',
-      emptyLabel: 'No calibrated data available for this sensor',
-      lineLabel: currentData.LightIntensity.unit,
-    }
-  } else if (currentData.UvIndex) {
-    return {
-      title: 'Current UV index',
-      emptyLabel: 'No calibrated data available for this sensor',
-      lineLabel: currentData.UvIndex.unit,
-    }
-  } else if (currentData.WindSpeed) {
-    return {
-      title: 'Current wind speed',
-      emptyLabel: 'No calibrated data available for this sensor',
-      lineLabel: currentData.WindSpeed.unit,
-    }
-  } else if (currentData.WindDirection) {
-    return {
-      title: 'Current wind direction',
-      emptyLabel: 'No calibrated data available for this sensor',
-      lineLabel: currentData.WindDirection.unit,
-    }
-  } else if (currentData.RainfallHourly) {
-    return {
-      title: 'Current hourly rainfall',
-      emptyLabel: 'No calibrated data available for this sensor',
-      lineLabel: currentData.RainfallHourly.unit,
-    }
-  } else if (currentData.BarometricPressure) {
-    return {
-      title: 'Current barometric pressure',
-      emptyLabel: 'No calibrated data available for this sensor',
-      lineLabel: currentData.BarometricPressure.unit,
-    }
-  } else {
-    return {
-      emptyLabel: 'LABEL UNKNOWN',
-      title: 'TITLE UNKNOWN',
-      lineLabel: 'LINE LABEL UNKNOWN',
-    }
+  const key = currentData.key
+  const lineLabel = currentData.value.unit
+
+  switch (key) {
+    case 'Raw':
+      return {
+        title: 'Distance measured by sensor',
+        emptyLabel: 'No data available for this sensor',
+        lineLabel: 'Distance',
+      }
+
+    case 'Volume':
+      return {
+        title: 'Water in tank',
+        emptyLabel: 'No calibrated data available for this sensor',
+        lineLabel: lineLabel,
+      }
+
+    case 'AirTemperature':
+      return {
+        title: 'Current air temperature',
+        emptyLabel: 'No calibrated data available for this sensor',
+        lineLabel: lineLabel,
+      }
+
+    case 'AirHumidity':
+      return {
+        title: 'Current air humidity',
+        emptyLabel: 'No calibrated data available for this sensor',
+        lineLabel: lineLabel,
+      }
+
+    case 'LightIntensity':
+      return {
+        title: 'Current light intensity',
+        emptyLabel: 'No calibrated data available for this sensor',
+        lineLabel: lineLabel,
+      }
+
+    case 'UvIndex':
+      return {
+        title: 'Current UV index',
+        emptyLabel: 'No calibrated data available for this sensor',
+        lineLabel: lineLabel,
+      }
+
+    case 'WindSpeed':
+      return {
+        title: 'Current wind speed',
+        emptyLabel: 'No calibrated data available for this sensor',
+        lineLabel: lineLabel,
+      }
+
+    case 'WindDirection':
+      return {
+        title: 'Current wind direction',
+        emptyLabel: 'No calibrated data available for this sensor',
+        lineLabel: lineLabel,
+      }
+
+    case 'RainfallHourly':
+      return {
+        title: 'Current hourly rainfall',
+        emptyLabel: 'No calibrated data available for this sensor',
+        lineLabel: lineLabel,
+      }
+
+    case 'BarometricPressure':
+      return {
+        title: 'Current barometric pressure',
+        emptyLabel: 'No calibrated data available for this sensor',
+        lineLabel: lineLabel,
+      }
   }
 })
 
@@ -203,9 +208,6 @@ onMounted(() => {
 watch(
   computedDisplayData,
   (newMap, oldMap) => {
-    // console.log("🚀 ~ oldMap:", oldMap)
-    // // console.log("🚀 ~ newMap, oldMap:", newMap, oldMap)
-
     setDefaultGraph(newMap)
   },
   { deep: true },
@@ -224,22 +226,14 @@ const selectGraphOption = (option: keyof GraphData) => {
 }
 
 const setDefaultGraph = (displayData: GraphData) => {
-  // console.log("🚀 ~ setDefaultGraph ~ displayData:", displayData)
-  // If "raw" is set, that should be the only entry.
-
-  // TODO: Very brittle currently... only allowing for a single value to be available.
-  // const singleOption = displayData[availableOptions.value[0]]
-
-  // if (singleOption != null) {
   selectedGraphType.value = {
     key: availableOptions.value[0],
     value: displayData[availableOptions.value[0]]!,
   }
-  // }
 }
 
 const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
-  const current = selectedGraphType.value
+  const current = toRaw(selectedGraphType.value)
   // console.log("🚀 ~ current:", current)
   if (current == null) {
     return {
@@ -249,7 +243,7 @@ const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
 
   if (props.displayData == null) {
     return {
-      datasets: []
+      datasets: [],
     }
   }
 
