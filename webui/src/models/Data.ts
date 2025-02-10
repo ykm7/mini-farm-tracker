@@ -37,7 +37,7 @@ interface CalibratedDataType {
   // Define properties of CalibratedDataType here
   // For example:
   Data: number;
-  Unit: string;
+  Units: string;
 }
 
 

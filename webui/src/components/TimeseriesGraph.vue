@@ -35,16 +35,24 @@
         ALL
       </button>
     </div>
+
     <div class="graph-wrapper">
-      <!-- <div>
-        {{  availableOptions }}
-      </div> -->
-      <Line
+      <div
+        class="graph-custom-wrapper-group graph-custom-wrapper"
         v-if="rawDataGraph?.datasets.length > 0"
-        class="graph-custom-wrapper"
-        :options="chartOptions"
-        :data="rawDataGraph"
-      />
+      >
+        <div class="available-graph-data-options">
+          <button
+            @click="selectGraphOption(option)"
+            :class="{ selected: selectedGraphType?.key === option }"
+            v-for="option in availableOptions"
+          >
+            {{ option }}
+          </button>
+        </div>
+        <Line :options="chartOptions" :data="rawDataGraph" />
+      </div>
+
       <div v-else class="graph-custom-wrapper">{{ computedChartVisualSettings.emptyLabel }}</div>
     </div>
   </div>
@@ -85,7 +93,16 @@ const computedDisplayData = computed(() => toRaw(props.displayData))
 
 const computedChartVisualSettings = computed<ChartVisualSettings>(() => {
   const currentData = computedDisplayData.value
+  if (currentData == null) {
+    return {
+      emptyLabel: 'LABEL UNKNOWN',
+      title: 'TITLE UNKNOWN',
+      lineLabel: 'LINE LABEL UNKNOWN',
+    }
+  }
   
+  console.log("🚀 ~ currentData:", currentData)
+
   if (currentData.Raw) {
     return {
       title: 'Distance measured by sensor',
@@ -96,16 +113,57 @@ const computedChartVisualSettings = computed<ChartVisualSettings>(() => {
     return {
       title: 'Water in tank',
       emptyLabel: 'No calibrated data available for this sensor',
-      lineLabel: 'Litres',
+      lineLabel: currentData.Volume.unit,
     }
   } else if (currentData.AirTemperature) {
     return {
       title: 'Current air temperature',
       emptyLabel: 'No calibrated data available for this sensor',
-      lineLabel: '℃',
+      lineLabel: currentData.AirTemperature.unit,
     }
-  }
-  else {
+  } else if (currentData.AirHumidity) {
+    return {
+      title: 'Current air humidity',
+      emptyLabel: 'No calibrated data available for this sensor',
+      lineLabel: currentData.AirHumidity.unit,
+    }
+  } else if (currentData.LightIntensity) {
+    return {
+      title: 'Current light intensity',
+      emptyLabel: 'No calibrated data available for this sensor',
+      lineLabel: currentData.LightIntensity.unit,
+    }
+  } else if (currentData.UvIndex) {
+    return {
+      title: 'Current UV index',
+      emptyLabel: 'No calibrated data available for this sensor',
+      lineLabel: currentData.UvIndex.unit,
+    }
+  } else if (currentData.WindSpeed) {
+    return {
+      title: 'Current wind speed',
+      emptyLabel: 'No calibrated data available for this sensor',
+      lineLabel: currentData.WindSpeed.unit,
+    }
+  } else if (currentData.WindDirection) {
+    return {
+      title: 'Current wind direction',
+      emptyLabel: 'No calibrated data available for this sensor',
+      lineLabel: currentData.WindDirection.unit,
+    }
+  } else if (currentData.RainfallHourly) {
+    return {
+      title: 'Current hourly rainfall',
+      emptyLabel: 'No calibrated data available for this sensor',
+      lineLabel: currentData.RainfallHourly.unit,
+    }
+  } else if (currentData.BarometricPressure) {
+    return {
+      title: 'Current barometric pressure',
+      emptyLabel: 'No calibrated data available for this sensor',
+      lineLabel: currentData.BarometricPressure.unit,
+    }
+  } else {
     return {
       emptyLabel: 'LABEL UNKNOWN',
       title: 'TITLE UNKNOWN',
@@ -127,6 +185,7 @@ interface SelectedGraph {
 
 const availableOptions = computed<KeyOf<GraphData>[]>(() => {
   const keys = Object.keys(props.displayData)
+  console.log('🚀 ~ keys:', keys)
   if (keys.length === 0) {
     return []
   } else {
@@ -157,19 +216,26 @@ const selectTimePeriod = (period: number) => {
   emit('update-starting-date', props.item, period)
 }
 
+const selectGraphOption = (option: keyof GraphData) => {
+  selectedGraphType.value = {
+    key: option,
+    value: props.displayData[option]!,
+  }
+}
+
 const setDefaultGraph = (displayData: GraphData) => {
   // console.log("🚀 ~ setDefaultGraph ~ displayData:", displayData)
   // If "raw" is set, that should be the only entry.
 
   // TODO: Very brittle currently... only allowing for a single value to be available.
-  const singleOption = displayData[availableOptions.value[0]]
+  // const singleOption = displayData[availableOptions.value[0]]
 
-  if (singleOption != null) {
-    selectedGraphType.value = {
-      key: 'Raw',
-      value: singleOption,
-    }
+  // if (singleOption != null) {
+  selectedGraphType.value = {
+    key: availableOptions.value[0],
+    value: displayData[availableOptions.value[0]]!,
   }
+  // }
 }
 
 const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
@@ -178,6 +244,12 @@ const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
   if (current == null) {
     return {
       datasets: [],
+    }
+  }
+
+  if (props.displayData == null) {
+    return {
+      datasets: []
     }
   }
 
@@ -215,6 +287,7 @@ const dynamicTimeUnit = (dataPoints: DisplayPoint[]) => {
 
 const chartOptions = computed<ChartOptions<'line'>>(() => {
   const current = selectedGraphType.value
+  console.log('🚀 ~ current:', current)
   if (current == null) {
     return {}
   }
@@ -284,38 +357,38 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
 .graph-top-wrapper {
   display: flex;
 
+  button {
+    flex: auto;
+    background-color: #42b883;
+    color: #ffffff;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+  }
+
+  @media (max-width: 1024px) {
+    button {
+      padding: 5px 7px;
+    }
+  }
+
+  button:hover {
+    background-color: #36495d;
+  }
+
+  button.selected {
+    background-color: #36495d;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    transform: translateY(1px);
+  }
+
   .graph-buttons {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-
-    button {
-      flex: auto;
-      background-color: #42b883;
-      color: #ffffff;
-      border: none;
-      padding: 10px 15px;
-      cursor: pointer;
-      border-radius: 4px;
-      font-size: 14px;
-      transition: background-color 0.3s ease;
-    }
-
-    @media (max-width: 1024px) {
-      button {
-        padding: 5px 7px;
-      }
-    }
-
-    button:hover {
-      background-color: #36495d;
-    }
-
-    button.selected {
-      background-color: #36495d;
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-      transform: translateY(1px);
-    }
   }
 
   .graph-wrapper {
@@ -325,13 +398,23 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
     min-width: 0;
 
     .graph-custom-wrapper {
+      /* flex-grow: 1; */
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 300px;
+      height: 325px;
       background-color: rgba(0, 0, 0, 0.05);
       color: gray;
       border-radius: 8px;
+    }
+
+    .graph-custom-wrapper-group {
+      display: flex;
+      flex-direction: column;
+
+      .available-graph-data-options {
+        flex-grow: 0;
+      }
     }
   }
 }
