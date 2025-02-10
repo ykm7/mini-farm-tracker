@@ -372,6 +372,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
   @media (max-width: 1024px) {
     button {
       padding: 5px 7px;
+      font-size: x-small;
     }
   }
 
@@ -414,6 +415,10 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
 
       .available-graph-data-options {
         flex-grow: 0;
+      }
+
+      canvas {
+        min-height: 0;
       }
     }
   }
