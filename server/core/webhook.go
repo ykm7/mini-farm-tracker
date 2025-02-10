@@ -71,7 +71,7 @@ func handleWebhook(c *gin.Context, server *Server) {
 		}
 		err = json.Unmarshal(jsonData, &data.LDDS45)
 		if err != nil || data.LDDS45 == nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v to expected data type for: %s", jsonData, LDDS45),
 			})
 			return
@@ -118,9 +118,9 @@ func handleWebhook(c *gin.Context, server *Server) {
 
 		// err = data.S2120.Unmarshal(jsonData)
 
-		if err != nil {
+		if err != nil || data.S2120 == nil {
 			fmt.Printf("For payload (as string) %s and expected sensor %s have error %v", string(jsonData), S2120, err)
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v (as string: %s) to expected data type for: %s", jsonData, string(jsonData), S2120),
 			})
 			return

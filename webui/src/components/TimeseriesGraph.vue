@@ -98,7 +98,13 @@ const computedChartVisualSettings = computed<ChartVisualSettings>(() => {
       emptyLabel: 'No calibrated data available for this sensor',
       lineLabel: 'Litres',
     }
-  } 
+  } else if (currentData.AirTemperature) {
+    return {
+      title: 'Current air temperature',
+      emptyLabel: 'No calibrated data available for this sensor',
+      lineLabel: '℃',
+    }
+  }
   else {
     return {
       emptyLabel: 'LABEL UNKNOWN',

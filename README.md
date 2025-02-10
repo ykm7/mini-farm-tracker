@@ -83,7 +83,11 @@ flowchart TD
 
 [Guide](https://cdn.shopify.com/s/files/1/1386/3791/files/SenseCAP_S2120_LoRaWAN_8-in-1_Weather_Station_User_Guide.pdf?v=1662178525)
 
-[Payload Decoding](https://github.com/Seeed-Solution/TTN-Payload-Decoder/blob/master/README.md)
+[Ignore decoder within guide](https://github.com/Seeed-Solution/TTN-Payload-Decoder/blob/master/README.md)
+
+Should have looked here first:
+[Online Guide](https://wiki.seeedstudio.com/Getting_Started_with_SenseCAP_S2120_8-in-1_LoRaWAN_Weather_Sensor/)
+https://github.com/Seeed-Solution/SenseCAP-Decoder/tree/main/S2120/TTN
 
 # Hosting
 

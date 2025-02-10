@@ -399,6 +399,135 @@ func Test_handleWebhook(t *testing.T) {
 			},
 		},
 		{
+			name:    "Invalid 'S2120RawData' data - no messages",
+			runTest: true,
+			args: args{
+				additionalHeaders: http.Header{
+					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
+				},
+				server: &Server{
+					Envs: &environmentVariables{
+						Ttn_webhhook_api: "RANDOM_TEST_KEY",
+					},
+					Sensors: &syncCacheImpl[string, Sensor]{
+						cache: map[string]Sensor{
+							MOCK_DEVICE_ID: {
+								Id:    MOCK_SENSOR_ID,
+								Model: S2120,
+							},
+						},
+					},
+				},
+				uplinkMessage: createMockUplinkMessage(
+					MOCK_DEVICE_ID,
+					MOCK_RECEIVED_AT,
+					map[string]interface{}{
+						"err":      0,
+						"payload":  "",
+						"valid":    true,
+						"messages": []map[string]interface{}{},
+					},
+				),
+				preData: CollectionToData{
+					sensorConfigurations: CollectionWrapper[SensorConfiguration]{
+						data: []SensorConfiguration{
+							{
+								Sensor:  MOCK_SENSOR_ID,
+								Asset:   MOCK_ASSET_ID,
+								Applied: mockConvertTimeStringToMongoTime("2025-01-26T13:35:18.467+00:00"),
+							},
+						},
+					},
+					assets: CollectionWrapper[Asset]{
+						data: []Asset{
+							{
+								Id: MOCK_ASSET_ID,
+							},
+						},
+					},
+				},
+			},
+			expected: expected{
+				code: http.StatusOK,
+				message: map[string]string{
+					"message": "Webhook received successfully",
+				},
+				postData: DateExpectedToFind{
+					rawData: []RawData{
+						{
+							Timestamp: mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
+							Sensor:    &MOCK_SENSOR_ID,
+							Valid:     true,
+							Data: SensorData{
+								S2120: &S2120RawData{
+									Messages: []S2120RawDataMsg{},
+								},
+							},
+						},
+					},
+					calibratedData: []CalibratedData{
+						{
+							Timestamp:  mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
+							Sensor:     MOCK_SENSOR_ID,
+							DataPoints: CalibratedDataPoints{},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:    "Invalid 'S2120RawData' data - no data at all",
+			runTest: true,
+			args: args{
+				additionalHeaders: http.Header{
+					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
+				},
+				server: &Server{
+					Envs: &environmentVariables{
+						Ttn_webhhook_api: "RANDOM_TEST_KEY",
+					},
+					Sensors: &syncCacheImpl[string, Sensor]{
+						cache: map[string]Sensor{
+							MOCK_DEVICE_ID: {
+								Id:    MOCK_SENSOR_ID,
+								Model: S2120,
+							},
+						},
+					},
+				},
+				uplinkMessage: createMockUplinkMessage(
+					MOCK_DEVICE_ID,
+					MOCK_RECEIVED_AT,
+					map[string]interface{}{},
+				),
+				preData: CollectionToData{
+					sensorConfigurations: CollectionWrapper[SensorConfiguration]{
+						data: []SensorConfiguration{
+							{
+								Sensor:  MOCK_SENSOR_ID,
+								Asset:   MOCK_ASSET_ID,
+								Applied: mockConvertTimeStringToMongoTime("2025-01-26T13:35:18.467+00:00"),
+							},
+						},
+					},
+					assets: CollectionWrapper[Asset]{
+						data: []Asset{
+							{
+								Id: MOCK_ASSET_ID,
+							},
+						},
+					},
+				},
+			},
+			expected: expected{
+				code: http.StatusBadRequest,
+				message: map[string]string{
+					"status": "Error casting the decoded json: [110 117 108 108] (as string: null) to expected data type for: S2120",
+				},
+				postData: DateExpectedToFind{},
+			},
+		},
+		{
 			name:    "Valid 'LDDS45RawData' data",
 			runTest: true,
 			args: args{
