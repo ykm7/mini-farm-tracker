@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	compress "github.com/lf4096/gin-compress"
 )
 
 const HEALTH_ENDPOINT = "/health"
@@ -22,7 +23,9 @@ func CustomLogger() gin.HandlerFunc {
 
 func SetupRouter(server *Server) *gin.Engine {
 	r := gin.New()
+
 	r.Use(CustomLogger())
+	r.Use(compress.Compress())
 	r.Use(gin.Recovery())
 
 	config := cors.DefaultConfig()

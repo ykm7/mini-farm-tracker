@@ -4,6 +4,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import vueDevTools from 'vite-plugin-vue-devtools'
+import viteCompression from 'vite-plugin-compression';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -13,6 +14,7 @@ export default defineConfig({
     vue(),
     vueJsx(),
     vueDevTools(),
+    viteCompression(),
   ],
   build: {
     sourcemap: isDev // Enable sourcemaps only in development
