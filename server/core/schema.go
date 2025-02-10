@@ -41,7 +41,7 @@ const (
 	MM_PER_HOUR  UNITS = "mm/hr"
 	M_PER_SEC    UNITS = "m/s"
 	DEGREE_C     UNITS = "℃"
-	DEGREE       UNITS = "℃"
+	DEGREE       UNITS = "C"
 	PRESSURE     UNITS = "Pa"
 	AIR_HUMIDITY UNITS = "%RH"
 	LUX          UNITS = "Lux"

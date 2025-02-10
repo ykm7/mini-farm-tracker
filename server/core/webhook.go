@@ -71,7 +71,7 @@ func handleWebhook(c *gin.Context, server *Server) {
 		}
 		err = json.Unmarshal(jsonData, &data.LDDS45)
 		if err != nil || data.LDDS45 == nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v to expected data type for: %s", jsonData, LDDS45),
 			})
 			return
@@ -118,9 +118,9 @@ func handleWebhook(c *gin.Context, server *Server) {
 
 		// err = data.S2120.Unmarshal(jsonData)
 
-		if err != nil {
+		if err != nil || data.S2120 == nil {
 			fmt.Printf("For payload (as string) %s and expected sensor %s have error %v", string(jsonData), S2120, err)
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v (as string: %s) to expected data type for: %s", jsonData, string(jsonData), S2120),
 			})
 			return
@@ -215,24 +215,24 @@ func storeS2120CalibratedData(
 				}
 
 			case AirHumidity:
-				if v, ok := value.(int16); ok {
+				if v, ok := value.(float64); ok {
 					dataPoint.AirHumidity = &CalibratedDataType{
-						Data:  float64(v),
+						Data:  v,
 						Units: AIR_HUMIDITY,
 					}
 				} else {
-					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (int16)\n", additionalErrors, string(AirHumidity), value)
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(AirHumidity), value)
 				}
 
 			case LightIntensity:
-				if v, ok := value.(int16); ok {
+				if v, ok := value.(float64); ok {
 					dataPoint.LightIntensity = &CalibratedDataType{
-						Data:  float64(v),
+						Data:  v,
 						Units: LUX,
 					}
 
 				} else {
-					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (int16)\n", additionalErrors, string(LightIntensity), value)
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(LightIntensity), value)
 				}
 
 			case UVIndex:
@@ -275,13 +275,13 @@ func storeS2120CalibratedData(
 				}
 
 			case BarometricPressure:
-				if v, ok := value.(int16); ok {
+				if v, ok := value.(float64); ok {
 					dataPoint.BarometricPressure = &CalibratedDataType{
-						Data:  float64(v),
+						Data:  v,
 						Units: PRESSURE,
 					}
 				} else {
-					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (int16)\n", additionalErrors, string(BarometricPressure), value)
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(BarometricPressure), value)
 				}
 			}
 		}

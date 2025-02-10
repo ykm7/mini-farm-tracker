@@ -45,7 +45,7 @@
         :options="chartOptions"
         :data="rawDataGraph"
       />
-      <div v-else class="graph-custom-wrapper">{{ emptyLabel }}</div>
+      <div v-else class="graph-custom-wrapper">{{ computedChartVisualSettings.emptyLabel }}</div>
     </div>
   </div>
 </template>
@@ -70,15 +70,49 @@ import type { DisplayPoint, GraphData, GraphDataType, KeyOf, Unit } from '@/type
 
 Chart.register(TimeScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
+interface ChartVisualSettings {
+  title: string
+  lineLabel: string
+  emptyLabel: string
+}
+
 const props = defineProps<{
   item: T
   displayData: GraphData
-  lineLabel: string
-  emptyLabel: string
-  title: string
 }>()
 
 const computedDisplayData = computed(() => toRaw(props.displayData))
+
+const computedChartVisualSettings = computed<ChartVisualSettings>(() => {
+  const currentData = computedDisplayData.value
+  
+  if (currentData.Raw) {
+    return {
+      title: 'Distance measured by sensor',
+      emptyLabel: 'No data available for this sensor',
+      lineLabel: 'Distance',
+    }
+  } else if (currentData.Volume) {
+    return {
+      title: 'Water in tank',
+      emptyLabel: 'No calibrated data available for this sensor',
+      lineLabel: 'Litres',
+    }
+  } else if (currentData.AirTemperature) {
+    return {
+      title: 'Current air temperature',
+      emptyLabel: 'No calibrated data available for this sensor',
+      lineLabel: '℃',
+    }
+  }
+  else {
+    return {
+      emptyLabel: 'LABEL UNKNOWN',
+      title: 'TITLE UNKNOWN',
+      lineLabel: 'LINE LABEL UNKNOWN',
+    }
+  }
+})
 
 const emit = defineEmits<{
   (e: 'update-starting-date', item: T, startingOffset: number): void
@@ -110,12 +144,13 @@ onMounted(() => {
 watch(
   computedDisplayData,
   (newMap, oldMap) => {
-  // console.log("🚀 ~ oldMap:", oldMap)
-  // // console.log("🚀 ~ newMap, oldMap:", newMap, oldMap)
+    // console.log("🚀 ~ oldMap:", oldMap)
+    // // console.log("🚀 ~ newMap, oldMap:", newMap, oldMap)
 
-  setDefaultGraph(newMap)
-
-}, {deep: true})
+    setDefaultGraph(newMap)
+  },
+  { deep: true },
+)
 
 const selectTimePeriod = (period: number) => {
   selectedPeriod.value = period
@@ -131,25 +166,25 @@ const setDefaultGraph = (displayData: GraphData) => {
 
   if (singleOption != null) {
     selectedGraphType.value = {
-      key: "Raw",
-      value: singleOption
+      key: 'Raw',
+      value: singleOption,
     }
-  } 
+  }
 }
 
 const rawDataGraph = computed<ChartData<'line', Point[]>>(() => {
   const current = selectedGraphType.value
   // console.log("🚀 ~ current:", current)
-  if (current == null ) {
+  if (current == null) {
     return {
-      datasets: []
+      datasets: [],
     }
   }
 
   return {
     datasets: [
       {
-        label: props.lineLabel,
+        label: computedChartVisualSettings.value.lineLabel,
         data: props.displayData
           ? current.value.data.map<Point>((v) => {
               return {
@@ -180,7 +215,7 @@ const dynamicTimeUnit = (dataPoints: DisplayPoint[]) => {
 
 const chartOptions = computed<ChartOptions<'line'>>(() => {
   const current = selectedGraphType.value
-  if (current == null ) {
+  if (current == null) {
     return {}
   }
 
@@ -228,7 +263,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
     plugins: {
       title: {
         display: true,
-        text: props.title,
+        text: computedChartVisualSettings.value.title,
       },
     },
     elements: {

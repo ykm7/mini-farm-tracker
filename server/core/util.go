@@ -134,7 +134,6 @@ func ListenToSensors(server *Server) {
 	results, err := GetSensorCollection(server.MongoDb).Find(server.ExitContext, nil)
 	for _, r := range results {
 		server.Sensors.Update(r.Id, r)
-		// sensorCache[r.Id] = r
 	}
 	if err != nil {
 		panic(err)
@@ -176,7 +175,6 @@ func ListenToSensors(server *Server) {
 						continue
 					}
 					server.Sensors.Update(sensor.Id, sensor)
-					// sensorCache[sensor.Id] = sensor
 					fmt.Printf("Sensor 'inserted', 'updated' or 'replaced': %+v\n", sensor)
 				}
 
@@ -193,7 +191,6 @@ func ListenToSensors(server *Server) {
 					}
 					fmt.Printf("Sensor deleted: %+v\n", sensor)
 					server.Sensors.Delete(sensor.Id)
-					// delete(sensorCache, sensor.Id)
 				}
 			}
 		}

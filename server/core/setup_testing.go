@@ -84,7 +84,6 @@ func MockContextAdd(c *gin.Context, headers http.Header) {
 func MockJsonGet(c *gin.Context, params gin.Params, u url.Values) {
 	c.Request.Method = "GET"
 	c.Request.Header.Set("Content-Type", "application/json")
-	c.Set("user_id", 1)
 
 	// set path params
 	c.Params = params

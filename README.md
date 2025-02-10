@@ -77,13 +77,160 @@ flowchart TD
 
 [User Manual](https://wiki.dragino.com/xwiki/bin/view/Main/User%20Manual%20for%20LoRaWAN%20End%20Nodes/LDDS45%20-%20LoRaWAN%20Distance%20Detection%20Sensor%20User%20Manual/)
 
+### Decoder
+
+When adding the device within TTN there was no need to add the decoder manually as the end device was able to be added from with the lorawan device repository.
+
 ## Weather sensor - S2120 
 
 [Purchase Location](https://www.iot-store.com.au/products/sensecap-s2120-lorawn-weather-station)
 
 [Guide](https://cdn.shopify.com/s/files/1/1386/3791/files/SenseCAP_S2120_LoRaWAN_8-in-1_Weather_Station_User_Guide.pdf?v=1662178525)
 
-[Payload Decoding](https://github.com/Seeed-Solution/TTN-Payload-Decoder/blob/master/README.md)
+[Ignore decoder within guide](https://github.com/Seeed-Solution/TTN-Payload-Decoder/blob/master/README.md)
+
+Should have looked here first:
+[Online Guide](https://wiki.seeedstudio.com/Getting_Started_with_SenseCAP_S2120_8-in-1_LoRaWAN_Weather_Sensor/)
+[Actual decoder](https://github.com/Seeed-Solution/SenseCAP-Decoder/tree/main/S2120/TTN)
+Copied for testing purposes within server directory `ttnDecoders`.
+
+### Decoder
+
+The end device was required to be added manually.
+
+By default the format of the decoder looks like:
+
+```json
+{
+    "err": 0,
+    "messages": [
+        [
+            {
+                "measurementId": "4097",
+                "measurementValue": 30.8,
+                "type": "Air Temperature"
+            },
+            {
+                "measurementId": "4098",
+                "measurementValue": 44,
+                "type": "Air Humidity"
+            },
+            {
+                "measurementId": "4099",
+                "measurementValue": 114488,
+                "type": "Light Intensity"
+            },
+            {
+                "measurementId": "4190",
+                "measurementValue": 8.8,
+                "type": "UV Index"
+            },
+            {
+                "measurementId": "4105",
+                "measurementValue": 1.2,
+                "type": "Wind Speed"
+            }
+        ],
+        [
+            {
+                "measurementId": "4104",
+                "measurementValue": 54,
+                "type": "Wind Direction Sensor"
+            },
+            {
+                "measurementId": "4113",
+                "measurementValue": 0,
+                "type": "Rain Gauge"
+            },
+            {
+                "measurementId": "4101",
+                "measurementValue": 99190,
+                "type": "Barometric Pressure"
+            }
+        ],
+        [
+            {
+                "measurementId": "4191",
+                "measurementValue": 3,
+                "type": " Peak Wind Gust"
+            },
+            {
+                "measurementId": "4213",
+                "measurementValue": 0,
+                "type": "Rain Accumulation"
+            }
+        ]
+    ],
+    "payload": "4A01342C0001BF3858000C4B00360000000026BF4C001E00000000",
+    "valid": true
+}
+```
+
+The structure of nested messages arrays are somewhat irrigating to parse.
+Minor code modification was performed to "flatter" the resulting array.
+
+```json
+{
+    "err": 0,
+    "payload": "4A01342C0001BF3858000C4B00360000000026BF4C001E00000000",
+    "valid": true,
+    "messages": [
+      {
+        "measurementValue": 30.8,
+        "measurementId": "4097",
+        "type": "Air Temperature"
+      },
+      {
+        "measurementValue": 44,
+        "measurementId": "4098",
+        "type": "Air Humidity"
+      },
+      {
+        "measurementValue": 114488,
+        "measurementId": "4099",
+        "type": "Light Intensity"
+      },
+      {
+        "measurementValue": 8.8,
+        "measurementId": "4190",
+        "type": "UV Index"
+      },
+      {
+        "measurementValue": 1.2,
+        "measurementId": "4105",
+        "type": "Wind Speed"
+      },
+      {
+        "measurementValue": 54,
+        "measurementId": "4104",
+        "type": "Wind Direction Sensor"
+      },
+      {
+        "measurementValue": 0,
+        "measurementId": "4113",
+        "type": "Rain Gauge"
+      },
+      {
+        "measurementValue": 99190,
+        "measurementId": "4101",
+        "type": "Barometric Pressure"
+      },
+      {
+        "measurementValue": 3,
+        "measurementId": "4191",
+        "type": " Peak Wind Gust"
+      },
+      {
+        "measurementValue": 0,
+        "measurementId": "4213",
+        "type": "Rain Accumulation"
+      }
+    ]
+}
+```
+
+This allows for simplied parsing without all loss of useful information for my purposes.
+(I do not benefit for the separation of data collection from each internal 8-in-1 sensor)
 
 # Hosting
 

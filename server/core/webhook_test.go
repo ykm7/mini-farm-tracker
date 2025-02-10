@@ -253,17 +253,10 @@ type DateExpectedToFind struct {
 }
 
 func Test_handleWebhook(t *testing.T) {
-
-	// initEnvironmentVariables := &environmentVariables{}
-	// TODO: if the cache was queried multiple times within the function possible to open
-	// it up to race conditions. Worth being aware of when adding the configuration stuff in the future
-	// initsensorCache := map[string]Sensor{}
-
 	db, deferFn := MockSetupMongo(context.TODO())
 	mongoDb := &MongoDatabaseImpl{Db: db}
 	defer deferFn()
 
-	MOCK_DEVICE_ID := "MOCK_DEVICE_ID"
 	MOCK_SENSOR_ID := "112233445566778899"
 	MOCK_RECEIVED_AT := "2025-01-28T03:14:25.480959673Z"
 	MOCK_ASSET_ID := primitive.NewObjectID()
@@ -303,7 +296,7 @@ func Test_handleWebhook(t *testing.T) {
 					},
 					Sensors: &syncCacheImpl[string, Sensor]{
 						cache: map[string]Sensor{
-							MOCK_DEVICE_ID: {
+							MOCK_SENSOR_ID: {
 								Id:    MOCK_SENSOR_ID,
 								Model: S2120,
 							},
@@ -311,7 +304,7 @@ func Test_handleWebhook(t *testing.T) {
 					},
 				},
 				uplinkMessage: createMockUplinkMessage(
-					MOCK_DEVICE_ID,
+					MOCK_SENSOR_ID,
 					MOCK_RECEIVED_AT,
 					map[string]interface{}{
 						"err":     0,
@@ -399,6 +392,135 @@ func Test_handleWebhook(t *testing.T) {
 			},
 		},
 		{
+			name:    "Invalid 'S2120RawData' data - no messages",
+			runTest: true,
+			args: args{
+				additionalHeaders: http.Header{
+					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
+				},
+				server: &Server{
+					Envs: &environmentVariables{
+						Ttn_webhhook_api: "RANDOM_TEST_KEY",
+					},
+					Sensors: &syncCacheImpl[string, Sensor]{
+						cache: map[string]Sensor{
+							MOCK_SENSOR_ID: {
+								Id:    MOCK_SENSOR_ID,
+								Model: S2120,
+							},
+						},
+					},
+				},
+				uplinkMessage: createMockUplinkMessage(
+					MOCK_SENSOR_ID,
+					MOCK_RECEIVED_AT,
+					map[string]interface{}{
+						"err":      0,
+						"payload":  "",
+						"valid":    true,
+						"messages": []map[string]interface{}{},
+					},
+				),
+				preData: CollectionToData{
+					sensorConfigurations: CollectionWrapper[SensorConfiguration]{
+						data: []SensorConfiguration{
+							{
+								Sensor:  MOCK_SENSOR_ID,
+								Asset:   MOCK_ASSET_ID,
+								Applied: mockConvertTimeStringToMongoTime("2025-01-26T13:35:18.467+00:00"),
+							},
+						},
+					},
+					assets: CollectionWrapper[Asset]{
+						data: []Asset{
+							{
+								Id: MOCK_ASSET_ID,
+							},
+						},
+					},
+				},
+			},
+			expected: expected{
+				code: http.StatusOK,
+				message: map[string]string{
+					"message": "Webhook received successfully",
+				},
+				postData: DateExpectedToFind{
+					rawData: []RawData{
+						{
+							Timestamp: mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
+							Sensor:    &MOCK_SENSOR_ID,
+							Valid:     true,
+							Data: SensorData{
+								S2120: &S2120RawData{
+									Messages: []S2120RawDataMsg{},
+								},
+							},
+						},
+					},
+					calibratedData: []CalibratedData{
+						{
+							Timestamp:  mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
+							Sensor:     MOCK_SENSOR_ID,
+							DataPoints: CalibratedDataPoints{},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:    "Invalid 'S2120RawData' data - no data at all",
+			runTest: true,
+			args: args{
+				additionalHeaders: http.Header{
+					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
+				},
+				server: &Server{
+					Envs: &environmentVariables{
+						Ttn_webhhook_api: "RANDOM_TEST_KEY",
+					},
+					Sensors: &syncCacheImpl[string, Sensor]{
+						cache: map[string]Sensor{
+							MOCK_SENSOR_ID: {
+								Id:    MOCK_SENSOR_ID,
+								Model: S2120,
+							},
+						},
+					},
+				},
+				uplinkMessage: createMockUplinkMessage(
+					MOCK_SENSOR_ID,
+					MOCK_RECEIVED_AT,
+					map[string]interface{}{},
+				),
+				preData: CollectionToData{
+					sensorConfigurations: CollectionWrapper[SensorConfiguration]{
+						data: []SensorConfiguration{
+							{
+								Sensor:  MOCK_SENSOR_ID,
+								Asset:   MOCK_ASSET_ID,
+								Applied: mockConvertTimeStringToMongoTime("2025-01-26T13:35:18.467+00:00"),
+							},
+						},
+					},
+					assets: CollectionWrapper[Asset]{
+						data: []Asset{
+							{
+								Id: MOCK_ASSET_ID,
+							},
+						},
+					},
+				},
+			},
+			expected: expected{
+				code: http.StatusBadRequest,
+				message: map[string]string{
+					"status": "Error casting the decoded json: [110 117 108 108] (as string: null) to expected data type for: S2120",
+				},
+				postData: DateExpectedToFind{},
+			},
+		},
+		{
 			name:    "Valid 'LDDS45RawData' data",
 			runTest: true,
 			args: args{
@@ -411,7 +533,7 @@ func Test_handleWebhook(t *testing.T) {
 					},
 					Sensors: &syncCacheImpl[string, Sensor]{
 						cache: map[string]Sensor{
-							MOCK_DEVICE_ID: {
+							MOCK_SENSOR_ID: {
 								Id:    MOCK_SENSOR_ID,
 								Model: LDDS45,
 							},
@@ -419,7 +541,7 @@ func Test_handleWebhook(t *testing.T) {
 					},
 				},
 				uplinkMessage: createMockUplinkMessage(
-					MOCK_DEVICE_ID,
+					MOCK_SENSOR_ID,
 					MOCK_RECEIVED_AT,
 					map[string]interface{}{
 						"Bat":            3.413,
@@ -578,6 +700,21 @@ func Test_handleWebhook(t *testing.T) {
 
 			// Check that the data is valid
 			validateDataExistingsWithinMockDb(t, &tt.expected.postData, &tt.args.preData)
+
+			// TODO: Raw data
+
+			// calibrated data
+			// w = httptest.NewRecorder()
+			// mockCtx = MockGinContext(w)
+
+			// // mockCtx.Request.URL.RawPath = "api/sensors/2cf7f1c0613006fe/data/raw_data"
+
+			// MockJsonGet(mockCtx, gin.Params{{Key: SENSOR_ID_PARAM, Value: MOCK_SENSOR_ID}}, url.Values{})
+
+			// getCalibratedDataWithSensorId(mockCtx, tt.args.server)
+
+			// assert.Equal(t, tt.expected.code, w.Code)
+			// fmt.Println(w.Body.String())
 		})
 	}
 }

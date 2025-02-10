@@ -21,10 +21,6 @@
                     :item="sensor"
                     @update-starting-date="handleUpdateStartingTimeEvent"
                     :displayData="data ? data : {}"
-                    emptyLabel="No data available for this sensor"
-                    yAxisUnit="mm"
-                    lineLabel="Distance"
-                    title="Distance measured by sensor"
                   />
                 </template>
               </AsyncWrapper>
