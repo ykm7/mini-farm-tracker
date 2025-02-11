@@ -190,6 +190,8 @@ const computedChartVisualSettings = computed<ChartVisualSettings>(() => {
         lineLabel: lineLabel,
       }
   }
+
+  return EMPTY
 })
 
 const emit = defineEmits<{
@@ -211,7 +213,7 @@ onMounted(() => {
 
 watch(
   computedDisplayData,
-  (newMap, _) => {
+  (newMap) => {
     setDefaultGraph(newMap)
   },
   { deep: true },

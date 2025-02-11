@@ -4,7 +4,7 @@
     <div>
       <a>Available sensors</a>
 
-      <div v-for="sensor in sensors">
+      <div :key="sensor.Id" v-for="sensor in sensors">
         <CCard class="card-holder" style="margin: 0.5rem 0">
           <div class="card-details">
             <CCardTitle>{{ sensor.Id }}</CCardTitle>
@@ -58,7 +58,7 @@ function handleUpdateStartingTimeEvent(sensor: Sensor, startingOffset: number) {
 
 watch(
   sensors,
-  (newSensors, _) => {
+  (newSensors) => {
     newSensors.forEach((s) => {
       sensorToData.value.set(s.Id, Promise.resolve({}))
     })
@@ -87,7 +87,7 @@ watch(
 /**
  * TODO:
  * * We have a fair bit of shared code between sensorCollection and AssetCollection - fix
- * While pagination has been added, we aren't taking full advantage of drawing graph values 
+ * While pagination has been added, we aren't taking full advantage of drawing graph values
  * while the data is loading; ie, we are loading ALL the data first
  * */
 const pullSensorData = async (

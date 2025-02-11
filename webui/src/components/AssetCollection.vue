@@ -1,7 +1,7 @@
 <template>
   <div>
     <h4>Asset Collection</h4>
-    <div v-for="asset in assets">
+    <div :key="asset.Id.toString()" v-for="asset in assets">
       <CCard class="card-holder" style="margin: 0.5rem 0">
         <div class="card-details">
           <CCardTitle>{{ asset.Name }}</CCardTitle>
@@ -9,7 +9,11 @@
             <div>{{ asset.Description }}</div>
             <div>
               <a>Metrics:</a>
-              <CListGroup flush v-for="metric in asset.Metrics">
+              <CListGroup
+                flush
+                :key="`${metric?.Height}-${metric?.Radius}-${metric?.Volume}`"
+                v-for="metric in asset.Metrics"
+              >
                 <CListGroupItem v-if="metric?.Volume"
                   ><label>Volume:</label> {{ metric.Volume }} litres</CListGroupItem
                 >
@@ -18,7 +22,7 @@
 
             <div>
               <a>Attached Sensors:</a>
-              <CListGroup flush v-for="sensor in asset.Sensors">
+              <CListGroup flush :key="sensor" v-for="sensor in asset.Sensors">
                 <CListGroupItem>{{ sensor }}</CListGroupItem>
               </CListGroup>
             </div>
@@ -73,7 +77,7 @@ function handleUpdateStartingTimeEvent(asset: Asset, startingOffset: number) {
 
 watch(
   assets,
-  (newAssets, _) => {
+  (newAssets) => {
     newAssets.forEach((a) => {
       assetToData.value.set(a.Id, Promise.resolve({}))
     })
