@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { Analytics } from "@vercel/analytics/vue"
   import { SpeedInsights } from "@vercel/speed-insights/vue"
-  import { RouterView } from "vue-router"
+  import { RouterView } from "vue-router" /* PartiallyEnd: #3632/scriptSetup.vue */ /* PartiallyEnd: #3632/scriptSetup.vue */
 </script>
 
 <template>
