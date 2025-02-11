@@ -24,20 +24,14 @@ func getStartStopTimes(c *gin.Context) (start time.Time, end time.Time, err erro
 	start, err = time.Parse(time.RFC3339, startDate)
 	if err != nil {
 		err = fmt.Errorf("Invalid start time format")
+		return
 	}
-	// if err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start time format"})
-	// 	return
-	// }
 
 	end, err = time.Parse(time.RFC3339, endDate)
 	if err != nil {
 		err = fmt.Errorf("Invalid end time format")
+		return
 	}
-	// if err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end time format"})
-	// 	return
-	// }
 
 	return
 }
