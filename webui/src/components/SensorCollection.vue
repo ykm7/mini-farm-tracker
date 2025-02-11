@@ -34,15 +34,15 @@
 
 <script setup lang="ts">
   import { CCard, CCardBody, CCardTitle } from "@coreui/vue"
-  import AsyncWrapper from "./AsyncWrapper.vue"
   import { computed, ref, watch } from "vue"
+  import AsyncWrapper from "./AsyncWrapper.vue"
 
-  import TimeseriesGraph from "./TimeseriesGraph.vue"
-  import axios from "axios"
   import type { RawData } from "@/models/Data"
   import type { Sensor } from "@/models/Sensor"
   import { useSensorStore } from "@/stores/sensor"
   import type { GraphData } from "@/types/GraphRelated"
+  import axios from "axios"
+  import TimeseriesGraph from "./TimeseriesGraph.vue"
 
   const BASE_URL: string = import.meta.env.VITE_BASE_URL
   const sensorCollection = useSensorStore()

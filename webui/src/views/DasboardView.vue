@@ -1,6 +1,6 @@
 <script setup lang="ts">
-  import Dashboard from "../components/DashboardMain.vue"
   import DashboardHeader from "../components/DashboardHeader.vue"
+  import Dashboard from "../components/DashboardMain.vue"
 </script>
 
 <template>

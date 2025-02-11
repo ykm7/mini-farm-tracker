@@ -52,15 +52,15 @@
 
 <script setup lang="ts">
   import type { Asset } from "@/models/Asset"
-  import { useAssetStore } from "@/stores/asset"
-  import TimeseriesGraph from "./TimeseriesGraph.vue"
-  import AsyncWrapper from "./AsyncWrapper.vue"
-  import { computed, ref, watch } from "vue"
-  import { CCard, CCardBody, CCardTitle, CListGroup, CListGroupItem } from "@coreui/vue"
-  import axios from "axios"
   import type { CalibratedData } from "@/models/Data"
+  import { useAssetStore } from "@/stores/asset"
   import type { GraphData, Unit } from "@/types/GraphRelated"
   import type { ObjectId } from "@/types/ObjectId"
+  import { CCard, CCardBody, CCardTitle, CListGroup, CListGroupItem } from "@coreui/vue"
+  import axios from "axios"
+  import { computed, ref, watch } from "vue"
+  import AsyncWrapper from "./AsyncWrapper.vue"
+  import TimeseriesGraph from "./TimeseriesGraph.vue"
 
   const BASE_URL: string = import.meta.env.VITE_BASE_URL
   const assetCollection = useAssetStore()

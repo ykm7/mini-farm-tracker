@@ -60,22 +60,22 @@
 </template>
 
 <script setup lang="ts" generic="T">
+  import { ALL_YEARS, ONE_DAY, ONE_HOUR, ONE_MONTH, ONE_WEEK, ONE_YEAR } from "@/helper"
+  import type { DisplayPoint, GraphData, GraphDataType, KeyOf } from "@/types/GraphRelated"
   import type { ChartData, ChartOptions, Point } from "chart.js"
-  import { computed, onMounted, ref, toRaw, watch } from "vue"
-  import { Line } from "vue-chartjs"
   import {
     Chart,
-    TimeScale,
+    Legend,
     LinearScale,
-    PointElement,
     LineElement,
+    PointElement,
+    TimeScale,
     Title,
     Tooltip,
-    Legend,
   } from "chart.js"
   import "chartjs-adapter-moment"
-  import { ONE_DAY, ONE_HOUR, ONE_MONTH, ONE_WEEK, ONE_YEAR, ALL_YEARS } from "@/helper"
-  import type { DisplayPoint, GraphData, GraphDataType, KeyOf } from "@/types/GraphRelated"
+  import { computed, onMounted, ref, toRaw, watch } from "vue"
+  import { Line } from "vue-chartjs"
 
   Chart.register(TimeScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
