@@ -66,67 +66,14 @@ func handleWithSensorID(c *gin.Context) {
 }
 
 func getRawDataWithSensorId(c *gin.Context, server *Server) {
-	sensorID := c.Param(SENSOR_ID_PARAM)
-
-	start, end, err := getStartStopTimes(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("%v", err)})
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	sensor, exists := server.Sensors.Get(sensorID)
-	if !exists {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-			"status": fmt.Sprintf("Unable to find sensor: %s", sensorID),
-		})
-		return
-	}
-
-	switch sensor.Model {
-	case LDDS45, S2120:
-		results, err := GetRawDataCollection(server.MongoDb).Find(
-			ctx,
-			bson.D{
-				{Key: "sensor", Value: sensor.Id},
-				{Key: "timestamp", Value: bson.D{
-					{Key: "$gte", Value: primitive.NewDateTimeFromTime(start)},
-					{Key: "$lt", Value: primitive.NewDateTimeFromTime(end)},
-				}},
-			},
-			options.Find().SetProjection(
-				bson.D{
-					{
-						Key: "Id", Value: 0,
-					},
-					{
-						Key: "Sensor", Value: 0,
-					},
-				},
-			),
-		)
-		if err != nil {
-			log.Printf("Error within raw data query: %v\n", err)
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"status": "ok",
-			})
-			return
-		}
-
-		c.JSON(http.StatusOK, results)
-		return
-
-	default:
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"status": fmt.Sprintf("Unexpected sensor model: %s for sensor id: %s\n", sensor.Model, sensor.Id),
-		})
-		return
-	}
+	sharedDataPullFunctionality(c, server, GetRawDataCollection)
 }
 
 func getCalibratedDataWithSensorId(c *gin.Context, server *Server) {
+	sharedDataPullFunctionality(c, server, GetCalibratedDataCollection)
+}
+
+func sharedDataPullFunctionality[T QueryData](c *gin.Context, server *Server, dataPullFn func(db MongoDatabase) MongoCollection[T]) {
 	sensorID := c.Param(SENSOR_ID_PARAM)
 
 	start, end, err := getStartStopTimes(c)
@@ -148,7 +95,7 @@ func getCalibratedDataWithSensorId(c *gin.Context, server *Server) {
 
 	switch sensor.Model {
 	case LDDS45, S2120:
-		results, err := GetCalibratedDataCollection(server.MongoDb).Find(
+		results, err := dataPullFn(server.MongoDb).Find(
 			ctx,
 			bson.D{
 				{Key: "sensor", Value: sensor.Id},
@@ -169,7 +116,7 @@ func getCalibratedDataWithSensorId(c *gin.Context, server *Server) {
 			),
 		)
 		if err != nil {
-			log.Printf("Error within raw data query: %v\n", err)
+			log.Printf("Error within %T data query: %v\n", results, err)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"status": "ok",
 			})
