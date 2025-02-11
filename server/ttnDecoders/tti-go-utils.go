@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/base64"
-	"fmt"
 	"log"
 )
 
@@ -21,7 +20,7 @@ func frmPayloadFormatter(s string) {
 		return
 	}
 
-	fmt.Printf("Decoded Bytes: %X\n", decodedBytes)
+	log.Printf("Decoded Bytes: %X\n", decodedBytes)
 }
 
 func main() {

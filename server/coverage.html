@@ -221,7 +221,7 @@ func SetupMongo(envs *environmentVariables) (db *mongo.Database, deferFn func())
         <span class="cov0" title="0">if err := client.Database("admin").RunCommand(context.TODO(), bson.D{{Key: "ping", Value: 1}}).Err(); err != nil </span><span class="cov0" title="0">{
                 panic(err)</span>
         }
-        <span class="cov0" title="0">fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
+        <span class="cov0" title="0">log.Println("Pinged your deployment. You successfully connected to MongoDB!")
 
         db = client.Database(DATABASE_NAME)
         deferFn = func() </span><span class="cov0" title="0">{

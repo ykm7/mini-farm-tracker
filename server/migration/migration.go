@@ -91,7 +91,7 @@ func V1OfCalibratedDataToV2(database *mongo.Database) {
 	}
 
 	batchCount := len(results)
-	fmt.Printf("Processed documents: %d\n", batchCount)
+	log.Printf("Processed documents: %d\n", batchCount)
 
 	// Now, read from the temp collection and insert into the time series collection
 	tempCursor, err := database.Collection(tempcalibratedCollectionName).Find(context.Background(), bson.M{})
@@ -168,7 +168,7 @@ func V1OfRawDataToV2(database *mongo.Database) {
 	}
 
 	batchCount := len(results)
-	fmt.Printf("Processed documents: %d\n", batchCount)
+	log.Printf("Processed documents: %d\n", batchCount)
 
 	// Now, read from the temp collection and insert into the time series collection
 	tempCursor, err := database.Collection(tempRawCollectionName).Find(context.Background(), bson.M{})

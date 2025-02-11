@@ -714,7 +714,7 @@ func Test_handleWebhook(t *testing.T) {
 			// getCalibratedDataWithSensorId(mockCtx, tt.args.server)
 
 			// assert.Equal(t, tt.expected.code, w.Code)
-			// fmt.Println(w.Body.String())
+			// log.Println(w.Body.String())
 		})
 	}
 }

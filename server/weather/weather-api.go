@@ -130,11 +130,11 @@ func main() {
 	var weather WeatherResponse
 	err = json.Unmarshal(body, &weather)
 	if err != nil {
-		fmt.Println("Error:", err)
+		log.Println("Error:", err)
 		return
 	}
 
-	fmt.Println(string(body))
+	log.Println(string(body))
 
-	fmt.Println("%+v", weather)
+	log.Println("%+v", weather)
 }

@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -29,7 +30,7 @@ func SetupMongo(envs *environmentVariables) (db *mongo.Database, deferFn func())
 	if err := client.Database("admin").RunCommand(ctx, bson.D{{Key: "ping", Value: 1}}).Err(); err != nil {
 		panic(err)
 	}
-	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
+	log.Println("Pinged your deployment. You successfully connected to MongoDB!")
 
 	db = client.Database(DATABASE_NAME)
 

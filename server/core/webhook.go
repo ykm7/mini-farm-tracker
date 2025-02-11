@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -119,7 +120,7 @@ func handleWebhook(c *gin.Context, server *Server) {
 		// err = data.S2120.Unmarshal(jsonData)
 
 		if err != nil || data.S2120 == nil {
-			fmt.Printf("For payload (as string) %s and expected sensor %s have error %v", string(jsonData), S2120, err)
+			log.Printf("For payload (as string) %s and expected sensor %s have error %v", string(jsonData), S2120, err)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v (as string: %s) to expected data type for: %s", jsonData, string(jsonData), S2120),
 			})
@@ -365,7 +366,7 @@ func storeLDDS45CalibratedData(
 
 			distanceInMms, err := strconv.ParseFloat(distanceInMmsString, 64)
 			if err != nil {
-				fmt.Println("Error:", err)
+				log.Println("Error:", err)
 				return fmt.Errorf("Error converting LDDS45RawData distance to float %w", err)
 			}
 

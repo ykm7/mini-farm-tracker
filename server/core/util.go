@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -151,7 +150,7 @@ func ListenToSensors(server *Server) {
 		defer stream.Close(routineCtx)
 
 		for stream.Next(routineCtx) {
-			fmt.Println("Stream listener on the 'sensors' collection started...")
+			log.Println("Stream listener on the 'sensors' collection started...")
 
 			var changeEvent bson.M
 			if err := sensorStream.Decode(&changeEvent); err != nil {
@@ -175,7 +174,7 @@ func ListenToSensors(server *Server) {
 						continue
 					}
 					server.Sensors.Update(sensor.Id, sensor)
-					fmt.Printf("Sensor 'inserted', 'updated' or 'replaced': %+v\n", sensor)
+					log.Printf("Sensor 'inserted', 'updated' or 'replaced': %+v\n", sensor)
 				}
 
 			case "delete":
@@ -189,7 +188,7 @@ func ListenToSensors(server *Server) {
 						log.Printf("Error unmarshaling full document before change: %v", err)
 						continue
 					}
-					fmt.Printf("Sensor deleted: %+v\n", sensor)
+					log.Printf("Sensor deleted: %+v\n", sensor)
 					server.Sensors.Delete(sensor.Id)
 				}
 			}

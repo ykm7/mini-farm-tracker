@@ -64,6 +64,10 @@ func StringToUnits(s string) (UNITS, error) {
 	}
 }
 
+type QueryData interface {
+	RawData | CalibratedData
+}
+
 type AssetMetricsCylinderVolume struct {
 	// Max static volume
 	// This is not likely to be the manufactoring volume, but rather based on height of overflow outlet. Actually likely to be the same?
