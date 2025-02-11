@@ -29,6 +29,7 @@ func SetupRouter(server *Server) *gin.Engine {
 	r.Use(gin.Recovery())
 
 	config := cors.DefaultConfig()
+	config.ExposeHeaders = []string{DATA_API_LIMIT_HEADER}
 
 	if isProduction() {
 		config.AllowOrigins = []string{"https://mini-farm-tracker.io", "https://www.mini-farm-tracker.io"}

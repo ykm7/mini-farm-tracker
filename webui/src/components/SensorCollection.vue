@@ -84,6 +84,12 @@ watch(
   { deep: true },
 )
 
+/**
+ * TODO:
+ * * We have a fair bit of shared code between sensorCollection and AssetCollection - fix
+ * While pagination has been added, we aren't taking full advantage of drawing graph values 
+ * while the data is loading; ie, we are loading ALL the data first
+ * */
 const pullSensorData = async (
   sensor: Sensor,
   startOffset: number,
@@ -95,37 +101,58 @@ const pullSensorData = async (
 
   const graphData: GraphData = {}
 
+  const data: RawData[] = []
   const params = new URLSearchParams({
     start: start.toISOString(),
     end: end.toISOString(),
   })
 
-  try {
-    const response = await axios.get<RawData[]>(
-      `${BASE_URL}/api/sensors/${sensor.Id}/data/raw_data?${params.toString()}`,
-    )
+  while (true) {
+    try {
+      const response = await axios.get<RawData[]>(
+        `${BASE_URL}/api/sensors/${sensor.Id}/data/raw_data?${params.toString()}`,
+      )
 
-    response.data.forEach((d: RawData) => {
-      if (d.Data.LDDS45) {
-        if (graphData.Raw == null) {
-          graphData.Raw = {
-            unit: 'mm',
-            data: [],
-          }
-        }
+      // efficient array adding
+      Array.prototype.push.apply(data, response.data)
 
-        graphData.Raw?.data.push({
-          value: d.Data.LDDS45.Distance.split(' ')[0] as unknown as number,
-          timestamp: d.Timestamp,
-        })
+      const limitHeader = Number(response.headers['x-max-data-limit'])
+      if (Number.isNaN(limitHeader)) {
+        console.error("Unable to find the expected header 'x-max-data-limit'")
+        break
       }
-    })
 
-    return graphData
-  } catch (e) {
-    console.warn(e)
-    return {}
+      const available = response.data.length
+
+      if (available < limitHeader) {
+        // We have the all within the specified limit limit
+        break
+      }
+
+      params.set('start', response.data[available - 1].Timestamp)
+    } catch (e) {
+      console.warn(e)
+      return {}
+    }
   }
+
+  data.forEach((d: RawData) => {
+    if (d.Data.LDDS45) {
+      if (graphData.Raw == null) {
+        graphData.Raw = {
+          unit: 'mm',
+          data: [],
+        }
+      }
+
+      graphData.Raw?.data.push({
+        value: d.Data.LDDS45.Distance.split(' ')[0] as unknown as number,
+        timestamp: d.Timestamp,
+      })
+    }
+  })
+
+  return graphData
 }
 </script>
 

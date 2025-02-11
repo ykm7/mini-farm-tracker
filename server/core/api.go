@@ -13,6 +13,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+const DATA_API_LIMIT_HEADER = "X-Max-Data-Limit"
+const DATA_API_LIMIT = 500
+
 func getStartStopTimes(c *gin.Context) (start time.Time, end time.Time, err error) {
 	now := time.Now()
 	// default to 7 days
@@ -89,6 +92,24 @@ func sharedDataPullFunctionality[T QueryData](c *gin.Context, server *Server, da
 
 	switch sensor.Model {
 	case LDDS45, S2120:
+
+		options := options.Find().SetSort(
+			bson.D{
+				{
+					Key: "timestamp", Value: 1,
+				},
+			},
+		).SetProjection(
+			bson.D{
+				{
+					Key: "Id", Value: 0,
+				},
+				{
+					Key: "Sensor", Value: 0,
+				},
+			},
+		).SetLimit(DATA_API_LIMIT)
+
 		results, err := dataPullFn(server.MongoDb).Find(
 			ctx,
 			bson.D{
@@ -98,16 +119,7 @@ func sharedDataPullFunctionality[T QueryData](c *gin.Context, server *Server, da
 					{Key: "$lt", Value: primitive.NewDateTimeFromTime(end)},
 				}},
 			},
-			options.Find().SetProjection(
-				bson.D{
-					{
-						Key: "Id", Value: 0,
-					},
-					{
-						Key: "Sensor", Value: 0,
-					},
-				},
-			),
+			options,
 		)
 		if err != nil {
 			log.Printf("Error within %T data query: %v\n", results, err)
@@ -117,6 +129,7 @@ func sharedDataPullFunctionality[T QueryData](c *gin.Context, server *Server, da
 			return
 		}
 
+		c.Header(DATA_API_LIMIT_HEADER, fmt.Sprint(DATA_API_LIMIT))
 		c.JSON(http.StatusOK, results)
 		return
 
