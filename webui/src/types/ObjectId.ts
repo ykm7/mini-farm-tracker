@@ -3,4 +3,4 @@
 // import { ObjectId } from 'mongodb'
 
 // In a new file, e.g., @/types/ObjectId.ts
-export type ObjectId = string | { toString(): string };
+export type ObjectId = string | { toString(): string }

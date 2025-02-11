@@ -27,24 +27,23 @@
   </header>
 </template>
 
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 
 <style scoped>
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-}
-
-.navigation {
-  ul {
+  .dashboard-header {
     display: flex;
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
+    justify-content: space-between;
   }
-  li {
-    margin-right: 1.5rem;
+
+  .navigation {
+    ul {
+      display: flex;
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+    li {
+      margin-right: 1.5rem;
+    }
   }
-}
 </style>

@@ -1,7 +1,7 @@
-import type { Asset } from '@/models/Asset'
-import { defineStore } from 'pinia'
-import type { ObjectId } from '@/types/ObjectId'
-import axios from 'axios'
+import type { Asset } from "@/models/Asset"
+import { defineStore } from "pinia"
+import type { ObjectId } from "@/types/ObjectId"
+import axios from "axios"
 
 const BASE_URL: string = import.meta.env.VITE_BASE_URL
 
@@ -10,7 +10,7 @@ interface AssetState {
   loading: boolean
 }
 
-export const useAssetStore = defineStore('asset', {
+export const useAssetStore = defineStore("asset", {
   state: (): AssetState => ({
     assets: [],
     loading: false,

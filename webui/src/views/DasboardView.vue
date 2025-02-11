@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Dashboard from '../components/DashboardMain.vue'
-import DashboardHeader from '../components/DashboardHeader.vue'
+  import Dashboard from "../components/DashboardMain.vue"
+  import DashboardHeader from "../components/DashboardHeader.vue"
 </script>
 
 <template>
@@ -16,20 +16,20 @@ import DashboardHeader from '../components/DashboardHeader.vue'
 </template>
 
 <style scoped>
-.main-content {
-  padding: 2rem;
-  min-height: 100vh;
-  min-width: 100vw;
-  display: flex;
-  flex-direction: column;
-}
+  .main-content {
+    padding: 2rem;
+    min-height: 100vh;
+    min-width: 100vw;
+    display: flex;
+    flex-direction: column;
+  }
 
-.dashboard-header {
-  height: 50px;
-  flex-shrink: 0;
-}
+  .dashboard-header {
+    height: 50px;
+    flex-shrink: 0;
+  }
 
-.dashboard {
-  flex-grow: 1;
-}
+  .dashboard {
+    flex-grow: 1;
+  }
 </style>

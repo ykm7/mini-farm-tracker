@@ -1,7 +1,7 @@
-import { defineStore } from 'pinia'
-import type { ObjectId } from '@/types/ObjectId'
-import axios from 'axios'
-import type { Sensor } from '@/models/Sensor'
+import { defineStore } from "pinia"
+import type { ObjectId } from "@/types/ObjectId"
+import axios from "axios"
+import type { Sensor } from "@/models/Sensor"
 
 const BASE_URL: string = import.meta.env.VITE_BASE_URL
 
@@ -10,7 +10,7 @@ interface SensorState {
   loading: boolean
 }
 
-export const useSensorStore = defineStore('sensor', {
+export const useSensorStore = defineStore("sensor", {
   state: (): SensorState => ({
     sensors: [],
     loading: false,

@@ -22,25 +22,24 @@ export interface RawData extends Data {
 }
 
 interface CalibratedDataPoints {
-  Volume?: CalibratedDataType;
-  AirTemperature?: CalibratedDataType;
-  AirHumidity?: CalibratedDataType;
-  LightIntensity?: CalibratedDataType;
-  UvIndex?: CalibratedDataType;
-  WindSpeed?: CalibratedDataType;
-  WindDirection?: CalibratedDataType;
-  RainfallHourly?: CalibratedDataType;
-  BarometricPressure?: CalibratedDataType;
+  Volume?: CalibratedDataType
+  AirTemperature?: CalibratedDataType
+  AirHumidity?: CalibratedDataType
+  LightIntensity?: CalibratedDataType
+  UvIndex?: CalibratedDataType
+  WindSpeed?: CalibratedDataType
+  WindDirection?: CalibratedDataType
+  RainfallHourly?: CalibratedDataType
+  BarometricPressure?: CalibratedDataType
 }
 
 interface CalibratedDataType {
   // Define properties of CalibratedDataType here
   // For example:
-  Data: number;
-  Units: string;
+  Data: number
+  Units: string
 }
 
-
 export interface CalibratedData extends Data {
-  DataPoints: CalibratedDataPoints;
+  DataPoints: CalibratedDataPoints
 }

@@ -1,19 +1,19 @@
-import type { ObjectId } from '@/types/ObjectId'
+import type { ObjectId } from "@/types/ObjectId"
 
 interface AssetMetricsCylinderVolume {
-    Volume: number;
-    Radius: number;
-    Height: number;
+  Volume: number
+  Radius: number
+  Height: number
 }
 
 interface AssetMetrics {
-    Volume?: AssetMetricsCylinderVolume;
+  Volume?: AssetMetricsCylinderVolume
 }
 
 export interface Asset {
-    Id: ObjectId;
-    Name: string;
-    Description: string;
-    Sensors?: string[];
-    Metrics?: AssetMetrics;
+  Id: ObjectId
+  Name: string
+  Description: string
+  Sensors?: string[]
+  Metrics?: AssetMetrics
 }
