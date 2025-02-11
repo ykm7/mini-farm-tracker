@@ -13,6 +13,35 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+func getStartStopTimes(c *gin.Context) (start time.Time, end time.Time, err error) {
+	now := time.Now()
+	// default to 7 days
+	startDate := c.DefaultQuery(START_DATE, now.AddDate(0, 0, -7).Format(time.RFC3339))
+	// should be "now"
+	endDate := c.DefaultQuery(END_DATE, now.Format(time.RFC3339))
+
+	// var err error
+	start, err = time.Parse(time.RFC3339, startDate)
+	if err != nil {
+		err = fmt.Errorf("Invalid start time format")
+	}
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start time format"})
+	// 	return
+	// }
+
+	end, err = time.Parse(time.RFC3339, endDate)
+	if err != nil {
+		err = fmt.Errorf("Invalid end time format")
+	}
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end time format"})
+	// 	return
+	// }
+
+	return
+}
+
 func handleWithoutSensorID(c *gin.Context, server *Server) {
 	c.JSON(http.StatusOK, server.Sensors.ToList())
 }
@@ -39,21 +68,9 @@ func handleWithSensorID(c *gin.Context) {
 func getRawDataWithSensorId(c *gin.Context, server *Server) {
 	sensorID := c.Param(SENSOR_ID_PARAM)
 
-	now := time.Now()
-	// default to 7 days
-	startDate := c.DefaultQuery(START_DATE, now.AddDate(0, 0, -7).Format(time.RFC3339))
-	// should be "now"
-	endDate := c.DefaultQuery(END_DATE, now.Format(time.RFC3339))
-
-	start, err := time.Parse(time.RFC3339, startDate)
+	start, end, err := getStartStopTimes(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start time format"})
-		return
-	}
-
-	end, err := time.Parse(time.RFC3339, endDate)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end time format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("%v", err)})
 		return
 	}
 
@@ -112,21 +129,9 @@ func getRawDataWithSensorId(c *gin.Context, server *Server) {
 func getCalibratedDataWithSensorId(c *gin.Context, server *Server) {
 	sensorID := c.Param(SENSOR_ID_PARAM)
 
-	now := time.Now()
-	// default to 7 days
-	startDate := c.DefaultQuery(START_DATE, now.AddDate(0, 0, -7).Format(time.RFC3339))
-	// should be "now"
-	endDate := c.DefaultQuery(END_DATE, now.Format(time.RFC3339))
-
-	start, err := time.Parse(time.RFC3339, startDate)
+	start, end, err := getStartStopTimes(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start time format"})
-		return
-	}
-
-	end, err := time.Parse(time.RFC3339, endDate)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end time format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("%v", err)})
 		return
 	}
 
