@@ -41,7 +41,7 @@
   import { useSensorStore } from "@/stores/sensor"
   import type { GraphData } from "@/types/GraphRelated"
   import axios from "axios"
-  import mergeWith from 'lodash/mergeWith';
+  import mergeWith from "lodash/mergeWith"
   import TimeseriesGraph from "./TimeseriesGraph.vue"
 
   const BASE_URL: string = import.meta.env.VITE_BASE_URL
