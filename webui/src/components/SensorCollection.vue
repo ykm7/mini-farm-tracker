@@ -3,12 +3,10 @@
     <h4>Sensor Collection</h4>
     <div>
       <a>Available sensors</a>
-
       <div :key="sensor.Id" v-for="sensor in sensors">
         <CCard class="card-holder" style="margin: 0.5rem 0">
           <div class="card-details">
             <CCardTitle>{{ sensor.Id }}</CCardTitle>
-            <!-- <CCardSubtitle class="mb-2 text-body-secondary">{{ asset.Id }}</CCardSubtitle> -->
             <CCardBody
               ><div>{{ sensor.Description }}</div></CCardBody
             >
@@ -70,14 +68,19 @@
     sensorIdToStarting,
     (newMap, oldMap) => {
       // Iterate through the new map to find changes
-      newMap.forEach((newValue, key) => {
+      newMap.forEach(async (newValue, key) => {
         const oldValue = oldMap.get(key)
         // TODO: Have to re-visit this otherwise each time ANY time trigger is updated ALL arrays are updated
         if (!oldValue || newValue !== oldValue) {
-          sensorToData.value.set(
-            key,
-            pullSensorData(sensors.value.find((s) => s.Id === key)!, newValue)
+          const generator = pullSensorData(
+            sensors.value.find((s) => s.Id.toString() === key.toString())!,
+            newValue
           )
+
+          for await (const data of generator) {
+            console.log("🚀 ~ forawait ~ data:", data)
+            sensorToData.value.set(key, Promise.resolve(data))
+          }
         }
       })
     },
@@ -90,18 +93,17 @@
    * While pagination has been added, we aren't taking full advantage of drawing graph values
    * while the data is loading; ie, we are loading ALL the data first
    * */
-  const pullSensorData = async (
+  const pullSensorData = async function* (
     sensor: Sensor,
     startOffset: number,
     endOffset: number = 0
-  ): Promise<GraphData> => {
+  ): AsyncGenerator<GraphData> {
     const now = new Date()
     const start = new Date(now.getTime() - startOffset)
     const end = new Date(now.getTime() - endOffset)
 
     const graphData: GraphData = {}
 
-    const data: RawData[] = []
     const params = new URLSearchParams({
       start: start.toISOString(),
       end: end.toISOString(),
@@ -113,8 +115,23 @@
           `${BASE_URL}/api/sensors/${sensor.Id}/data/raw_data?${params.toString()}`
         )
 
-        // efficient array adding
-        Array.prototype.push.apply(data, response.data)
+        response.data.forEach((d: RawData) => {
+          if (d.Data.LDDS45) {
+            if (graphData.Raw == null) {
+              graphData.Raw = {
+                unit: "mm",
+                data: [],
+              }
+            }
+
+            graphData.Raw?.data.push({
+              value: d.Data.LDDS45.Distance.split(" ")[0] as unknown as number,
+              timestamp: d.Timestamp,
+            })
+          }
+        })
+
+        yield graphData
 
         const limitHeader = Number(response.headers["x-max-data-limit"])
         if (Number.isNaN(limitHeader)) {
@@ -132,27 +149,9 @@
         params.set("start", response.data[available - 1].Timestamp)
       } catch (e) {
         console.warn(e)
-        return {}
+        break
       }
     }
-
-    data.forEach((d: RawData) => {
-      if (d.Data.LDDS45) {
-        if (graphData.Raw == null) {
-          graphData.Raw = {
-            unit: "mm",
-            data: [],
-          }
-        }
-
-        graphData.Raw?.data.push({
-          value: d.Data.LDDS45.Distance.split(" ")[0] as unknown as number,
-          timestamp: d.Timestamp,
-        })
-      }
-    })
-
-    return graphData
   }
 </script>
 
