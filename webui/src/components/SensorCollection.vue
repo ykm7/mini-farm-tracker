@@ -35,11 +35,13 @@
   import { computed, ref, watch } from "vue"
   import AsyncWrapper from "./AsyncWrapper.vue"
 
+  import { customMerge } from "@/helper"
   import type { RawData } from "@/models/Data"
   import type { Sensor } from "@/models/Sensor"
   import { useSensorStore } from "@/stores/sensor"
   import type { GraphData } from "@/types/GraphRelated"
   import axios from "axios"
+  import mergeWith from 'lodash/mergeWith';
   import TimeseriesGraph from "./TimeseriesGraph.vue"
 
   const BASE_URL: string = import.meta.env.VITE_BASE_URL
@@ -78,7 +80,6 @@
           )
 
           for await (const data of generator) {
-            console.log("🚀 ~ forawait ~ data:", data)
             sensorToData.value.set(key, Promise.resolve(data))
           }
         }
@@ -102,7 +103,7 @@
     const start = new Date(now.getTime() - startOffset)
     const end = new Date(now.getTime() - endOffset)
 
-    const graphData: GraphData = {}
+    let graphData: GraphData = {}
 
     const params = new URLSearchParams({
       start: start.toISOString(),
@@ -110,6 +111,7 @@
     })
 
     while (true) {
+      const newGraphData: GraphData = {}
       try {
         const response = await axios.get<RawData[]>(
           `${BASE_URL}/api/sensors/${sensor.Id}/data/raw_data?${params.toString()}`
@@ -117,20 +119,21 @@
 
         response.data.forEach((d: RawData) => {
           if (d.Data.LDDS45) {
-            if (graphData.Raw == null) {
-              graphData.Raw = {
+            if (newGraphData.Raw == null) {
+              newGraphData.Raw = {
                 unit: "mm",
                 data: [],
               }
             }
 
-            graphData.Raw?.data.push({
+            newGraphData.Raw?.data.push({
               value: d.Data.LDDS45.Distance.split(" ")[0] as unknown as number,
               timestamp: d.Timestamp,
             })
           }
         })
 
+        graphData = mergeWith({}, graphData, newGraphData, customMerge)
         yield graphData
 
         const limitHeader = Number(response.headers["x-max-data-limit"])

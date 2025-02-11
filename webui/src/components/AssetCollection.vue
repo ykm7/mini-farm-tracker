@@ -51,6 +51,7 @@
 </template>
 
 <script setup lang="ts">
+  import { customMerge } from "@/helper"
   import type { Asset } from "@/models/Asset"
   import type { CalibratedData } from "@/models/Data"
   import { useAssetStore } from "@/stores/asset"
@@ -58,6 +59,7 @@
   import type { ObjectId } from "@/types/ObjectId"
   import { CCard, CCardBody, CCardTitle, CListGroup, CListGroupItem } from "@coreui/vue"
   import axios from "axios"
+  import mergeWith from "lodash/mergeWith"
   import { computed, ref, watch } from "vue"
   import AsyncWrapper from "./AsyncWrapper.vue"
   import TimeseriesGraph from "./TimeseriesGraph.vue"
@@ -99,7 +101,6 @@
           )
 
           for await (const data of generator) {
-            console.log("🚀 ~ forawait ~ data:", data)
             assetToData.value.set(key, Promise.resolve(data))
           }
         }
@@ -129,6 +130,7 @@
     })
 
     while (true) {
+      const newGraphData: GraphData = {}
       try {
         // TODO: This still is limiting a single sensor per asset.
         const response = await axios.get<CalibratedData[]>(
@@ -137,132 +139,133 @@
 
         response.data.forEach((d: CalibratedData) => {
           if (d.DataPoints.Volume) {
-            if (graphData.Volume == null) {
-              graphData.Volume = {
+            if (newGraphData.Volume == null) {
+              newGraphData.Volume = {
                 data: [],
                 unit: d.DataPoints.Volume.Units as Unit,
               }
             }
 
-            graphData.Volume!.data.push({
+            newGraphData.Volume!.data.push({
               value: d.DataPoints.Volume.Data,
               timestamp: d.Timestamp,
             })
           }
 
           if (d.DataPoints.AirTemperature) {
-            if (graphData.AirTemperature == null) {
-              graphData.AirTemperature = {
+            if (newGraphData.AirTemperature == null) {
+              newGraphData.AirTemperature = {
                 data: [],
                 unit: d.DataPoints.AirTemperature.Units as Unit,
               }
             }
 
-            graphData.AirTemperature.data.push({
+            newGraphData.AirTemperature.data.push({
               value: d.DataPoints.AirTemperature.Data,
               timestamp: d.Timestamp,
             })
           }
 
           if (d.DataPoints.AirHumidity) {
-            if (graphData.AirHumidity == null) {
-              graphData.AirHumidity = {
+            if (newGraphData.AirHumidity == null) {
+              newGraphData.AirHumidity = {
                 data: [],
                 unit: d.DataPoints.AirHumidity.Units as Unit,
               }
             }
 
-            graphData.AirHumidity.data.push({
+            newGraphData.AirHumidity.data.push({
               value: d.DataPoints.AirHumidity.Data,
               timestamp: d.Timestamp,
             })
           }
 
           if (d.DataPoints.LightIntensity) {
-            if (graphData.LightIntensity == null) {
-              graphData.LightIntensity = {
+            if (newGraphData.LightIntensity == null) {
+              newGraphData.LightIntensity = {
                 data: [],
                 unit: d.DataPoints.LightIntensity.Units as Unit,
               }
             }
 
-            graphData.LightIntensity.data.push({
+            newGraphData.LightIntensity.data.push({
               value: d.DataPoints.LightIntensity.Data,
               timestamp: d.Timestamp,
             })
           }
 
           if (d.DataPoints.UvIndex) {
-            if (graphData.UvIndex == null) {
-              graphData.UvIndex = {
+            if (newGraphData.UvIndex == null) {
+              newGraphData.UvIndex = {
                 data: [],
                 unit: d.DataPoints.UvIndex.Units as Unit,
               }
             }
 
-            graphData.UvIndex.data.push({
+            newGraphData.UvIndex.data.push({
               value: d.DataPoints.UvIndex.Data,
               timestamp: d.Timestamp,
             })
           }
 
           if (d.DataPoints.WindSpeed) {
-            if (graphData.WindSpeed == null) {
-              graphData.WindSpeed = {
+            if (newGraphData.WindSpeed == null) {
+              newGraphData.WindSpeed = {
                 data: [],
                 unit: d.DataPoints.WindSpeed.Units as Unit,
               }
             }
 
-            graphData.WindSpeed.data.push({
+            newGraphData.WindSpeed.data.push({
               value: d.DataPoints.WindSpeed.Data,
               timestamp: d.Timestamp,
             })
           }
 
           if (d.DataPoints.WindDirection) {
-            if (graphData.WindDirection == null) {
-              graphData.WindDirection = {
+            if (newGraphData.WindDirection == null) {
+              newGraphData.WindDirection = {
                 data: [],
                 unit: d.DataPoints.WindDirection.Units as Unit,
               }
             }
 
-            graphData.WindDirection.data.push({
+            newGraphData.WindDirection.data.push({
               value: d.DataPoints.WindDirection.Data,
               timestamp: d.Timestamp,
             })
           }
 
           if (d.DataPoints.RainfallHourly) {
-            if (graphData.RainfallHourly == null) {
-              graphData.RainfallHourly = {
+            if (newGraphData.RainfallHourly == null) {
+              newGraphData.RainfallHourly = {
                 data: [],
                 unit: d.DataPoints.RainfallHourly.Units as Unit,
               }
             }
 
-            graphData.RainfallHourly.data.push({
+            newGraphData.RainfallHourly.data.push({
               value: d.DataPoints.RainfallHourly.Data,
               timestamp: d.Timestamp,
             })
           }
 
           if (d.DataPoints.BarometricPressure) {
-            if (graphData.BarometricPressure == null) {
-              graphData.BarometricPressure = {
+            if (newGraphData.BarometricPressure == null) {
+              newGraphData.BarometricPressure = {
                 data: [],
                 unit: d.DataPoints.BarometricPressure.Units as Unit,
               }
             }
 
-            graphData.BarometricPressure.data.push({
+            newGraphData.BarometricPressure.data.push({
               value: d.DataPoints.BarometricPressure.Data,
               timestamp: d.Timestamp,
             })
           }
         })
 
+        graphData = mergeWith({}, graphData, newGraphData, customMerge)
         yield graphData
 
         const limitHeader = Number(response.headers["x-max-data-limit"])
