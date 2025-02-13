@@ -25,6 +25,9 @@ func main() {
 	database, mongoDeferFn := core.SetupMongo(envs)
 	defer mongoDeferFn()
 
+	redis, redisDeferFn := core.GetRedisClient(envs)
+	defer redisDeferFn()
+
 	mongoDb := &core.MongoDatabaseImpl{Db: database}
 
 	server := &core.Server{

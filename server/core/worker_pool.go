@@ -9,6 +9,10 @@ import (
 
 const NUM_OF_WORKERS = 5
 
+/**
+Considersations.
+*/
+
 // Overall this is overly developed as I don't have more than a single type.
 // Partly its to pratice
 type TaskJob interface {

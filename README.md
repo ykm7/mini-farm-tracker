@@ -329,8 +329,6 @@ NOTE: testContainer can use cloud resources however prefer to run locally.
 
 #### TODO
 
-Implement what I have done previously; allowing for initial, expected post data per collection to be tested after each test run.
-
 #### Test result generation
 
 ##### Server
@@ -349,6 +347,12 @@ Following [configuration path](https://golang.testcontainers.org/features/config
 > ryuk.disabled=true
 
 # Rough TODO
+
+Considersations.
+* I want a cron-style periodic tasks which to handle aggregating sensor data.
+  * I want a common task/worker pool supported functionality.
+  * I want these actions to be "sync'd" between multiple instances of the application (currently we have 2 running hosted with DigitalOcean), only want each task to be handled by pod of either of the pods, with the tasks being picked up by each pod.
+    * I use the term "pod", even though thats not a DigitalOcean specific term.
 
 ### WebUI
 

@@ -79,6 +79,7 @@ type environmentVariables struct {
 	Ttn_webhhook_api string
 	Mongo_conn       string
 	Open_weather_api string
+	Redis_conn       string
 }
 
 func ContextWithQuitChannel(parent context.Context, quit <-chan struct{}) (context.Context, context.CancelFunc) {
@@ -105,6 +106,7 @@ func ReadEnvs() *environmentVariables {
 		Ttn_webhhook_api: os.Getenv("TTN_WEBHOOK_API"),
 		Mongo_conn:       os.Getenv("MONGO_CONN"),
 		Open_weather_api: os.Getenv("OPEN_WEATHER_API"),
+		Redis_conn:       os.Getenv("REDIS_CONNECTION_STRING"),
 	}
 }
 
