@@ -23,11 +23,6 @@ Using Golang
 
 Primary motivation is I have done similar in Python multiple times (Flask, Quart) and while I have created microservices within Golang, I have not used it for web API hosting.
 
-## MongoDB Consideration
-
-Both `RawData` and `CalibratedData` schemas within MongoDB are configured as timeseries collections.
-Both use `sensor` and `timestamp` as compound indexes and are intended to function as covering indexes for all associated queries.
-
 # Diagrams
 
 ## Data Flow of data into the system
@@ -231,6 +226,44 @@ Minor code modification was performed to "flatter" the resulting array.
 
 This allows for simplied parsing without all loss of useful information for my purposes.
 (I do not benefit for the separation of data collection from each internal 8-in-1 sensor)
+
+## Mongo
+
+### Indices
+Both `RawData` and `CalibratedData` schemas within MongoDB are configured as timeseries collections.
+Both use `sensor` and `timestamp` as compound indexes and are intended to function as covering indexes for all associated queries.
+
+### mongosh
+
+View timeseries information
+
+```mongosh
+db.runCommand({
+  listCollections: 1,
+  filter: { name: "raw_data" }
+})
+```
+
+```mongosh
+db.runCommand({
+  listCollections: 1,
+  filter: { name: "raw_data" }
+}).cursor.firstBatch[0]
+```
+
+```mongosh
+db.runCommand({
+  listCollections: 1,
+  filter: { name: "calibrated_data" }
+})
+```
+
+```mongosh
+db.runCommand({
+  listCollections: 1,
+  filter: { name: "calibrated_data" }
+}).cursor.firstBatch[0]
+```
 
 # Hosting
 

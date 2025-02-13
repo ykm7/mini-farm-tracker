@@ -11,6 +11,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// TODO: Leaving this as the default value until I understand better how to use this
+const MAX_POOL_SIZE = 100
+
 /*
 TODO: Add cancellation context
 */
@@ -19,7 +22,7 @@ func SetupMongo(envs *environmentVariables) (db *mongo.Database, deferFn func())
 	defer cancel()
 
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().ApplyURI(envs.Mongo_conn).SetServerAPIOptions(serverAPI)
+	opts := options.Client().ApplyURI(envs.Mongo_conn).SetServerAPIOptions(serverAPI).SetMaxPoolSize(MAX_POOL_SIZE)
 	// Create a new client and connect to the server
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
@@ -70,6 +73,7 @@ type MongoCollection[T any] interface {
 	UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 	Watch(ctx context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
 	DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
+	Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) ([]T, error)
 }
 
 type MongoDatabaseImpl struct {
@@ -165,4 +169,18 @@ func (m *MongoCollectionWrapper[T]) Watch(ctx context.Context, pipeline interfac
 
 func (m *MongoCollectionWrapper[T]) DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error) {
 	return m.col.DeleteMany(ctx, filter, opts...)
+}
+
+func (m *MongoCollectionWrapper[T]) Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) ([]T, error) {
+	cursor, err := m.col.Aggregate(ctx, pipeline, opts...)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []T
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
