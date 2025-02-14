@@ -23,16 +23,23 @@ func SetupPeriodicTasks(server *Server) {
 	c.AddFunc("@hourly", func() {
 		fmt.Println("Every hour on the half hour")
 
-		tasks := []TaskMongoAggregation{}
+		// tasks := []TaskMongoAggregation{}
 
-		for _, t := range tasks {
-			server.Tasks <- &t
-		}
+		// for _, t := range tasks {
+		// 	server.Tasks <- &t
+		// }
 	})
 	c.AddFunc("@weekly ", func() {
 		fmt.Println("Every hour on the half hour")
 
-		tasks := []TaskMongoAggregation{}
+		hourlyPipeline := createAggregationPipeline("rainfallHourly", "hourly", "%Y-%m-%d-%H")
+
+		tasks := []TaskMongoAggregation[CalibratedData]{
+			TaskMongoAggregation[CalibratedData]{
+				mongoCollection: GetCalibratedDataCollection(server.MongoDb),
+				pipeline:        hourlyPipeline,
+			},
+		}
 
 		for _, t := range tasks {
 			server.Tasks <- &t
@@ -41,20 +48,20 @@ func SetupPeriodicTasks(server *Server) {
 	c.AddFunc("@monthly", func() {
 		fmt.Println("Every hour on the half hour")
 
-		tasks := []TaskMongoAggregation{}
+		// tasks := []TaskMongoAggregation{}
 
-		for _, t := range tasks {
-			server.Tasks <- &t
-		}
+		// for _, t := range tasks {
+		// 	server.Tasks <- &t
+		// }
 	})
 	c.AddFunc("@yearly", func() {
 		fmt.Println("Every hour on the half hour")
 
-		tasks := []TaskMongoAggregation{}
+		// tasks := []TaskMongoAggregation{}
 
-		for _, t := range tasks {
-			server.Tasks <- &t
-		}
+		// for _, t := range tasks {
+		// 	server.Tasks <- &t
+		// }
 	})
 
 	c.Start()
@@ -67,4 +74,8 @@ func SetupPeriodicTasks(server *Server) {
 		c.Stop()
 	}()
 
+}
+
+func SetupTaskHandler(server *Server) {
+	debounce(time.Second*1, server.Tasks, taskHandler)
 }

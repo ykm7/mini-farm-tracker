@@ -252,8 +252,8 @@ func mapToList[K comparable, V any](m map[K]V) []V {
 
 // TODO: To be paired with the overall available tasks. Allows for handling of all tasks raised within a time period.
 // Likely setting this to several seconds should capture all possible tasks.
-func debounce(interval time.Duration, incoming chan TaskJob, f func([]TaskJob)) {
-	var items []TaskJob
+func debounce[T any](interval time.Duration, incoming chan T, f func([]T)) {
+	var items []T
 	timer := time.NewTimer(interval)
 
 	for {
@@ -264,7 +264,7 @@ func debounce(interval time.Duration, incoming chan TaskJob, f func([]TaskJob)) 
 		case <-timer.C:
 			if len(items) > 0 {
 				f(items)
-				items = []TaskJob{}
+				items = []T{}
 			}
 			timer.Reset(interval)
 		}

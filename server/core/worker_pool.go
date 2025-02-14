@@ -22,13 +22,13 @@ type TaskJob interface {
 	Job(ctx context.Context) error
 }
 
-type TaskMongoAggregation struct {
-	mongoDb  MongoDatabase
-	pipeline mongo.Pipeline
+type TaskMongoAggregation[T any] struct {
+	mongoCollection MongoCollection[T]
+	pipeline        mongo.Pipeline
 }
 
-func (t *TaskMongoAggregation) Job(ctx context.Context) error {
-	_, err := t.mongoDb.Collection("").Aggregate(context.TODO(), t.pipeline)
+func (t *TaskMongoAggregation[T]) Job(ctx context.Context) error {
+	_, err := t.mongoCollection.Aggregate(context.TODO(), t.pipeline)
 
 	return err
 }
@@ -37,10 +37,8 @@ func worker(id int, tasks <-chan TaskJob, results chan<- error) {
 	for task := range tasks {
 		log.Printf("Worker %d processing task: %+v\n", id, task)
 
-		// start actual task
 		err := task.Job(context.TODO())
 
-		// catch results
 		results <- err
 	}
 }
@@ -48,31 +46,31 @@ func worker(id int, tasks <-chan TaskJob, results chan<- error) {
 /*
 *
  */
-func random() {
+// func random() {
 
-	getKey("as", "adfasdf", Volume)
+// 	getKey("as", "adfasdf", Volume)
 
-	aggregationTasks := []TaskMongoAggregation{}
+// 	aggregationTasks := []TaskMongoAggregation{}
 
-	t := TaskMongoAggregation{
-		mongoDb:  nil,
-		pipeline: mongo.Pipeline{},
-	}
+// 	t := TaskMongoAggregation{
+// 		mongoDb:  nil,
+// 		pipeline: mongo.Pipeline{},
+// 	}
 
-	aggregationTasks = append(aggregationTasks, t)
+// 	aggregationTasks = append(aggregationTasks, t)
 
-	taskNum := len(aggregationTasks)
+// 	taskNum := len(aggregationTasks)
 
-	tasks := make(chan TaskJob, taskNum)
-	taskErrors := make(chan error, taskNum)
+// 	tasks := make(chan TaskJob, taskNum)
+// 	taskErrors := make(chan error, taskNum)
 
-	tasks <- &t
+// 	tasks <- &t
 
-	for i := range taskNum {
-		go worker(i, tasks, taskErrors)
-	}
+// 	for i := range taskNum {
+// 		go worker(i, tasks, taskErrors)
+// 	}
 
-}
+// }
 
 func taskHandler(items []TaskJob) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

@@ -65,7 +65,6 @@ type MongoDatabase interface {
 	Collection(name string, opts ...*options.CollectionOptions) MongoCollection[any]
 }
 
-//go:generate mockgen -destination=../mocks/mock_MongoCollection.go -package=mocks MongoCollection
 type MongoCollection[T any] interface {
 	InsertOne(ctx context.Context, document T) (*mongo.InsertOneResult, error)
 	FindOne(ctx context.Context, filter interface{}, result *T) error
@@ -183,4 +182,79 @@ func (m *MongoCollectionWrapper[T]) Aggregate(ctx context.Context, pipeline inte
 		return nil, err
 	}
 	return results, nil
+}
+
+/*
+*
+dataType - rainfallHourly
+*/
+func getSumAggregation(dataType string) mongo.Pipeline {
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.D{
+			{Key: fmt.Sprintf("dataPoints.%s", dataType), Value: bson.D{{Key: "$exists", Value: true}}},
+		}}},
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: bson.D{
+				{Key: "date", Value: bson.D{{Key: "$dateToString", Value: bson.D{{Key: "format", Value: "%Y-%m-%d"}, {Key: "date", Value: "$timestamp"}}}}},
+				{Key: "sensor", Value: "$sensor"},
+			}},
+			{Key: "totalRainfall", Value: bson.D{{Key: "$sum", Value: fmt.Sprintf("dataPoints.%s.data", dataType)}}},
+			{Key: "unit", Value: bson.D{{Key: "$first", Value: fmt.Sprintf("dataPoints.%s.units", dataType)}}},
+		}}},
+		{{Key: "$project", Value: bson.D{
+			{Key: "_id", Value: 0},
+			{Key: "date", Value: bson.D{{Key: "$dateFromString", Value: bson.D{{Key: "dateString", Value: "$_id.date"}}}}},
+			{Key: "metadata", Value: bson.D{
+				{Key: "sensor", Value: "$_id.sensor"},
+				{Key: "type", Value: "daily"},
+			}},
+			{Key: "totalRainfall", Value: bson.D{
+				{Key: "value", Value: "$totalRainfall"},
+				{Key: "unit", Value: "$unit"},
+			}},
+		}}},
+		{{Key: "$merge", Value: bson.D{
+			{Key: "into", Value: "daily_aggregates"},
+			{Key: "on", Value: bson.A{"date", "metadata.sensor"}},
+			{Key: "whenMatched", Value: "replace"},
+			{Key: "whenNotMatched", Value: "insert"},
+		}}},
+	}
+
+	return pipeline
+}
+
+func createAggregationPipeline(dataType string, aggregationType string, groupByFormat string) mongo.Pipeline {
+	return mongo.Pipeline{
+		{{Key: "$match", Value: bson.D{
+			{Key: fmt.Sprintf("dataPoints.%s", dataType), Value: bson.D{{Key: "$exists", Value: true}}},
+		}}},
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: bson.D{
+				{Key: "date", Value: bson.D{{Key: "$dateToString", Value: bson.D{{Key: "format", Value: groupByFormat}, {Key: "date", Value: "$timestamp"}}}}},
+				{Key: "sensor", Value: "$sensor"},
+			}},
+			{Key: "totalValue", Value: bson.D{{Key: "$sum", Value: fmt.Sprintf("$dataPoints.%s.data", dataType)}}},
+			{Key: "unit", Value: bson.D{{Key: "$first", Value: fmt.Sprintf("$dataPoints.%s.units", dataType)}}},
+		}}},
+		{{Key: "$project", Value: bson.D{
+			{Key: "_id", Value: 0},
+			{Key: "date", Value: bson.D{{Key: "$dateFromString", Value: bson.D{{Key: "dateString", Value: "$_id.date"}}}}},
+			{Key: "metadata", Value: bson.D{
+				{Key: "sensor", Value: "$_id.sensor"},
+				{Key: "type", Value: aggregationType},
+				{Key: "dataType", Value: dataType},
+			}},
+			{Key: "totalValue", Value: bson.D{
+				{Key: "value", Value: "$totalValue"},
+				{Key: "unit", Value: "$unit"},
+			}},
+		}}},
+		{{Key: "$merge", Value: bson.D{
+			{Key: "into", Value: "aggregated_data"},
+			{Key: "on", Value: bson.A{"date", "metadata.sensor", "metadata.type", "metadata.dataType"}},
+			{Key: "whenMatched", Value: "replace"},
+			{Key: "whenNotMatched", Value: "insert"},
+		}}},
+	}
 }
