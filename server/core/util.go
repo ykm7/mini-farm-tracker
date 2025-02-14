@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,7 +19,9 @@ import (
 type Server struct {
 	Envs        *environmentVariables
 	MongoDb     MongoDatabase
+	Redis       *redis.Client
 	Sensors     SyncCache[string, Sensor]
+	Tasks       chan TaskJob
 	ExitContext context.Context
 	ExitChan    chan struct{}
 }
@@ -73,6 +76,36 @@ func (s *syncCacheImpl[K, V]) Delete(key K) {
 	if s.cache == nil {
 		delete(s.cache, key)
 	}
+}
+
+func NewSyncSlice[V any]() *SyncSliceImpl[V] {
+	return &SyncSliceImpl[V]{
+		slice: make([]V, 0),
+	}
+}
+
+type SyncSlice[V any] interface {
+	Append()
+	Extract(count int) []V
+}
+
+type SyncSliceImpl[V any] struct {
+	slice []V
+	mu    sync.RWMutex
+}
+
+func (s *SyncSliceImpl[V]) Append() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+}
+
+func (s *SyncSliceImpl[V]) Extract(count int) []V {
+	s.mu.RLock()
+	defer s.mu.Unlock()
+
+	chunk := s.slice[0:min(count, len(s.slice))]
+	return chunk
 }
 
 type environmentVariables struct {
@@ -215,4 +248,25 @@ func mapToList[K comparable, V any](m map[K]V) []V {
 		result = append(result, value)
 	}
 	return result
+}
+
+// TODO: To be paired with the overall available tasks. Allows for handling of all tasks raised within a time period.
+// Likely setting this to several seconds should capture all possible tasks.
+func debounce(interval time.Duration, incoming chan TaskJob, f func([]TaskJob)) {
+	var items []TaskJob
+	timer := time.NewTimer(interval)
+
+	for {
+		select {
+		case item := <-incoming:
+			items = append(items, item)
+			timer.Reset(interval)
+		case <-timer.C:
+			if len(items) > 0 {
+				f(items)
+				items = []TaskJob{}
+			}
+			timer.Reset(interval)
+		}
+	}
 }

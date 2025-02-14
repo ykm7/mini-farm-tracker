@@ -27,6 +27,10 @@ func GetRedisClient(envs *environmentVariables) (client *redis.Client, deferFn f
 	return client, deferFn
 }
 
+func getKey(sensorId, period string, metric MetricTypes) string {
+	return fmt.Sprintf("%s-%s-%s", sensorId, period, metric)
+}
+
 func getLock(key string, duration time.Duration) (*redislock.Lock, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr: os.Getenv("REDIS_URL"),
@@ -48,7 +52,7 @@ func getLock(key string, duration time.Duration) (*redislock.Lock, error) {
 }
 
 func howToUse() {
-	lock, err := getLock("task-key", 30*time.Second)
+	lock, err := getLock("task-key", AGGREGATION_TIME_LIMIT)
 	if err != nil {
 		// Handle error
 		return

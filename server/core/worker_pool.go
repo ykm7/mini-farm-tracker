@@ -3,11 +3,14 @@ package core
 import (
 	"context"
 	"log"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const NUM_OF_WORKERS = 5
+const NUM_BATCH_COUNT = 3
+const AGGREGATION_TIME_LIMIT = 30 * time.Second
 
 /**
 Considersations.
@@ -42,9 +45,12 @@ func worker(id int, tasks <-chan TaskJob, results chan<- error) {
 	}
 }
 
-// Purpose of this is to take the conjob style aggregation requests which will be run periodically to "group"
-// data pull; ie, sum daily rainfall.
+/*
+*
+ */
 func random() {
+
+	getKey("as", "adfasdf", Volume)
 
 	aggregationTasks := []TaskMongoAggregation{}
 
@@ -66,4 +72,46 @@ func random() {
 		go worker(i, tasks, taskErrors)
 	}
 
+}
+
+func taskHandler(items []TaskJob) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	taskNum := len(items)
+	tasks := make(chan TaskJob, taskNum)
+	taskErrors := make(chan error, taskNum)
+
+	// Start worker goroutines
+	for i := 0; i < 5; i++ { // Adjust number of workers as needed
+		go worker(i, tasks, taskErrors)
+	}
+
+	// Send tasks to workers
+	for _, item := range items {
+		tasks <- item
+	}
+	close(tasks)
+
+	// Collect errors
+	var errs []error
+	for i := 0; i < taskNum; i++ {
+		select {
+		case err := <-taskErrors:
+			if err != nil {
+				errs = append(errs, err)
+			}
+		case <-ctx.Done():
+			errs = append(errs, ctx.Err())
+			return
+		}
+	}
+
+	// Handle errors (log them, send to error channel, etc.)
+	if len(errs) > 0 {
+		log.Printf("Encountered %d errors during task processing", len(errs))
+		for _, err := range errs {
+			log.Printf("Error: %v", err)
+		}
+	}
 }

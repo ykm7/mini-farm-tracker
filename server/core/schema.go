@@ -288,6 +288,13 @@ type S2120RawDataMsg interface {
 	is()
 }
 
+type MetricTypes string
+
+const (
+	Volume         MetricTypes = "Volume"
+	AirTemperature MetricTypes = "AirTemperature"
+)
+
 type S2120RawDataMeasurementType string
 
 const (

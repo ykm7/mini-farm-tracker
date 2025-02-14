@@ -13,6 +13,8 @@ require (
 	go.mongodb.org/mongo-driver v1.17.2
 )
 
+require github.com/robfig/cron/v3 v3.0.0 // indirect
+
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect

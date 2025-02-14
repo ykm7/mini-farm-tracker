@@ -33,7 +33,9 @@ func main() {
 	server := &core.Server{
 		Envs:        envs,
 		MongoDb:     mongoDb,
+		Redis:       redis,
 		Sensors:     core.NewSyncCache[string, core.Sensor](),
+		Tasks:       make(chan core.TaskJob),
 		ExitContext: innerCtx,
 		ExitChan:    exitChan,
 	}
@@ -67,7 +69,7 @@ func main() {
 	select {
 	case <-quit:
 		log.Println("Received OS signal, shutting down...")
-	case <-exitChan:
+	case <-server.ExitChan:
 		log.Println("Change stream on the 'sensors' collection exited, shutting down...")
 	}
 

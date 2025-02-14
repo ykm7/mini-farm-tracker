@@ -348,11 +348,20 @@ Following [configuration path](https://golang.testcontainers.org/features/config
 
 # Rough TODO
 
+## Cron style aggregation/s
+
 Considersations.
-* I want a cron-style periodic tasks which to handle aggregating sensor data.
-  * I want a common task/worker pool supported functionality.
-  * I want these actions to be "sync'd" between multiple instances of the application (currently we have 2 running hosted with DigitalOcean), only want each task to be handled by pod of either of the pods, with the tasks being picked up by each pod.
-    * I use the term "pod", even though thats not a DigitalOcean specific term.
+
+Purpose of this is to take the conjob style aggregation requests which will be run periodically to "group"
+data pull; ie, sum daily rainfall.
+
+Overall, likely overengineered for the traffic we have, however want to test max concurrency bahaviour.
+Ideal outcomes would be flat resource usage across App Platform and Mongo. (Again, excessive as App Platform current average 3-4% at current tier.) Avoid spikes.
+
+1. Cron job periodically trigger (hourly, day, weekly etc) for all the aggregated tasks for that time period.
+2. Tasks are assigned a consistent key which will be paired with redis to lock the aggregation to only be performed by a single application (purpose is to sync between the num of applications)
+3. Randomise creation of task to minimise clashes (if the task lists are generated/sent to job queue in the same order )
+I want:
 
 ### WebUI
 
