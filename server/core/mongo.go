@@ -224,7 +224,7 @@ func getSumAggregation(dataType string) mongo.Pipeline {
 	return pipeline
 }
 
-func createAggregationPipeline(dataType string, aggregationType string, groupByFormat string) mongo.Pipeline {
+func createAggregationPipeline(dataType string, aggregationType string, groupByFormat AGGREGATION_PERIOD) mongo.Pipeline {
 	return mongo.Pipeline{
 		{{Key: "$match", Value: bson.D{
 			{Key: fmt.Sprintf("dataPoints.%s", dataType), Value: bson.D{{Key: "$exists", Value: true}}},

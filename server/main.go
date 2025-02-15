@@ -42,6 +42,9 @@ func main() {
 
 	core.ListenToSensors(server)
 
+	core.SetupPeriodicTasks(server)
+	go core.SetupTaskHandler(server)
+
 	r := core.SetupRouter(server)
 
 	srv := &http.Server{

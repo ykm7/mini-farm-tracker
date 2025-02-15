@@ -8,8 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-const NUM_OF_WORKERS = 5
-const NUM_BATCH_COUNT = 3
 const AGGREGATION_TIME_LIMIT = 30 * time.Second
 
 /**
@@ -72,7 +70,7 @@ func worker(id int, tasks <-chan TaskJob, results chan<- error) {
 
 // }
 
-func taskHandler(items []TaskJob) {
+func taskHandler(items []TaskJob, goroutineCount int) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -81,7 +79,7 @@ func taskHandler(items []TaskJob) {
 	taskErrors := make(chan error, taskNum)
 
 	// Start worker goroutines
-	for i := 0; i < 5; i++ { // Adjust number of workers as needed
+	for i := 0; i < goroutineCount; i++ { // Adjust number of workers as needed
 		go worker(i, tasks, taskErrors)
 	}
 
@@ -101,7 +99,7 @@ func taskHandler(items []TaskJob) {
 			}
 		case <-ctx.Done():
 			errs = append(errs, ctx.Err())
-			return
+			break
 		}
 	}
 
