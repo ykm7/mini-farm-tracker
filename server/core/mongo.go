@@ -199,46 +199,6 @@ func (m *MongoCollectionWrapper[T]) Aggregate(ctx context.Context, pipeline inte
 
 /*
 *
-dataType - rainfallHourly
-*/
-func getSumAggregation(dataType string) mongo.Pipeline {
-	pipeline := mongo.Pipeline{
-		{{Key: "$match", Value: bson.D{
-			{Key: fmt.Sprintf("dataPoints.%s", dataType), Value: bson.D{{Key: "$exists", Value: true}}},
-		}}},
-		{{Key: "$group", Value: bson.D{
-			{Key: "_id", Value: bson.D{
-				{Key: "date", Value: bson.D{{Key: "$dateToString", Value: bson.D{{Key: "format", Value: "%Y-%m-%d"}, {Key: "date", Value: "$timestamp"}}}}},
-				{Key: "sensor", Value: "$sensor"},
-			}},
-			{Key: "totalRainfall", Value: bson.D{{Key: "$sum", Value: fmt.Sprintf("dataPoints.%s.data", dataType)}}},
-			{Key: "unit", Value: bson.D{{Key: "$first", Value: fmt.Sprintf("dataPoints.%s.units", dataType)}}},
-		}}},
-		{{Key: "$project", Value: bson.D{
-			{Key: "_id", Value: 0},
-			{Key: "date", Value: bson.D{{Key: "$dateFromString", Value: bson.D{{Key: "dateString", Value: "$_id.date"}}}}},
-			{Key: "metadata", Value: bson.D{
-				{Key: "sensor", Value: "$_id.sensor"},
-				{Key: "type", Value: "daily"},
-			}},
-			{Key: "totalRainfall", Value: bson.D{
-				{Key: "value", Value: "$totalRainfall"},
-				{Key: "unit", Value: "$unit"},
-			}},
-		}}},
-		{{Key: "$merge", Value: bson.D{
-			{Key: "into", Value: "daily_aggregates"},
-			{Key: "on", Value: bson.A{"date", "metadata.sensor"}},
-			{Key: "whenMatched", Value: "replace"},
-			{Key: "whenNotMatched", Value: "insert"},
-		}}},
-	}
-
-	return pipeline
-}
-
-/*
-*
 
 Paired collection:
 
@@ -277,7 +237,7 @@ func createAggregationPipeline(dataType CalibratedDataNames, aggregationType AGG
 			}},
 		}}},
 		{{Key: "$merge", Value: bson.D{
-			{Key: "into", Value: "aggregated_data"},
+			{Key: "into", Value: AGGREGATED_DATA_COLLECTION},
 			{Key: "on", Value: bson.A{"date", "metadata.sensor", "metadata.type", "metadata.dataType"}},
 			{Key: "whenMatched", Value: "replace"},
 			{Key: "whenNotMatched", Value: "insert"},

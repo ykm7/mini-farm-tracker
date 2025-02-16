@@ -27,6 +27,7 @@ const (
 	SENSOR_CONFIGURATIONS_COLLECTION DB_COLLECTIONS = "sensor_configurations"
 	SENSORS_COLLECTION               DB_COLLECTIONS = "sensors"
 	ASSETS_COLLECTION                DB_COLLECTIONS = "assets"
+	AGGREGATED_DATA_COLLECTION       DB_COLLECTIONS = "aggregated_data"
 )
 
 type UNITS string

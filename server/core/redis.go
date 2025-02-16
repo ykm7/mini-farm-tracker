@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/bsm/redislock"
@@ -12,10 +11,12 @@ import (
 )
 
 func GetRedisClient(envs *environmentVariables) (client *redis.Client, deferFn func()) {
-	client = redis.NewClient(&redis.Options{
-		Addr: os.Getenv(envs.Redis_conn),
-	})
+	opt, err := redis.ParseURL(envs.Redis_conn)
+	if err != nil {
+		panic(err)
+	}
 
+	client = redis.NewClient(opt)
 	deferFn = func() {
 		err := client.Close()
 		if err != nil {
