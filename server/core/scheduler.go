@@ -12,11 +12,35 @@ import (
 type AGGREGATION_PERIOD string
 
 const (
-	HOURLY  AGGREGATION_PERIOD = "%Y-%m-%d-%H"
-	DAILY   AGGREGATION_PERIOD = "%Y-%m-%d"
-	WEEKLY  AGGREGATION_PERIOD = "%Y-%W"
-	MONTHLY AGGREGATION_PERIOD = "%Y-%m"
-	YEARLY  AGGREGATION_PERIOD = "%Y"
+	HOURLY_PERIOD  AGGREGATION_PERIOD = "%Y-%m-%d-%H"
+	DAILY_PERIOD   AGGREGATION_PERIOD = "%Y-%m-%d"
+	WEEKLY_PERIOD  AGGREGATION_PERIOD = "%Y-%W"
+	MONTHLY_PERIOD AGGREGATION_PERIOD = "%Y-%m"
+	YEARLY_PERIOD  AGGREGATION_PERIOD = "%Y"
+)
+
+type AGGREGATION_TYPE string
+
+const (
+	HOURLY_TYPE  AGGREGATION_TYPE = "HOURLY"
+	DAILY_TYPE   AGGREGATION_TYPE = "DAILY"
+	WEEKLY_TYPE  AGGREGATION_TYPE = "WEEKLYY"
+	MONTHLY_TYPE AGGREGATION_TYPE = "MONTHLY"
+	YEARLY_TYPE  AGGREGATION_TYPE = "YEARLY"
+)
+
+// TODO: This needs further considersation.
+// The idea is that this value is used with the TTL values to claim ownership of the aggregation action
+// (via the unique action key within redis) but is required to be "freed" prior to the subsequent calls.
+// 1 minute is somewhat arbitarily selected but should be viable.
+const TTL_SUBSTRACTION = 1 * time.Minute
+
+const (
+	HOURLY_TTL  = time.Hour - TTL_SUBSTRACTION
+	DAILY_TTL   = time.Hour*24 - TTL_SUBSTRACTION
+	WEEKLY_TTL  = time.Hour*24*7 - TTL_SUBSTRACTION
+	MONTHLY_TTL = time.Hour*24*7*4 - TTL_SUBSTRACTION
+	YEARLY_TTL  = time.Hour*24*7*52 - TTL_SUBSTRACTION
 )
 
 // TODO: Would be an environment variable
@@ -30,37 +54,91 @@ func SetupPeriodicTasks(server *Server) {
 
 	c := cron.New(cron.WithChain(cron.Recover(cron.DefaultLogger)), cron.WithLocation(loc))
 
-	// These similar need to add to the current pool - push tasks to channel, group via the debouncer.
+	c.AddFunc("* * * * *", func() {
+		fmt.Println("Every minute")
+	})
 	c.AddFunc("@hourly", func() {
 		fmt.Println("Every hour")
+	})
+	c.AddFunc("@daily", func() {
+		fmt.Println("Every day")
 
-		// tasks := []TaskMongoAggregation{}
+		aggregation := DAILY_TYPE
+		period := DAILY_PERIOD
+		ttl := DAILY_TTL
 
-		// for _, t := range tasks {
-		// 	server.Tasks <- &t
-		// }
+		metricType := RAIN_FALL_HOURLY_DATA_NAMES
+		rainfallTask := NewTaskMongoAggregation(
+			GetCalibratedDataCollection(server.MongoDb),
+			createAggregationPipeline(metricType, aggregation, period),
+			&TaskRedisCheck{
+				key:    getKey(metricType, aggregation, period),
+				client: server.Redis,
+				ttl:    ttl,
+			},
+		)
+
+		server.Tasks <- &rainfallTask
 	})
 	c.AddFunc("@weekly ", func() {
 		fmt.Println("Every week")
 
-		hourlyPipeline := createAggregationPipeline("rainfallHourly", "hourly", "%Y-%m-%d-%H")
+		aggregation := WEEKLY_TYPE
+		period := WEEKLY_PERIOD
+		ttl := WEEKLY_TTL
 
-		tasks := []TaskMongoAggregation[CalibratedData]{
-			TaskMongoAggregation[CalibratedData]{
-				mongoCollection: GetCalibratedDataCollection(server.MongoDb),
-				pipeline:        hourlyPipeline,
+		metricType := RAIN_FALL_HOURLY_DATA_NAMES
+		rainfallTask := NewTaskMongoAggregation(
+			GetCalibratedDataCollection(server.MongoDb),
+			createAggregationPipeline(metricType, aggregation, period),
+			&TaskRedisCheck{
+				key:    getKey(metricType, aggregation, period),
+				client: server.Redis,
+				ttl:    ttl,
 			},
-		}
+		)
 
-		for _, t := range tasks {
-			server.Tasks <- &t
-		}
+		server.Tasks <- &rainfallTask
 	})
 	c.AddFunc("@monthly", func() {
 		fmt.Println("Every month")
+
+		aggregation := MONTHLY_TYPE
+		period := MONTHLY_PERIOD
+		ttl := MONTHLY_TTL
+
+		metricType := RAIN_FALL_HOURLY_DATA_NAMES
+		rainfallTask := NewTaskMongoAggregation(
+			GetCalibratedDataCollection(server.MongoDb),
+			createAggregationPipeline(metricType, aggregation, period),
+			&TaskRedisCheck{
+				key:    getKey(metricType, aggregation, period),
+				client: server.Redis,
+				ttl:    ttl,
+			},
+		)
+
+		server.Tasks <- &rainfallTask
 	})
 	c.AddFunc("@yearly", func() {
 		fmt.Println("Every year")
+
+		aggregation := YEARLY_TYPE
+		period := YEARLY_PERIOD
+		ttl := YEARLY_TTL
+
+		metricType := RAIN_FALL_HOURLY_DATA_NAMES
+		rainfallTask := NewTaskMongoAggregation(
+			GetCalibratedDataCollection(server.MongoDb),
+			createAggregationPipeline(metricType, aggregation, period),
+			&TaskRedisCheck{
+				key:    getKey(metricType, aggregation, period),
+				client: server.Redis,
+				ttl:    ttl,
+			},
+		)
+
+		server.Tasks <- &rainfallTask
 	})
 
 	c.Start()

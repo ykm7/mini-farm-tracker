@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -80,10 +81,51 @@ func SetupRouter(server *Server) *gin.Engine {
 	log.Printf("Endpoint: %s not logged\n", HEALTH_ENDPOINT)
 	r.GET(HEALTH_ENDPOINT, func(c *gin.Context) {
 
-		// TODO: Realistically should include checks to Mongo within here.
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-		})
+		var wg sync.WaitGroup
+		results := make(chan error, 2)
+		wg.Add(2)
+
+		go func() {
+			defer wg.Done()
+
+			err := PingMongo(server.MongoDb)
+			if err != nil {
+				err = fmt.Errorf("error in mongo ping %w", err)
+			}
+			results <- err
+		}()
+
+		go func() {
+			defer wg.Done()
+
+			err := PingRedis(server.Redis)
+			if err != nil {
+				err = fmt.Errorf("error in redis ping %w", err)
+			}
+
+			results <- err
+		}()
+
+		wg.Wait()
+		close(results)
+
+		success := true
+		for result := range results {
+			if result != nil {
+				log.Printf("Error/s found:\n%v\n", result)
+				success = false
+			}
+		}
+
+		if success {
+			c.JSON(http.StatusOK, gin.H{
+				"status": "ok",
+			})
+		} else {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status": "failed",
+			})
+		}
 	})
 
 	return r

@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 // TODO: Leaving this as the default value until I understand better how to use this
@@ -29,14 +30,14 @@ func SetupMongo(envs *environmentVariables) (db *mongo.Database, deferFn func())
 		panic(err)
 	}
 
-	// Send a ping to confirm a successful connection
-	if err := client.Database("admin").RunCommand(ctx, bson.D{{Key: "ping", Value: 1}}).Err(); err != nil {
-		panic(err)
-	}
-	log.Println("Pinged your deployment. You successfully connected to MongoDB!")
-
 	db = client.Database(DATABASE_NAME)
 
+	// Send a ping to confirm a successful connection
+	if err := db.Client().Ping(ctx, nil); err != nil {
+		panic(err)
+	}
+
+	log.Println("You successfully connected to MongoDB!")
 	//// Leaving this here for documentation. These is required to be set BUT the established user does not have permission to modify.
 	// result := db.RunCommand(ctx, bson.D{
 	// 	{Key: "collMod", Value: SENSORS_COLLECTION},
@@ -60,8 +61,16 @@ func SetupMongo(envs *environmentVariables) (db *mongo.Database, deferFn func())
 	return
 }
 
+func PingMongo(client MongoDatabase) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	return client.Ping(ctx, nil)
+}
+
 //go:generate mockgen -destination=../mocks/mock_MongoDatabase.go -package=mocks MongoDatabase
 type MongoDatabase interface {
+	Ping(ctx context.Context, rp *readpref.ReadPref) error
 	Collection(name string, opts ...*options.CollectionOptions) MongoCollection[any]
 }
 
@@ -82,6 +91,10 @@ type MongoDatabaseImpl struct {
 // Wrapper struct implementing MongoCollection
 type MongoCollectionWrapper[T any] struct {
 	col *mongo.Collection
+}
+
+func (m *MongoDatabaseImpl) Ping(ctx context.Context, rp *readpref.ReadPref) error {
+	return m.Db.Client().Ping(ctx, rp)
 }
 
 func (m *MongoDatabaseImpl) Collection(name string, opts ...*options.CollectionOptions) MongoCollection[any] {
@@ -224,7 +237,20 @@ func getSumAggregation(dataType string) mongo.Pipeline {
 	return pipeline
 }
 
-func createAggregationPipeline(dataType string, aggregationType string, groupByFormat AGGREGATION_PERIOD) mongo.Pipeline {
+/*
+*
+
+Paired collection:
+
+		db.createCollection("aggregated_data", {
+	  timeseries: {
+	    timeField: "date",
+	    metaField: "metadata",
+	    granularity: "hours"
+	  }
+	})
+*/
+func createAggregationPipeline(dataType CalibratedDataNames, aggregationType AGGREGATION_TYPE, groupByFormat AGGREGATION_PERIOD) mongo.Pipeline {
 	return mongo.Pipeline{
 		{{Key: "$match", Value: bson.D{
 			{Key: fmt.Sprintf("dataPoints.%s", dataType), Value: bson.D{{Key: "$exists", Value: true}}},

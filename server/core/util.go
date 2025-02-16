@@ -139,7 +139,7 @@ func ReadEnvs() *environmentVariables {
 		Ttn_webhhook_api: os.Getenv("TTN_WEBHOOK_API"),
 		Mongo_conn:       os.Getenv("MONGO_CONN"),
 		Open_weather_api: os.Getenv("OPEN_WEATHER_API"),
-		Redis_conn:       os.Getenv("REDIS_CONNECTION_STRING"),
+		Redis_conn:       os.Getenv("REDIS_CONN"),
 	}
 }
 
@@ -263,10 +263,9 @@ func debounce[T any](interval time.Duration, maxBatchSize int, incoming <-chan T
 			if len(items) >= maxBatchSize {
 				f(items, goroutineCount)
 				items = []T{}
-				timer.Reset(interval)
-			} else {
-				timer.Reset(interval)
 			}
+
+			timer.Reset(interval)
 		case <-timer.C:
 			if len(items) > 0 {
 				f(items, goroutineCount)

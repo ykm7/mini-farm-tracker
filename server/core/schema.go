@@ -288,11 +288,18 @@ type S2120RawDataMsg interface {
 	is()
 }
 
-type MetricTypes string
+type CalibratedDataNames string
 
+// TODO: need to tweak these. Starting to duplicate the constant labels for data types.
 const (
-	Volume         MetricTypes = "Volume"
-	AirTemperature MetricTypes = "AirTemperature"
+	VOLUME_DATA_NAMES              CalibratedDataNames = "Volume"
+	AIR_TEMPERATURE_DATA_NAMES     CalibratedDataNames = "AirTemperature"
+	LIGHT_INTENSITY_DATA_NAMES     CalibratedDataNames = "LightIntensity"
+	UV_INDEX_DATA_NAMES            CalibratedDataNames = "UVIndex"
+	WIND_SPEED_DATA_NAMES          CalibratedDataNames = "WindSpeed"
+	WIND_DIRECTION_DATA_NAMES      CalibratedDataNames = "WindDirection"
+	RAIN_FALL_HOURLY_DATA_NAMES    CalibratedDataNames = "RainfallHourly"
+	BAROMETRIC_PRESSURE_DATA_NAMES CalibratedDataNames = "BarometricPressure"
 )
 
 type S2120RawDataMeasurementType string

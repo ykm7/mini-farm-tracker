@@ -27,37 +27,30 @@ func GetRedisClient(envs *environmentVariables) (client *redis.Client, deferFn f
 	return client, deferFn
 }
 
-func getKey(sensorId, period string, metric MetricTypes) string {
-	return fmt.Sprintf("%s-%s-%s", sensorId, period, metric)
+func PingRedis(client *redis.Client) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	return client.Ping(ctx).Err()
 }
 
-func getLock(key string, duration time.Duration) (*redislock.Lock, error) {
-	client := redis.NewClient(&redis.Options{
-		Addr: os.Getenv("REDIS_URL"),
-	})
-	locker := redislock.New(client)
+func getKey(dataType CalibratedDataNames, aggregationType AGGREGATION_TYPE, groupByFormat AGGREGATION_PERIOD) string {
+	return fmt.Sprintf("%s-%s-%s", dataType, aggregationType, groupByFormat)
+}
 
-	lock, err := locker.Obtain(context.Background(), key, duration, nil)
+func GetLock(client *redis.Client, key string, duration time.Duration) (lock *redislock.Lock, alreadyHeld bool, err error) {
+
+	locker := redislock.New(client)
+	lock, err = locker.Obtain(context.Background(), key, duration, nil)
 	if err != nil {
 		if errors.Is(err, redislock.ErrNotObtained) {
 			// Handle the case where the lock is already held
 			// I wouldn't want to consider the lock already been held as an error.
 			// This is to be used to sync between 2 or more running "pods".
-			return nil, fmt.Errorf("lock already held for key %s", key)
+			return nil, true, nil
+		} else {
+			return nil, false, err
 		}
-
-		return nil, err
 	}
-	return lock, nil
-}
-
-func howToUse() {
-	lock, err := getLock("task-key", AGGREGATION_TIME_LIMIT)
-	if err != nil {
-		// Handle error
-		return
-	}
-	defer lock.Release(context.Background())
-
-	// Execute your task here
+	return lock, false, nil
 }
