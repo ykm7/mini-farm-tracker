@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	compress "github.com/lf4096/gin-compress"
+	"golang.org/x/sync/semaphore"
 )
 
 const HEALTH_ENDPOINT = "/health"
@@ -22,10 +24,31 @@ func CustomLogger() gin.HandlerFunc {
 	})
 }
 
+func ConcurrencyLimiter(maxConcurrent int64) gin.HandlerFunc {
+	sem := semaphore.NewWeighted(maxConcurrent)
+	return func(c *gin.Context) {
+		if err := sem.Acquire(context.Background(), 1); err != nil {
+
+			/**
+			Normally what would be done, however given the nature of the project would rather collect
+			this as a metric to make futher modifications.
+			*/
+			// c.AbortWithStatus(503) // Service Unavailable
+			// return
+
+			log.Printf("Gin middleware concurrency limiter limit hit with a value of %d\n", maxConcurrent)
+			c.Next()
+		}
+		defer sem.Release(1)
+		c.Next()
+	}
+}
+
 func SetupRouter(server *Server) *gin.Engine {
 	r := gin.New()
 
 	r.Use(CustomLogger())
+	r.Use(ConcurrencyLimiter(100))
 	r.Use(compress.Compress())
 	r.Use(gin.Recovery())
 
