@@ -202,18 +202,63 @@ func (m *MongoCollectionWrapper[T]) Aggregate(ctx context.Context, pipeline inte
 
 Paired collection:
 
-		db.createCollection("aggregated_data", {
-	  timeseries: {
-	    timeField: "date",
-	    metaField: "metadata",
-	    granularity: "hours"
-	  }
-	})
+			db.createCollection("aggregated_data", {
+		  timeseries: {
+		    timeField: "date",
+		    metaField: "metadata",
+		    granularity: "hours"
+		  }
+		})
+
+		{
+	      $match: {
+	        [`dataPoints.${dataType}`]: { $exists: true },
+	        timestamp: {
+	          $gte: new Date(timeRange),
+	          $lt: new Date()
+	        }
+	      }
+	    },
+	    {
+	      $group: {
+	        _id: {
+	          date: {
+	            $dateToString: {
+	              format: groupByFormat,
+	              date: "$timestamp"
+	            }
+	          },
+	          sensor: "$sensor"
+	        },
+	        totalValue: { $sum: `$dataPoints.${dataType}.data` },
+	        unit: { $first: `$dataPoints.${dataType}.units` }
+	      }
+	    },
+	    {
+	      $project: {
+	        _id: 0,
+	        date: { $dateFromString: { dateString: "$_id.date" } },
+	        metadata: {
+	          sensor: "$_id.sensor",
+	          type: aggregationType,
+	          dataType: dataType
+	        },
+	        totalValue: {
+	          value: "$totalValue",
+	          unit: "$unit"
+	        }
+	      }
+	    },
+	    { $out: "aggregated_data" }
 */
-func createAggregationPipeline(dataType CalibratedDataNames, aggregationType AGGREGATION_TYPE, groupByFormat AGGREGATION_PERIOD) mongo.Pipeline {
+func createAggregationPipeline(dataType CalibratedDataNames, aggregationType AGGREGATION_TYPE, groupByFormat AGGREGATION_PERIOD, timeRange time.Time) mongo.Pipeline {
 	return mongo.Pipeline{
 		{{Key: "$match", Value: bson.D{
 			{Key: fmt.Sprintf("dataPoints.%s", dataType), Value: bson.D{{Key: "$exists", Value: true}}},
+			{Key: "timestamp", Value: bson.D{
+				{Key: "$gte", Value: timeRange},
+				{Key: "$lt", Value: time.Now()},
+			}},
 		}}},
 		{{Key: "$group", Value: bson.D{
 			{Key: "_id", Value: bson.D{
@@ -236,11 +281,6 @@ func createAggregationPipeline(dataType CalibratedDataNames, aggregationType AGG
 				{Key: "unit", Value: "$unit"},
 			}},
 		}}},
-		{{Key: "$merge", Value: bson.D{
-			{Key: "into", Value: AGGREGATED_DATA_COLLECTION},
-			{Key: "on", Value: bson.A{"date", "metadata.sensor", "metadata.type", "metadata.dataType"}},
-			{Key: "whenMatched", Value: "replace"},
-			{Key: "whenNotMatched", Value: "insert"},
-		}}},
+		{{Key: "$out", Value: AGGREGATED_DATA_COLLECTION}},
 	}
 }

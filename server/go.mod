@@ -13,7 +13,7 @@ require (
 	go.mongodb.org/mongo-driver v1.17.2
 )
 
-require github.com/robfig/cron/v3 v3.0.0 // indirect
+require github.com/robfig/cron/v3 v3.0.0
 
 require (
 	dario.cat/mergo v1.0.0 // indirect

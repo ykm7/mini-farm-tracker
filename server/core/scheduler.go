@@ -54,23 +54,24 @@ func SetupPeriodicTasks(server *Server) {
 
 	c := cron.New(cron.WithChain(cron.Recover(cron.DefaultLogger)), cron.WithLocation(loc))
 
-	c.AddFunc("* * * * *", func() {
-		fmt.Println("Every minute")
-	})
-	c.AddFunc("@hourly", func() {
-		fmt.Println("Every hour")
-	})
+	// c.AddFunc("* * * * *", func() {
+	// 	fmt.Println("Every minute")
+	// })
+	// c.AddFunc("@hourly", func() {
+	// 	fmt.Println("Every hour")
+	// })
 	c.AddFunc("@daily", func() {
 		fmt.Println("Every day")
 
 		aggregation := DAILY_TYPE
 		period := DAILY_PERIOD
 		ttl := DAILY_TTL
+		timeRange := time.Now().AddDate(0, 0, -1)
 
 		metricType := RAIN_FALL_HOURLY_DATA_NAMES
 		rainfallTask := NewTaskMongoAggregation(
 			GetCalibratedDataCollection(server.MongoDb),
-			createAggregationPipeline(metricType, aggregation, period),
+			createAggregationPipeline(metricType, aggregation, period, timeRange),
 			&TaskRedisCheck{
 				key:    getKey(metricType, aggregation, period),
 				client: server.Redis,
@@ -86,11 +87,12 @@ func SetupPeriodicTasks(server *Server) {
 		aggregation := WEEKLY_TYPE
 		period := WEEKLY_PERIOD
 		ttl := WEEKLY_TTL
+		timeRange := time.Now().AddDate(0, 0, -7)
 
 		metricType := RAIN_FALL_HOURLY_DATA_NAMES
 		rainfallTask := NewTaskMongoAggregation(
 			GetCalibratedDataCollection(server.MongoDb),
-			createAggregationPipeline(metricType, aggregation, period),
+			createAggregationPipeline(metricType, aggregation, period, timeRange),
 			&TaskRedisCheck{
 				key:    getKey(metricType, aggregation, period),
 				client: server.Redis,
@@ -106,11 +108,12 @@ func SetupPeriodicTasks(server *Server) {
 		aggregation := MONTHLY_TYPE
 		period := MONTHLY_PERIOD
 		ttl := MONTHLY_TTL
+		timeRange := time.Now().AddDate(0, -1, 0)
 
 		metricType := RAIN_FALL_HOURLY_DATA_NAMES
 		rainfallTask := NewTaskMongoAggregation(
 			GetCalibratedDataCollection(server.MongoDb),
-			createAggregationPipeline(metricType, aggregation, period),
+			createAggregationPipeline(metricType, aggregation, period, timeRange),
 			&TaskRedisCheck{
 				key:    getKey(metricType, aggregation, period),
 				client: server.Redis,
@@ -126,11 +129,12 @@ func SetupPeriodicTasks(server *Server) {
 		aggregation := YEARLY_TYPE
 		period := YEARLY_PERIOD
 		ttl := YEARLY_TTL
+		timeRange := time.Now().AddDate(-1, 0, 0)
 
 		metricType := RAIN_FALL_HOURLY_DATA_NAMES
 		rainfallTask := NewTaskMongoAggregation(
 			GetCalibratedDataCollection(server.MongoDb),
-			createAggregationPipeline(metricType, aggregation, period),
+			createAggregationPipeline(metricType, aggregation, period, timeRange),
 			&TaskRedisCheck{
 				key:    getKey(metricType, aggregation, period),
 				client: server.Redis,
