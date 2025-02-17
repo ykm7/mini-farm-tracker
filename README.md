@@ -4,13 +4,23 @@ Basic overview:
 Provide a visualisation platform for various LoRaWAN sensors.
 Initial design is required to track available water in water tanks.
 
-MVP:
+MVP v1.0:
 
 - [x] Raw data (from LoRaWAN nodes) propagate through the system and are saved.
-- [?] This raw data is able to be queried from and displayed via graphs
+  - [x] Two ultrasonic sensors
+  - [x] Single 8-in-1 weather station
+- [x] This raw data is able to be queried from and displayed via graphs
+- [x] This calibrated data is also to be able to be viewed via the website
+- [x] Cron style aggregation functionality exists to perform periodic data manipulations.
+  - [x] Daily, weekly, monthly, yearly aggregation (sum) of rainfall occurring.
+  - [ ] Expand to other metrics
+- [ ] Display the above aggregated data on the webui
+- [ ] Improve graph choices based on the type of data being display, currently all are line graphs.
+
+v2.0:
+
 - [ ] Configurations per sensors are able to be created; these are responsible to determine how the raw data is to be modified as then stored as calibrated data. These are to have "starting" times to all the sensor to be re-installed.
-  - [ ] While for the MVP I want configurations to affect incoming data, the actual creation of these configurations should be behind a authentication. This can be V2.
-- [ ] This calibrated data is also to be able to be viewed via the website
+  - [ ] While for the MVP I want configurations to affect incoming data, the actual creation of these configurations should be behind a authentication.
 - [ ] User is able to re-calibrate the data; this will take all the raw data and apply all the calibrations created for the sensor.
 
 ## website
