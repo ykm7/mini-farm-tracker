@@ -23,6 +23,28 @@ Using Golang
 
 Primary motivation is I have done similar in Python multiple times (Flask, Quart) and while I have created microservices within Golang, I have not used it for web API hosting.
 
+### Cron style aggregation/s
+
+Considersations.
+
+Purpose of this is to take the conjob style aggregation requests which will be run periodically to "group"
+data pull; ie, sum daily rainfall.
+
+Overall, highly overengineered for the traffic we have, however want to experiment and play with concurrent behaviour
+Ideal outcomes would be flat resource usage across App Platform and Mongo. (Again, excessive as App Platform current average 3-4% at current tier.) Avoid spikes.
+
+1. Cron job periodically trigger (hourly, day, weekly etc) for all the aggregated tasks for that time period.
+    * `github.com/robfig/cron/v3` used to achieve this.
+
+2. Tasks are assigned a consistent key which will be paired with redis to lock the aggregation to only be performed by a single application (purpose is to sync between the num of applications)
+    * Achieved this - log seen:
+
+      `2025/02/16 16:00:01 Unable to acquire lock for key RainfallHourly-DAILY-%Y-%m-%d, already claimed (this is expected for multiple applications)`
+
+3. Randomise creation of task to minimise clashes (if the task lists are generated/sent to job queue in the same order )
+    * Haven't done this step yet.
+
+
 # Diagrams
 
 ## Data Flow of data into the system
@@ -265,6 +287,14 @@ db.runCommand({
 }).cursor.firstBatch[0]
 ```
 
+## Redis
+
+Purpose is current limited to sync IO tasks between multiple instances of the server. 
+
+## Logging
+
+DigitalOcean connected `Papertrail`
+
 # Hosting
 
 ## WebUI
@@ -295,8 +325,9 @@ DNS Records are configured within DigitalOcean to allow for vercel website to be
 
 ## Weather
 
-https://openweathermap.org/price
+<https://openweathermap.org/price>
 
+TODO: haven't anything with this currently.
 
 ### Development
 
@@ -346,26 +377,11 @@ Following [configuration path](https://golang.testcontainers.org/features/config
 
 > ryuk.disabled=true
 
-# Rough TODO
-
-## Cron style aggregation/s
-
-Considersations.
-
-Purpose of this is to take the conjob style aggregation requests which will be run periodically to "group"
-data pull; ie, sum daily rainfall.
-
-Overall, likely overengineered for the traffic we have, however want to test max concurrency bahaviour.
-Ideal outcomes would be flat resource usage across App Platform and Mongo. (Again, excessive as App Platform current average 3-4% at current tier.) Avoid spikes.
-
-1. Cron job periodically trigger (hourly, day, weekly etc) for all the aggregated tasks for that time period.
-2. Tasks are assigned a consistent key which will be paired with redis to lock the aggregation to only be performed by a single application (purpose is to sync between the num of applications)
-3. Randomise creation of task to minimise clashes (if the task lists are generated/sent to job queue in the same order )
-I want:
+## TODOs
 
 ### WebUI
 
-- [] Graphs
+- [x] Graphs
   - Initial HW will allow for 2 sensors; one for each tank.
 - [ ] V2 will have auth, although as part of the purpose of this is a demo project, putting it behind a auth "wall" is counter productive initially.
 

@@ -202,13 +202,15 @@ func (m *MongoCollectionWrapper[T]) Aggregate(ctx context.Context, pipeline inte
 
 Paired collection:
 
-			db.createCollection("aggregated_data", {
-		  timeseries: {
-		    timeField: "date",
-		    metaField: "metadata",
-		    granularity: "hours"
-		  }
-		})
+		db.createCollection("aggregated_data", {
+	  timeseries: {
+	    timeField: "date",
+	    metaField: "metadata",
+	    granularity: "hours"
+	  }
+	})
+
+Aggregation (tested via MongoDB Compass ):
 
 		{
 	      $match: {
