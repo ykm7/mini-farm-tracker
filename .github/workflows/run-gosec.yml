@@ -18,14 +18,6 @@ jobs:
     steps:
       - name: Checkout Source
         uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.23.6'
-
-      - name: Get dependencies
-        run: go mod tidy
         
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
