@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"mini-farm-tracker-server/core"
+	"runtime"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -60,6 +62,99 @@ func insertAssert(mongoDb core.MongoDatabase, asset *core.Asset) (primitive.Obje
 	}
 }
 
+func pullAllRainfallAggregations(mongodb core.MongoDatabase) {
+
+	loc, err := time.LoadLocation("Australia/Perth")
+	if err != nil {
+		log.Fatalf("Could not load timezone: %v", err)
+	}
+
+	// The purpose here to to grab and aggregate ALL the missing data
+	// easily covers EPOCH of "project"
+	timeRange := time.Now().In(loc).AddDate(-2, 0, 0)
+
+	source := core.GetCalibratedDataCollection(mongodb)
+	target := core.GetAggregatedDataCollection(mongodb)
+	metricType := core.RAIN_FALL_HOURLY_DATA_NAMES
+
+	tasks := make(chan core.TaskJob)
+
+	goroutineCount := runtime.NumCPU() * 4
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+
+		core.Debounce(ctx, time.Second*1, 100, tasks, core.TaskHandler, goroutineCount)
+
+		log.Println("Debounce tasks completed")
+	}()
+
+	// daily
+
+	aggregation := core.DAILY_TYPE
+	period := core.DAILY_PERIOD
+	pipeline := core.CreateAggregationPipeline(metricType, aggregation, period, timeRange)
+	daily := core.NewTaskMongoAggregation(
+		source,
+		target,
+		pipeline,
+		// no need for redis interactions
+		nil,
+	)
+
+	tasks <- &daily
+
+	// weekly
+	aggregation = core.WEEKLY_TYPE
+	period = core.WEEKLY_PERIOD
+	pipeline = core.CreateAggregationPipeline(metricType, aggregation, period, timeRange)
+	weekly := core.NewTaskMongoAggregation(
+		source,
+		target,
+		pipeline,
+		// no need for redis interactions
+		nil,
+	)
+
+	tasks <- &weekly
+
+	// monthly
+	aggregation = core.MONTHLY_TYPE
+	period = core.MONTHLY_PERIOD
+	pipeline = core.CreateAggregationPipeline(metricType, aggregation, period, timeRange)
+	monthly := core.NewTaskMongoAggregation(
+		source,
+		target,
+		pipeline,
+		// no need for redis interactions
+		nil,
+	)
+
+	tasks <- &monthly
+
+	// yearly
+	aggregation = core.YEARLY_TYPE
+	period = core.YEARLY_PERIOD
+	pipeline = core.CreateAggregationPipeline(metricType, aggregation, period, timeRange)
+	yearly := core.NewTaskMongoAggregation(
+		source,
+		target,
+		pipeline,
+		// no need for redis interactions
+		nil,
+	)
+
+	tasks <- &yearly
+
+	wg.Wait()
+}
+
 /*
 To be run manually to populate the database with various mock data
 
@@ -83,105 +178,8 @@ func main() {
 	mongoDb := &core.MongoDatabaseImpl{Db: database}
 	defer mongoDeferFn()
 
-	// testing mongo - START
-	// var inserted *mongo.InsertOneResult
-	// var err error
+	// redis, redisDeferFn := core.GetRedisClient(envs)
+	// defer redisDeferFn()
 
-	// sensorName := "Sensor 1"
-	// inserted, err = core.GetSensorCollection(mongoDb).InsertOne(context.TODO(), core.Sensor{Id: sensorName})
-	// // Ignore duplicate key error
-	// dontPanicOnMongoCode(11000, err)
-	// log.Printf("%v", inserted)
-
-	// // inserted, err = core.GetSensorCollection(mongoDb).InsertOne(context.TODO(), core.Sensor{Id: "Sensor 2"})
-	// // Ignore duplicate key errorls
-	// dontPanicOnMongoCode(11000, err)
-	// log.Printf("%v", inserted)
-
-	sensorId := "a840414f118397f3"
-
-	asset := &core.Asset{
-		Name: "Mock Initial Asset",
-		Sensors: &[]string{
-			sensorId,
-		},
-		Metrics: &core.AssetMetrics{
-			Volume: &core.AssetMetricsCylinderVolume{
-				Volume: float64(172000),
-				Radius: float64(5),
-				Height: float64(2.2),
-			},
-		},
-	}
-
-	assetId, err := insertAssert(mongoDb, asset)
-	if err != nil {
-		panic(err)
-	}
-
-	sensorConfig := &core.SensorConfiguration{
-		// not setting id - auto gen
-		Sensor:  sensorId,
-		Asset:   assetId,
-		Applied: primitive.NewDateTimeFromTime(time.Now()),
-		Offset: &struct {
-			Distance *struct {
-				Distance float64    "bson:\"distance\""
-				Units    core.UNITS "bson:\"units\""
-			} "bson:\"distance\""
-		}{
-			Distance: &struct {
-				Distance float64    "bson:\"distance\""
-				Units    core.UNITS "bson:\"units\""
-			}{
-				Distance: float64(0),
-				Units:    core.METRES,
-			},
-		},
-	}
-
-	_, err = insertSensorConfig(mongoDb, sensorConfig)
-	if err != nil {
-		panic(err)
-	}
-
-	// generates raw data - WORKING
-	// From successfully parsed payload
-	// {
-	// 	"Bat": 3.427,
-	// 	"Distance": "2321 mm",
-	// 	"Interrupt_flag": 0,
-	// 	"Sensor_flag": 1,
-	// 	"TempC_DS18B20": "0.00"
-	// }
-	// mockSensorData := []core.LDDS45RawData{
-	// 	{
-	// 		Distance:     "2321 mm",
-	// 		Battery:      3.427,
-	// 		InterruptPin: uint8(0),
-	// 		Temperature:  "0.00",
-	// 		SensorFlag:   uint8(0),
-	// 	},
-	// }
-	// timestamp := time.Now()
-	// for _, v := range mockSensorData {
-	// 	if _, err = core.GetRawDataCollection[core.LDDS45RawData](mongoDb).InsertOne(context.TODO(), core.RawData[core.LDDS45RawData]{
-	// 		Timestamp: primitive.NewDateTimeFromTime(timestamp),
-	// 		Sensor:    &sensorName,
-	// 		Data:      v,
-	// 	}); err != nil {
-	// 		log.Panicf("%v", err)
-	// 	}
-
-	// 	timestamp = timestamp.Add(-1 + 24*time.Hour)
-	// }
-
-	// // WORKING
-	// results, err := core.GetRawDataCollection[core.LDDS45RawData](mongoDb).Find(context.TODO(), bson.M{"sensor": sensorName})
-	// if err != nil {
-	// 	// Handle error
-	// 	panic(err)
-	// }
-
-	// log.Printf("Raw data: %v", results)
+	pullAllRainfallAggregations(mongoDb)
 }

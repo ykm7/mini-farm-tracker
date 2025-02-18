@@ -2,7 +2,9 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"reflect"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -33,23 +35,27 @@ type TaskRedisCheck struct {
 	ttl time.Duration
 }
 
-func NewTaskMongoAggregation[T any](mongoCollection MongoCollection[T], pipeline mongo.Pipeline, redisCheck *TaskRedisCheck) TaskMongoAggregation[T] {
-	return TaskMongoAggregation[T]{
-		mongoCollection: mongoCollection,
-		pipeline:        pipeline,
-		redisCheck:      redisCheck,
+func NewTaskMongoAggregation[T any, S interface{}](source MongoCollection[T], target MongoCollection[S], pipeline mongo.Pipeline, redisCheck *TaskRedisCheck) TaskMongoAggregation[T, S] {
+	return TaskMongoAggregation[T, S]{
+		source:     source,
+		target:     target,
+		pipeline:   pipeline,
+		redisCheck: redisCheck,
 	}
 }
 
-type TaskMongoAggregation[T any] struct {
-	redisCheck      *TaskRedisCheck
-	mongoCollection MongoCollection[T]
-	pipeline        mongo.Pipeline
+type TaskMongoAggregation[T any, S interface{}] struct {
+	redisCheck *TaskRedisCheck
+	source     MongoCollection[T]
+	target     MongoCollection[S]
+	pipeline   mongo.Pipeline
 }
 
-func (t *TaskMongoAggregation[T]) Job(ctx context.Context) TaskJobResult {
+func (t *TaskMongoAggregation[T, S]) Job(ctx context.Context) TaskJobResult {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
+	jobResult := TaskJobResult{}
 
 	// This allows for an options caching check
 	if t.redisCheck != nil {
@@ -57,23 +63,45 @@ func (t *TaskMongoAggregation[T]) Job(ctx context.Context) TaskJobResult {
 		if alreadyHeld {
 			log.Printf("Unable to acquire lock for key %s, already claimed (this is expected for multiple applications)\n", t.redisCheck.key)
 			// Any process is already performing this job
-			return TaskJobResult{}
+			return jobResult
 		}
 
 		if err != nil {
-			return TaskJobResult{err: err}
+			jobResult.err = err
+			return jobResult
 		}
 
 		// we deliberately are NOT releasing the lock but instead setting the TTL to be released in the future.
 	}
 
-	_, err := t.mongoCollection.Aggregate(ctx, t.pipeline)
-
-	result := TaskJobResult{
-		err: err,
+	results, err := t.source.Aggregate(ctx, t.pipeline)
+	if err != nil {
+		jobResult.err = err
+		return jobResult
 	}
 
-	return result
+	if len(results) == 0 {
+		jobResult.err = fmt.Errorf("aggregation results is zero length... this is likely wrong")
+		return jobResult
+	}
+
+	docs := make([]S, len(results))
+	for i, doc := range results {
+		if convertedDoc, ok := doc.(S); ok {
+			docs[i] = convertedDoc
+		} else {
+			jobResult.err = fmt.Errorf("unable to convert %+v to type of %s\n", doc, reflect.TypeFor[S]())
+			return jobResult
+		}
+	}
+
+	_, err = t.target.InsertMany(ctx, docs)
+	if err != nil {
+		jobResult.err = err
+		return jobResult
+	}
+
+	return jobResult
 }
 
 func worker(id int, tasks <-chan TaskJob, results chan<- TaskJobResult) {
@@ -86,7 +114,7 @@ func worker(id int, tasks <-chan TaskJob, results chan<- TaskJobResult) {
 	}
 }
 
-func taskHandler(items []TaskJob, goroutineCount int) {
+func TaskHandler(items []TaskJob, goroutineCount int) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 

@@ -292,15 +292,16 @@ type S2120RawDataMsg interface {
 type CalibratedDataNames string
 
 // TODO: need to tweak these. Starting to duplicate the constant labels for data types.
+// These values need to map to the stored collection values which are the "json" version of `CalibratedDataPoints` (needing to be lowercase)
 const (
-	VOLUME_DATA_NAMES              CalibratedDataNames = "Volume"
-	AIR_TEMPERATURE_DATA_NAMES     CalibratedDataNames = "AirTemperature"
-	LIGHT_INTENSITY_DATA_NAMES     CalibratedDataNames = "LightIntensity"
-	UV_INDEX_DATA_NAMES            CalibratedDataNames = "UVIndex"
-	WIND_SPEED_DATA_NAMES          CalibratedDataNames = "WindSpeed"
-	WIND_DIRECTION_DATA_NAMES      CalibratedDataNames = "WindDirection"
-	RAIN_FALL_HOURLY_DATA_NAMES    CalibratedDataNames = "RainfallHourly"
-	BAROMETRIC_PRESSURE_DATA_NAMES CalibratedDataNames = "BarometricPressure"
+	VOLUME_DATA_NAMES              CalibratedDataNames = "volume"
+	AIR_TEMPERATURE_DATA_NAMES     CalibratedDataNames = "airTemperature"
+	LIGHT_INTENSITY_DATA_NAMES     CalibratedDataNames = "lightIntensity"
+	UV_INDEX_DATA_NAMES            CalibratedDataNames = "uVIndex"
+	WIND_SPEED_DATA_NAMES          CalibratedDataNames = "windSpeed"
+	WIND_DIRECTION_DATA_NAMES      CalibratedDataNames = "windDirection"
+	RAIN_FALL_HOURLY_DATA_NAMES    CalibratedDataNames = "rainfallHourly"
+	BAROMETRIC_PRESSURE_DATA_NAMES CalibratedDataNames = "barometricPressure"
 )
 
 type S2120RawDataMeasurementType string
