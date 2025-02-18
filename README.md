@@ -62,16 +62,20 @@ Ideal outcomes would be flat resource usage across App Platform and Mongo. (Agai
 - [x] Currently on POST (or other insertion endpoints are available) so no current need for:
   - [x] Input validation
   - [x] Authentication - TODO as part of v2
-  - [x] Encryption (passwords) TODO as part of v2 although would like to allow for 3rd party auth.
+- [x] Encryption (passwords) TODO as part of v2 although would like to allow for 3rd party auth.
 - [x] Rate limiting considered however given its not a publically supplied API (just supplies website) not likely all that benefical.
 - [x] Concurrency limit added however doesn't actively deny the connection but rather logging spike so I can action.
-- [ ] Project scanned with `gosec`.
+- [x] Project scanned with `gosec`.
     > gosec ./... [within `server` directory.]
+    [x] Add github workflow to scan with gosec on `master` branch interactions.
 
 ### WebUI
 
+TODO: flesh this out
+
 ### General
 
+- [x] HTTPS/TLS is enforced by App Platform with Let's Encrypt certificates tied to my domain bought from Namecheap.
 
 # Diagrams
 
