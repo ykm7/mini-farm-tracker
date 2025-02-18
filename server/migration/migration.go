@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/ykm7/mini-farm-tracker/core"
+	"mini-farm-tracker/core"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"

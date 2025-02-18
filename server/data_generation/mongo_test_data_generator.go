@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ykm7/mini-farm-tracker/core"
+	"mini-farm-tracker/core"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
