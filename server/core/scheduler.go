@@ -9,14 +9,18 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
+/*
+interestingly, need the static "1" values to prevent issues with the date/time being considered incomplete
+*/
 type AGGREGATION_PERIOD string
 
 const (
-	HOURLY_PERIOD  AGGREGATION_PERIOD = "%Y-%m-%d-%H"
-	DAILY_PERIOD   AGGREGATION_PERIOD = "%Y-%m-%d"
-	WEEKLY_PERIOD  AGGREGATION_PERIOD = "%Y-%W"
-	MONTHLY_PERIOD AGGREGATION_PERIOD = "%Y-%m"
-	YEARLY_PERIOD  AGGREGATION_PERIOD = "%Y"
+	HOURLY_PERIOD AGGREGATION_PERIOD = "%Y-%m-%d-%H"
+	DAILY_PERIOD  AGGREGATION_PERIOD = "%Y-%m-%d"
+	// I should be able to use "%Y-%W-1" but "%U" is more widely supported
+	WEEKLY_PERIOD  AGGREGATION_PERIOD = "%Y-%U-1"
+	MONTHLY_PERIOD AGGREGATION_PERIOD = "%Y-%m-01"
+	YEARLY_PERIOD  AGGREGATION_PERIOD = "%Y-01-01"
 )
 
 type AGGREGATION_TYPE string
@@ -24,7 +28,7 @@ type AGGREGATION_TYPE string
 const (
 	HOURLY_TYPE  AGGREGATION_TYPE = "HOURLY"
 	DAILY_TYPE   AGGREGATION_TYPE = "DAILY"
-	WEEKLY_TYPE  AGGREGATION_TYPE = "WEEKLYY"
+	WEEKLY_TYPE  AGGREGATION_TYPE = "WEEKLY"
 	MONTHLY_TYPE AGGREGATION_TYPE = "MONTHLY"
 	YEARLY_TYPE  AGGREGATION_TYPE = "YEARLY"
 )
@@ -54,6 +58,9 @@ func SetupPeriodicTasks(server *Server) {
 
 	c := cron.New(cron.WithChain(cron.Recover(cron.DefaultLogger)), cron.WithLocation(loc))
 
+	source := GetCalibratedDataCollection(server.MongoDb)
+	target := GetAggregatedDataCollection(server.MongoDb)
+
 	// c.AddFunc("* * * * *", func() {
 	// 	fmt.Println("Every minute")
 	// })
@@ -66,12 +73,13 @@ func SetupPeriodicTasks(server *Server) {
 		aggregation := DAILY_TYPE
 		period := DAILY_PERIOD
 		ttl := DAILY_TTL
-		timeRange := time.Now().AddDate(0, 0, -1)
+		timeRange := time.Now().In(loc).AddDate(0, 0, -1)
 
 		metricType := RAIN_FALL_HOURLY_DATA_NAMES
 		rainfallTask := NewTaskMongoAggregation(
-			GetCalibratedDataCollection(server.MongoDb),
-			createAggregationPipeline(metricType, aggregation, period, timeRange),
+			source,
+			target,
+			CreateAggregationPipeline(metricType, aggregation, period, timeRange),
 			&TaskRedisCheck{
 				key:    getKey(metricType, aggregation, period),
 				client: server.Redis,
@@ -87,12 +95,13 @@ func SetupPeriodicTasks(server *Server) {
 		aggregation := WEEKLY_TYPE
 		period := WEEKLY_PERIOD
 		ttl := WEEKLY_TTL
-		timeRange := time.Now().AddDate(0, 0, -7)
+		timeRange := time.Now().In(loc).AddDate(0, 0, -7)
 
 		metricType := RAIN_FALL_HOURLY_DATA_NAMES
 		rainfallTask := NewTaskMongoAggregation(
-			GetCalibratedDataCollection(server.MongoDb),
-			createAggregationPipeline(metricType, aggregation, period, timeRange),
+			source,
+			target,
+			CreateAggregationPipeline(metricType, aggregation, period, timeRange),
 			&TaskRedisCheck{
 				key:    getKey(metricType, aggregation, period),
 				client: server.Redis,
@@ -108,12 +117,13 @@ func SetupPeriodicTasks(server *Server) {
 		aggregation := MONTHLY_TYPE
 		period := MONTHLY_PERIOD
 		ttl := MONTHLY_TTL
-		timeRange := time.Now().AddDate(0, -1, 0)
+		timeRange := time.Now().In(loc).AddDate(0, -1, 0)
 
 		metricType := RAIN_FALL_HOURLY_DATA_NAMES
 		rainfallTask := NewTaskMongoAggregation(
-			GetCalibratedDataCollection(server.MongoDb),
-			createAggregationPipeline(metricType, aggregation, period, timeRange),
+			source,
+			target,
+			CreateAggregationPipeline(metricType, aggregation, period, timeRange),
 			&TaskRedisCheck{
 				key:    getKey(metricType, aggregation, period),
 				client: server.Redis,
@@ -129,12 +139,13 @@ func SetupPeriodicTasks(server *Server) {
 		aggregation := YEARLY_TYPE
 		period := YEARLY_PERIOD
 		ttl := YEARLY_TTL
-		timeRange := time.Now().AddDate(-1, 0, 0)
+		timeRange := time.Now().In(loc).AddDate(-1, 0, 0)
 
 		metricType := RAIN_FALL_HOURLY_DATA_NAMES
 		rainfallTask := NewTaskMongoAggregation(
-			GetCalibratedDataCollection(server.MongoDb),
-			createAggregationPipeline(metricType, aggregation, period, timeRange),
+			source,
+			target,
+			CreateAggregationPipeline(metricType, aggregation, period, timeRange),
 			&TaskRedisCheck{
 				key:    getKey(metricType, aggregation, period),
 				client: server.Redis,
@@ -168,5 +179,5 @@ maybe a separate handler would be better.
 func SetupTaskHandler(server *Server) {
 	goroutineCount := runtime.NumCPU() * 4
 
-	debounce(time.Second*1, 100, server.Tasks, taskHandler, goroutineCount)
+	Debounce(server.ExitContext, time.Second*1, 100, server.Tasks, TaskHandler, goroutineCount)
 }

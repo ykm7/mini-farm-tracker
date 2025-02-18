@@ -15,8 +15,7 @@ func main() {
 	log.Println("Starting up...")
 
 	exitChan := make(chan struct{})
-	ctx := context.Background()
-	innerCtx, innerCtxCancel := core.ContextWithQuitChannel(ctx, exitChan)
+	innerCtx, innerCtxCancel := core.ContextWithQuitChannel(context.Background(), exitChan)
 	defer innerCtxCancel()
 
 	// values for Mongo and TTN

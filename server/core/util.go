@@ -252,12 +252,16 @@ func mapToList[K comparable, V any](m map[K]V) []V {
 
 // TODO: To be paired with the overall available tasks. Allows for handling of all tasks raised within a time period.
 // Likely setting this to several seconds should capture all possible tasks.
-func debounce[T any](interval time.Duration, maxBatchSize int, incoming <-chan T, f func([]T, int), goroutineCount int) {
+func Debounce[T any](ctx context.Context, interval time.Duration, maxBatchSize int, incoming <-chan T, f func([]T, int), goroutineCount int) {
 	var items []T
 	timer := time.NewTimer(interval)
 
 	for {
 		select {
+		case <-ctx.Done():
+			log.Println("Closing debounce task handler...")
+			return
+
 		case item := <-incoming:
 			items = append(items, item)
 			if len(items) >= maxBatchSize {
