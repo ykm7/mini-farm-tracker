@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -76,12 +77,13 @@ type MongoDatabase interface {
 
 type MongoCollection[T any] interface {
 	InsertOne(ctx context.Context, document T) (*mongo.InsertOneResult, error)
+	InsertMany(ctx context.Context, documents []T) (*mongo.InsertManyResult, error)
 	FindOne(ctx context.Context, filter interface{}, result *T) error
 	Find(ctx context.Context, filter interface{}, opts ...*options.FindOptions) ([]T, error)
 	UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 	Watch(ctx context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
 	DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
-	Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) ([]T, error)
+	Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) ([]interface{}, error)
 }
 
 type MongoDatabaseImpl struct {
@@ -135,12 +137,25 @@ func GetCalibratedDataCollection(mongoDb MongoDatabase) MongoCollection[Calibrat
 	return getTypedCollection[CalibratedData](mongoDb, string(CALIBRATED_DATA_COLLECTION))
 }
 
+func GetAggregatedDataCollection(mongoDb MongoDatabase) MongoCollection[any] {
+	return getTypedCollection[any](mongoDb, string(AGGREGATED_DATA_COLLECTION))
+}
+
 func GetAssetsCollection(mongoDb MongoDatabase) MongoCollection[Asset] {
 	return getTypedCollection[Asset](mongoDb, string(ASSETS_COLLECTION))
 }
 
 func (m *MongoCollectionWrapper[T]) InsertOne(ctx context.Context, document T) (*mongo.InsertOneResult, error) {
 	return m.col.InsertOne(ctx, document)
+}
+
+func (m *MongoCollectionWrapper[T]) InsertMany(ctx context.Context, documents []T) (*mongo.InsertManyResult, error) {
+	// Convert []T to []interface{}
+	docs := make([]interface{}, len(documents))
+	for i, doc := range documents {
+		docs[i] = doc
+	}
+	return m.col.InsertMany(ctx, docs)
 }
 
 func (m *MongoCollectionWrapper[T]) FindOne(ctx context.Context, filter interface{}, result *T) error {
@@ -183,14 +198,18 @@ func (m *MongoCollectionWrapper[T]) DeleteMany(ctx context.Context, filter inter
 	return m.col.DeleteMany(ctx, filter, opts...)
 }
 
-func (m *MongoCollectionWrapper[T]) Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) ([]T, error) {
+func (m *MongoCollectionWrapper[T]) Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) ([]interface{}, error) {
+	if pipeline == nil {
+		return nil, errors.New("pipeline cannot be nil")
+	}
+
 	cursor, err := m.col.Aggregate(ctx, pipeline, opts...)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 
-	var results []T
+	var results []interface{}
 	if err := cursor.All(ctx, &results); err != nil {
 		return nil, err
 	}
@@ -253,7 +272,11 @@ Aggregation (tested via MongoDB Compass ):
 	    },
 	    { $out: "aggregated_data" }
 */
-func createAggregationPipeline(dataType CalibratedDataNames, aggregationType AGGREGATION_TYPE, groupByFormat AGGREGATION_PERIOD, timeRange time.Time) mongo.Pipeline {
+func CreateAggregationPipeline(
+	dataType CalibratedDataNames,
+	aggregationType AGGREGATION_TYPE,
+	groupByFormat AGGREGATION_PERIOD,
+	timeRange time.Time) mongo.Pipeline {
 	return mongo.Pipeline{
 		{{Key: "$match", Value: bson.D{
 			{Key: fmt.Sprintf("dataPoints.%s", dataType), Value: bson.D{{Key: "$exists", Value: true}}},
@@ -275,7 +298,7 @@ func createAggregationPipeline(dataType CalibratedDataNames, aggregationType AGG
 			{Key: "date", Value: bson.D{{Key: "$dateFromString", Value: bson.D{{Key: "dateString", Value: "$_id.date"}}}}},
 			{Key: "metadata", Value: bson.D{
 				{Key: "sensor", Value: "$_id.sensor"},
-				{Key: "type", Value: aggregationType},
+				{Key: "period", Value: aggregationType},
 				{Key: "dataType", Value: dataType},
 			}},
 			{Key: "totalValue", Value: bson.D{
@@ -283,6 +306,6 @@ func createAggregationPipeline(dataType CalibratedDataNames, aggregationType AGG
 				{Key: "unit", Value: "$unit"},
 			}},
 		}}},
-		{{Key: "$out", Value: AGGREGATED_DATA_COLLECTION}},
+		{{Key: "$sort", Value: bson.D{{Key: "date", Value: 1}}}},
 	}
 }
