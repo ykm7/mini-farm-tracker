@@ -10,6 +10,9 @@ on:
 jobs:
   security-scan:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server
     env:
       GO111MODULE: on
     steps:
@@ -23,9 +26,8 @@ jobs:
 
       - name: Get dependencies
         run: go mod tidy
-        working-directory: ./server
         
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
-          args: -d ./server ./...
+          args: ./...
