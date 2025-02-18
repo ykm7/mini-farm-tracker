@@ -67,7 +67,7 @@ func SetupPeriodicTasks(server *Server) {
 	// c.AddFunc("@hourly", func() {
 	// 	fmt.Println("Every hour")
 	// })
-	c.AddFunc("@daily", func() {
+	if _, err := c.AddFunc("@daily", func() {
 		fmt.Println("Every day")
 
 		aggregation := DAILY_TYPE
@@ -88,8 +88,11 @@ func SetupPeriodicTasks(server *Server) {
 		)
 
 		server.Tasks <- &rainfallTask
-	})
-	c.AddFunc("@weekly ", func() {
+	}); err != nil {
+		log.Fatalf("Unable to start daily scheduled job: %v", err)
+	}
+
+	if _, err := c.AddFunc("@weekly", func() {
 		fmt.Println("Every week")
 
 		aggregation := WEEKLY_TYPE
@@ -110,8 +113,11 @@ func SetupPeriodicTasks(server *Server) {
 		)
 
 		server.Tasks <- &rainfallTask
-	})
-	c.AddFunc("@monthly", func() {
+	}); err != nil {
+		log.Fatalf("Unable to start weekly scheduled job: %v", err)
+	}
+
+	if _, err := c.AddFunc("@monthly", func() {
 		fmt.Println("Every month")
 
 		aggregation := MONTHLY_TYPE
@@ -132,8 +138,11 @@ func SetupPeriodicTasks(server *Server) {
 		)
 
 		server.Tasks <- &rainfallTask
-	})
-	c.AddFunc("@yearly", func() {
+	}); err != nil {
+		log.Fatalf("Unable to start monthly scheduled job: %v", err)
+	}
+
+	if _, err := c.AddFunc("@yearly", func() {
 		fmt.Println("Every year")
 
 		aggregation := YEARLY_TYPE
@@ -154,7 +163,9 @@ func SetupPeriodicTasks(server *Server) {
 		)
 
 		server.Tasks <- &rainfallTask
-	})
+	}); err != nil {
+		log.Fatalf("Unable to start yearly scheduled job: %v", err)
+	}
 
 	c.Start()
 
