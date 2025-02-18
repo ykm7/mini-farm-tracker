@@ -50,6 +50,11 @@ func main() {
 		// port defaults 8080 but for clarify, declaring
 		Addr:    ":8080",
 		Handler: r,
+		// Not setting this value was identified by `gosec`
+		// G112 (CWE-400): Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server (Confidence: LOW, Severity: MEDIUM)
+		// Based on some reading "https://adam-p.ca/blog/2022/01/golang-http-server-timeouts/" given we are supplying
+		// simply IoT timeseries data which value should be sufficient.
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	go func() {
