@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"log"
-	"mini-farm-tracker-server/core"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/ykm7/mini-farm-tracker/core"
 )
 
 func main() {

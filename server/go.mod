@@ -1,4 +1,4 @@
-module mini-farm-tracker-server
+module github.com/ykm7/mini-farm-tracker
 
 go 1.23.6
 

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"mini-farm-tracker-server/core"
 	"net/http"
 	"time"
+
+	"github.com/ykm7/mini-farm-tracker/core"
 )
 
 type WeatherResponse struct {
