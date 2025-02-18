@@ -10,9 +10,9 @@ on:
 jobs:
   security-scan:
     runs-on: ubuntu-latest
-    # defaults:
-    #   run:
-    #     working-directory: ./server
+    defaults:
+      run:
+        working-directory: ./server
     env:
       GO111MODULE: on
     steps:
@@ -34,4 +34,4 @@ jobs:
 
       - name: Run Gosec Security Scanner
         run: gosec ./...
-        working-directory: /home/runner/work/mini-farm-tracker/server
+        # working-directory: /home/runner/work/mini-farm-tracker/server
