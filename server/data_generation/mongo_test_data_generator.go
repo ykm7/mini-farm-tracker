@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"mini-farm-tracker-server/core"
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/ykm7/mini-farm-tracker/core"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
