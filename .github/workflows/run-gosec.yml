@@ -34,4 +34,4 @@ jobs:
 
       - name: Run Gosec Security Scanner
         run: gosec ./...
-        working-directory: server
+        working-directory: /home/runner/work/mini-farm-tracker/server
