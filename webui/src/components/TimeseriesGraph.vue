@@ -199,15 +199,6 @@
     (e: "update-starting-date", item: T, startingOffset: number): void
   }>()
 
-  const availableOptions = computed<KeyOf<GraphData>[]>(() => {
-    const keys = Object.keys(props.displayData)
-    if (keys.length === 0) {
-      return []
-    } else {
-      return keys as KeyOf<GraphData>[]
-    }
-  })
-
   onMounted(() => {
     selectTimePeriod(ONE_WEEK)
   })
@@ -220,6 +211,15 @@
     { deep: true }
   )
 
+  const availableOptions = computed<KeyOf<GraphData>[]>(() => {
+    const keys = Object.keys(props.displayData)
+    if (keys.length === 0) {
+      return []
+    } else {
+      return keys as KeyOf<GraphData>[]
+    }
+  })
+
   const selectTimePeriod = (period: number) => {
     selectedPeriod.value = period
     emit("update-starting-date", props.item, period)
@@ -229,13 +229,6 @@
     selectedGraphType.value = {
       key: option,
       value: toRaw(props.displayData[option]!),
-    }
-  }
-
-  const setDefaultGraph = (displayData: GraphData) => {
-    selectedGraphType.value = {
-      key: availableOptions.value[0],
-      value: displayData[availableOptions.value[0]]!,
     }
   }
 
@@ -272,21 +265,6 @@
       ],
     }
   })
-
-  const dynamicTimeUnit = (dataPoints: DisplayPoint[]) => {
-    const oldest = dataPoints[0]
-    const newest = dataPoints[dataPoints.length - 1]
-
-    const diff = Date.parse(newest.timestamp) - Date.parse(oldest.timestamp)
-
-    const hours = diff / (1000 * 60 * 60)
-
-    if (hours < 1) return "minute"
-    if (hours < 24) return "hour"
-    if (hours < 30 * 24) return "day"
-    if (hours < 365 * 24) return "month"
-    return "year"
-  }
 
   const chartOptions = computed<ChartOptions<"line">>(() => {
     const current = toRaw(selectedGraphType.value)
@@ -353,6 +331,37 @@
       },
     }
   })
+
+  const dynamicTimeUnit = (dataPoints: DisplayPoint[]) => {
+    const oldest = dataPoints[0]
+    const newest = dataPoints[dataPoints.length - 1]
+
+    const diff = Date.parse(newest.timestamp) - Date.parse(oldest.timestamp)
+
+    const hours = diff / (1000 * 60 * 60)
+
+    if (hours < 1) return "minute"
+    if (hours < 24) return "hour"
+    if (hours < 30 * 24) return "day"
+    if (hours < 365 * 24) return "month"
+    return "year"
+  }
+
+  const setDefaultGraph = (displayData: GraphData) => {
+    var key: keyof GraphData
+    if (selectedGraphType.value) {
+      // a subgraph type has already been selected
+      key = selectedGraphType.value.key
+    } else {
+      // on initial local there isn't a selected sub graph type
+      key = availableOptions.value[0]
+    }
+
+    selectedGraphType.value = {
+      key: key,
+      value: displayData[key]!,
+    }
+  }
 </script>
 
 <style scoped>
