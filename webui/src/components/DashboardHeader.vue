@@ -3,12 +3,12 @@
     <nav class="navigation">
       <ul>
         <li>
-          <router-link to="/">
+          <router-link to="/" aria-label="Assets">
             <font-awesome-icon :icon="['fas', 'house']" />
           </router-link>
         </li>
-        <li><router-link to="/">Assets</router-link></li>
-        <li><router-link to="/sensor">Sensors</router-link></li>
+        <li><router-link to="/" aria-label="Assets">Assets</router-link></li>
+        <li><router-link to="/sensor" aria-label="Sensors">Sensors</router-link></li>
       </ul>
     </nav>
     <div>
