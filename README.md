@@ -85,7 +85,9 @@ Ideal outcomes would be flat resource usage across App Platform and Mongo. (Agai
 - [x] Concurrency limit added however doesn't actively deny the connection but rather logging spike so I can action.
 - [x] Project scanned with `gosec`.
     > gosec ./... [within `server` directory.]
-    [x] Add github workflow to scan with gosec on `master` branch interactions.
+  - [x] Add github workflow to scan with gosec on `master` branch interactions.
+- [x] Implemented HSTS header following OWASP guidelines
+  - [ ] TODO: learn more about OWASP + plus general on [blob by UpGuard on HSTS](https://www.upguard.com/blog/hsts)
 
 ### WebUI
 
