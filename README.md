@@ -31,7 +31,25 @@ Using NodeJS v22.13.0
 
 Using Golang
 
+### Version
+
+[Limited by support version from DigitalOcean.](https://docs.digitalocean.com/products/app-platform/reference/buildpacks/go/)
+Specifically it is _App Platform uses version 192 of the Heroku Go Buildpack_
+[Direct list found here (for version _192_)](https://github.com/heroku/heroku-buildpack-go/blob/v192/data.json)
+
+[Version selection can be done via](https://go.dev/doc/manage-install)
+
+Latest version is: _1.22.4_
+
+Current:
+> go install golang.org/dl/go1.22.4@latest
+> go1.22.4 download
+
 Primary motivation is I have done similar in Python multiple times (Flask, Quart) and while I have created microservices within Golang, I have not used it for web API hosting.
+
+#### Gosec
+
+Last version compatible with _1.22.4_ should be [v2.21.0](https://github.com/securego/gosec/releases/tag/v2.21.0)
 
 ### Cron style aggregation/s
 
