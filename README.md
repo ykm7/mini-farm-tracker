@@ -87,7 +87,7 @@ Ideal outcomes would be flat resource usage across App Platform and Mongo. (Agai
     > gosec ./... [within `server` directory.]
   - [x] Add github workflow to scan with gosec on `master` branch interactions.
 - [x] Implemented HSTS header following OWASP guidelines
-  - [ ] TODO: learn more about OWASP + plus general on [blob by UpGuard on HSTS](https://www.upguard.com/blog/hsts)
+  - [ ] TODO: learn more about OWASP + plus general on [blog by UpGuard on HSTS](https://www.upguard.com/blog/hsts)
 
 ### WebUI
 
