@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"mini-farm-tracker/core"
+	"mini-farm-tracker-server/core"
 )
 
 type WeatherResponse struct {

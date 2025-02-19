@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"mini-farm-tracker/core"
+	"mini-farm-tracker-server/core"
 )
 
 func main() {
