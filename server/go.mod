@@ -1,4 +1,4 @@
-module mini-farm-tracker
+module mini-farm-tracker-server
 
 go 1.22.4
 
