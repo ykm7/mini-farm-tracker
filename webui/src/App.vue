@@ -1,7 +1,15 @@
 <script setup lang="ts">
   import { Analytics } from "@vercel/analytics/vue"
   import { SpeedInsights } from "@vercel/speed-insights/vue"
+  import { onMounted } from "vue"
   import { RouterView } from "vue-router" /* PartiallyEnd: #3632/scriptSetup.vue */ /* PartiallyEnd: #3632/scriptSetup.vue */ /* PartiallyEnd: #3632/scriptSetup.vue */
+
+  onMounted(() => {
+    const link = document.createElement("link")
+    link.rel = "preconnect"
+    link.href = import.meta.env.VITE_BASE_URL
+    document.head.appendChild(link)
+  })
 </script>
 
 <template>
