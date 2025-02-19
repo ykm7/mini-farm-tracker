@@ -58,7 +58,8 @@
   import type { GraphData, Unit } from "@/types/GraphRelated"
   import type { ObjectId } from "@/types/ObjectId"
   import { CCard, CCardBody, CCardTitle, CListGroup, CListGroupItem } from "@coreui/vue"
-  import axios from "axios"
+  import axios, { type CancelTokenSource } from "axios"
+
   import mergeWith from "lodash/mergeWith"
   import { computed, ref, watch } from "vue"
   import AsyncWrapper from "./AsyncWrapper.vue"
@@ -71,6 +72,9 @@
   const assetIdToStarting = ref<Map<ObjectId, number>>(new Map())
   const assetToData = ref<Map<ObjectId, Promise<GraphData>>>(new Map())
 
+  // sensor id -> cancellation tokens for all network calls (for the sensor)
+  const cancelTokens: Map<ObjectId, CancelTokenSource[]> = new Map()
+
   function handleUpdateStartingTimeEvent(asset: Asset, startingOffset: number) {
     const newMap = new Map(assetIdToStarting.value)
     newMap.set(asset.Id, startingOffset)
@@ -81,6 +85,7 @@
     assets,
     (newAssets) => {
       newAssets.forEach((a) => {
+        cancelTokens.set(a.Id, [])
         assetToData.value.set(a.Id, Promise.resolve({}))
       })
     },
@@ -114,6 +119,9 @@
     startOffset: number,
     endOffset: number = 0
   ): AsyncGenerator<GraphData> {
+    cancelTokens.get(asset.Id)!.forEach((source) => source.cancel("Request cancelled"))
+    cancelTokens.set(asset.Id, [])
+
     const now = new Date()
     const start = new Date(now.getTime() - startOffset)
     const end = new Date(now.getTime() - endOffset)
@@ -131,10 +139,15 @@
 
     while (true) {
       const newGraphData: GraphData = {}
+
+      const source = axios.CancelToken.source()
+      cancelTokens.get(asset.Id)!.push(source)
+
       try {
         // TODO: This still is limiting a single sensor per asset.
         const response = await axios.get<CalibratedData[]>(
-          `${BASE_URL}/api/sensors/${asset.Sensors[0]}/data/calibrated_data?${params.toString()}`
+          `${BASE_URL}/api/sensors/${asset.Sensors[0]}/data/calibrated_data?${params.toString()}`,
+          { cancelToken: source.token }
         )
 
         response.data.forEach((d: CalibratedData) => {
@@ -283,8 +296,19 @@
 
         params.set("start", response.data[available - 1].Timestamp)
       } catch (e) {
-        console.warn(e)
+        if (axios.isCancel(e)) {
+          // pass
+        } else {
+          // Handle other errors
+          console.warn(e)
+        }
+
         break
+      } finally {
+        const index = cancelTokens.get(asset.Id)!.indexOf(source)
+        if (index > -1) {
+          cancelTokens.get(asset.Id)!.splice(index, 1)
+        }
       }
     }
   }
