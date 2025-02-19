@@ -40,7 +40,7 @@
   import type { Sensor } from "@/models/Sensor"
   import { useSensorStore } from "@/stores/sensor"
   import type { GraphData } from "@/types/GraphRelated"
-  import axios from "axios"
+  import axios, { type CancelTokenSource } from "axios"
   import mergeWith from "lodash/mergeWith"
   import TimeseriesGraph from "./TimeseriesGraph.vue"
 
@@ -49,6 +49,9 @@
   const sensors = computed<Sensor[]>(() => sensorCollection.sensors)
   const sensorIdToStarting = ref<Map<string, number>>(new Map())
   const sensorToData = ref<Map<string, Promise<GraphData>>>(new Map())
+
+  // sensor id -> cancellation tokens for all network calls (for the sensor)
+  const cancelTokens: Map<string, CancelTokenSource[]> = new Map()
 
   function handleUpdateStartingTimeEvent(sensor: Sensor, startingOffset: number) {
     const newMap = new Map(sensorIdToStarting.value)
@@ -60,6 +63,7 @@
     sensors,
     (newSensors) => {
       newSensors.forEach((s) => {
+        cancelTokens.set(s.Id, [])
         sensorToData.value.set(s.Id, Promise.resolve({}))
       })
     },
@@ -99,6 +103,9 @@
     startOffset: number,
     endOffset: number = 0
   ): AsyncGenerator<GraphData> {
+    cancelTokens.get(sensor.Id)!.forEach((source) => source.cancel("Request cancelled"))
+    cancelTokens.set(sensor.Id, [])
+
     const now = new Date()
     const start = new Date(now.getTime() - startOffset)
     const end = new Date(now.getTime() - endOffset)
@@ -112,9 +119,14 @@
 
     while (true) {
       const newGraphData: GraphData = {}
+
+      const source = axios.CancelToken.source()
+      cancelTokens.get(sensor.Id)!.push(source)
+
       try {
         const response = await axios.get<RawData[]>(
-          `${BASE_URL}/api/sensors/${sensor.Id}/data/raw_data?${params.toString()}`
+          `${BASE_URL}/api/sensors/${sensor.Id}/data/raw_data?${params.toString()}`,
+          { cancelToken: source.token }
         )
 
         response.data.forEach((d: RawData) => {
@@ -151,8 +163,19 @@
 
         params.set("start", response.data[available - 1].Timestamp)
       } catch (e) {
-        console.warn(e)
+        if (axios.isCancel(e)) {
+          console.log("Request cancelled:", e.message)
+        } else {
+          // Handle other errors
+          console.warn(e)
+        }
+
         break
+      } finally {
+        const index = cancelTokens.get(sensor.Id)!.indexOf(source)
+        if (index > -1) {
+          cancelTokens.get(sensor.Id)!.splice(index, 1)
+        }
       }
     }
   }
