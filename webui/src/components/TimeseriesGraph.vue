@@ -349,7 +349,7 @@
 
   const setDefaultGraph = (displayData: GraphData) => {
     var key: keyof GraphData
-    if (selectedGraphType.value) {
+    if (selectedGraphType.value != null && selectedGraphType.value.key) {
       // a subgraph type has already been selected
       key = selectedGraphType.value.key
     } else {
@@ -362,6 +362,7 @@
       value: displayData[key]!,
     }
   }
+    
 </script>
 
 <style scoped>

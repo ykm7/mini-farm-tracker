@@ -164,7 +164,7 @@
         params.set("start", response.data[available - 1].Timestamp)
       } catch (e) {
         if (axios.isCancel(e)) {
-          console.log("Request cancelled:", e.message)
+          // pass
         } else {
           // Handle other errors
           console.warn(e)
