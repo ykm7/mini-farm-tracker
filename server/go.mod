@@ -1,6 +1,6 @@
 module mini-farm-tracker
 
-go 1.22.12
+go 1.22.4
 
 require (
 	github.com/gin-contrib/cors v1.7.3
