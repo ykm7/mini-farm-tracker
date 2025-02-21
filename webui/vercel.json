@@ -10,6 +10,10 @@
             "source": "/(.*)",
             "headers": [
                 {
+                    "key": "Cross-Origin-Opener-Policy",
+                    "value": "same-origin"
+                },
+                {
                     "key": "Content-Security-Policy",
                     "value": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.mini-farm-tracker.io;"
                 },
@@ -36,10 +40,6 @@
                 {
                     "key": "Permissions-Policy",
                     "value": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
-                },
-                {
-                    "key": "Feature-Policy",
-                    "value": "geolocation 'none'; microphone 'none'; camera 'none'"
                 },
                 {
                     "key": "Cache-Control",
