@@ -86,8 +86,10 @@ Ideal outcomes would be flat resource usage across App Platform and Mongo. (Agai
 - [x] Project scanned with `gosec`.
     > gosec ./... [within `server` directory.]
   - [x] Add github workflow to scan with gosec on `master` branch interactions.
-- [x] Implemented HSTS header following OWASP guidelines
-  - [ ] TODO: learn more about OWASP + plus general on [blog by UpGuard on HSTS](https://www.upguard.com/blog/hsts)
+~~- [x] Implemented HSTS header following OWASP guidelines~~
+- [ ] TODO: learn more about OWASP + plus general on [blog by UpGuard on HSTS](https://www.upguard.com/blog/hsts)
+- [x] Shifted security headers to be controllable by Vercel.
+  - Prompted by investigating why Lighthouse (and similar) where indicating the lack of the expected security headers. This is part of investigation into best practices.
 
 ### WebUI
 

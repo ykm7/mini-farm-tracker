@@ -24,23 +24,45 @@ func CustomLogger() gin.HandlerFunc {
 	})
 }
 
-/*
-*
-Applying Chrome's Lighthouse best practices
-https://developer.chrome.com/docs/lighthouse/best-practices/has-hsts?utm_source=lighthouse&utm_medium=devtools
+// /*
+// *
+// TODO: Understand
+// */
+// func CSPHandler() gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'nonce-{random_nonce}'; object-src 'none'")
+// 		c.Next()
+// 	}
+// }
 
-* The max-age directive specifies the amount of time the user's browser is forced to visit a website only using TLS (in seconds). After that time, it will be possible to reach the site using plain HTTP again if there is no HSTS header provided by the website (or temporary redirects from HTTP to HTTPS are in place).
+// /*
+// *
+// TODO: Understand
+// */
+// func COOPHandler() gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		c.Header("Cross-Origin-Opener-Policy", "same-origin")
+// 		c.Next()
+// 	}
+// }
 
-* Setting the includeSubDomains directive will enforce the header on any subdomains of the page URL sending the header initially. For example, having an HSTS header sent by google.com which includes the includeSubDomains directive would also enforce the HSTS header on mail.google.com.
+// /*
+// *
+// Applying Chrome's Lighthouse best practices
+// https://developer.chrome.com/docs/lighthouse/best-practices/has-hsts?utm_source=lighthouse&utm_medium=devtools
 
-* Setting the preload directive and submitting the domain to the HSTS preload service will compile the domain into browser binaries that use the preloaded HSTS list (not just Google Chrome).
-*/
-func HSTSHandler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Writer.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
-		c.Next()
-	}
-}
+// * The max-age directive specifies the amount of time the user's browser is forced to visit a website only using TLS (in seconds). After that time, it will be possible to reach the site using plain HTTP again if there is no HSTS header provided by the website (or temporary redirects from HTTP to HTTPS are in place).
+
+// * Setting the includeSubDomains directive will enforce the header on any subdomains of the page URL sending the header initially. For example, having an HSTS header sent by google.com which includes the includeSubDomains directive would also enforce the HSTS header on mail.google.com.
+
+// * Setting the preload directive and submitting the domain to the HSTS preload service will compile the domain into browser binaries that use the preloaded HSTS list (not just Google Chrome).
+// */
+// func HSTSHandler() gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		c.Writer.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+// 		c.Next()
+// 	}
+// }
 
 func ConcurrencyLimiter(maxConcurrent int64) gin.HandlerFunc {
 	sem := semaphore.NewWeighted(maxConcurrent)
@@ -66,7 +88,12 @@ func SetupRouter(server *Server) *gin.Engine {
 	r := gin.New()
 
 	r.Use(CustomLogger())
-	r.Use(HSTSHandler())
+	/**
+	Leaving these currently for historic purpose and again investigate pros/cons of having headers within code vs hosted.
+	*/
+	// r.Use(HSTSHandler())
+	// r.Use(CSPHandler())
+	// r.Use(COOPHandler())
 	r.Use(ConcurrencyLimiter(100))
 	r.Use(compress.Compress())
 	r.Use(gin.Recovery())
