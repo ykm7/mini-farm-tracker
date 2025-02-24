@@ -1,7 +1,6 @@
 package core
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,12 +10,35 @@ import (
 	"github.com/gin-gonic/gin"
 	compress "github.com/lf4096/gin-compress"
 	"golang.org/x/sync/semaphore"
+	"golang.org/x/time/rate"
 )
 
 const HEALTH_ENDPOINT = "/health"
-const SENSOR_ID_PARAM = "sensor_id"
-const START_DATE = "start"
-const END_DATE = "end"
+
+const (
+	SENSOR_ID_PARAM = "sensor_id"
+	START_DATE      = "start"
+	END_DATE        = "end"
+)
+
+const (
+	NO_ROUTE_LIMIT                               = rate.Limit(1)
+	NO_ROUTE_BURST                               = 3
+	NO_ROUTE_CONCURRENCY_LIMIT                   = 5
+	NO_ROUTE_CONCURRENCY_SEMAPHORE               = "semaphore"
+	NO_ROUTE_CONCURRENCY_SEMAPHORE_ACQUIRE_COUNT = 1
+)
+
+/*
+*
+Extracted to allow for easy extension on testing
+*/
+func noRoute() []gin.HandlerFunc {
+	return []gin.HandlerFunc{
+		rateLimiter(NO_ROUTE_LIMIT, NO_ROUTE_BURST),
+		ConcurrencyLimiter(NO_ROUTE_CONCURRENCY_LIMIT, true),
+	}
+}
 
 func CustomLogger() gin.HandlerFunc {
 	return gin.LoggerWithConfig(gin.LoggerConfig{
@@ -24,63 +46,68 @@ func CustomLogger() gin.HandlerFunc {
 	})
 }
 
-// /*
-// *
-// TODO: Understand
-// */
-// func CSPHandler() gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'nonce-{random_nonce}'; object-src 'none'")
-// 		c.Next()
-// 	}
-// }
+func rateLimiter(r rate.Limit, burst int) gin.HandlerFunc {
 
-// /*
-// *
-// TODO: Understand
-// */
-// func COOPHandler() gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		c.Header("Cross-Origin-Opener-Policy", "same-origin")
-// 		c.Next()
-// 	}
-// }
+	limiters := make(map[string]*rate.Limiter)
+	var mu sync.Mutex
 
-// /*
-// *
-// Applying Chrome's Lighthouse best practices
-// https://developer.chrome.com/docs/lighthouse/best-practices/has-hsts?utm_source=lighthouse&utm_medium=devtools
+	return func(ctx *gin.Context) {
 
-// * The max-age directive specifies the amount of time the user's browser is forced to visit a website only using TLS (in seconds). After that time, it will be possible to reach the site using plain HTTP again if there is no HSTS header provided by the website (or temporary redirects from HTTP to HTTPS are in place).
+		ip := ctx.ClientIP()
+		mu.Lock()
 
-// * Setting the includeSubDomains directive will enforce the header on any subdomains of the page URL sending the header initially. For example, having an HSTS header sent by google.com which includes the includeSubDomains directive would also enforce the HSTS header on mail.google.com.
-
-// * Setting the preload directive and submitting the domain to the HSTS preload service will compile the domain into browser binaries that use the preloaded HSTS list (not just Google Chrome).
-// */
-// func HSTSHandler() gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		c.Writer.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
-// 		c.Next()
-// 	}
-// }
-
-func ConcurrencyLimiter(maxConcurrent int64) gin.HandlerFunc {
-	sem := semaphore.NewWeighted(maxConcurrent)
-	return func(c *gin.Context) {
-		if err := sem.Acquire(context.Background(), 1); err != nil {
-
-			/**
-			Normally what would be done, however given the nature of the project would rather collect
-			this as a metric to make futher modifications.
-			*/
-			// c.AbortWithStatus(503) // Service Unavailable
-			// return
-
-			log.Printf("Gin middleware concurrency limiter limit hit with a value of %d\n", maxConcurrent)
-			c.Next()
+		limiter, exists := limiters[ip]
+		if !exists {
+			limiter = rate.NewLimiter(r, burst)
+			limiters[ip] = limiter
 		}
-		defer sem.Release(1)
-		c.Next()
+
+		mu.Unlock()
+
+		if !limiter.Allow() {
+			ctx.JSON(http.StatusTooManyRequests, gin.H{"error": "too many requests"})
+			ctx.Abort()
+			return
+		}
+		ctx.Next()
+	}
+}
+
+/*
+Normally what would be done, however given the nature of the project would rather collect
+this as a metric to make futher modifications.
+*/
+func ConcurrencyLimiter(maxConcurrent int64, causeError bool) gin.HandlerFunc {
+	sem := semaphore.NewWeighted(maxConcurrent)
+	return func(ctx *gin.Context) {
+		if !sem.TryAcquire(NO_ROUTE_CONCURRENCY_SEMAPHORE_ACQUIRE_COUNT) {
+			if causeError {
+				log.Printf("Concurrency limit reached, returning 503")
+				ctx.AbortWithStatus(http.StatusServiceUnavailable)
+			} else {
+				log.Printf("Concurrency limit reached, but allowing request")
+				ctx.Next()
+			}
+			return
+		}
+
+		// log.Printf("Request acquired semaphore")
+		ctx.Set(NO_ROUTE_CONCURRENCY_SEMAPHORE, sem)
+		ctx.Next()
+	}
+}
+
+func ReleaseSemaphore() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		defer func() {
+			if sem, exists := ctx.Get(NO_ROUTE_CONCURRENCY_SEMAPHORE); exists {
+				if s, ok := sem.(*semaphore.Weighted); ok {
+					s.Release(NO_ROUTE_CONCURRENCY_SEMAPHORE_ACQUIRE_COUNT)
+					// log.Printf("Semaphore released at the end of request")
+				}
+			}
+		}()
+		ctx.Next()
 	}
 }
 
@@ -94,9 +121,9 @@ func SetupRouter(server *Server) *gin.Engine {
 	// r.Use(HSTSHandler())
 	// r.Use(CSPHandler())
 	// r.Use(COOPHandler())
-	r.Use(ConcurrencyLimiter(100))
-	r.Use(compress.Compress())
 	r.Use(gin.Recovery())
+	r.Use(compress.Compress())
+	r.Use(ReleaseSemaphore())
 
 	config := cors.DefaultConfig()
 	config.ExposeHeaders = []string{DATA_API_LIMIT_HEADER}
@@ -109,6 +136,47 @@ func SetupRouter(server *Server) *gin.Engine {
 	}
 
 	r.Use(cors.New(config))
+
+	/**
+	This section was deemed useful after noticing various "attacks" on the server.
+
+	1. Various attempts to grab the project
+		Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      51.638µs | 206.221.176.253 | GET      "/backup.rar"
+		Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      47.694µs | 206.221.176.253 | GET      "/site.zip"
+		Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      44.674µs | 206.221.176.253 | GET      "/backup.zip"
+		Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      23.071µs | 206.221.176.253 | GET      "/api_mini-farm-tracker_io.rar"
+		Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      28.328µs | 206.221.176.253 | GET      "/website.zip"
+		Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      18.078µs | 206.221.176.253 | GET      "/api_mini-farm-tracker_io.zip"
+		Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      31.558µs | 206.221.176.253 | GET      "/site.rar"
+		Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      40.026µs | 206.221.176.253 | GET      "/api.mini-farm-tracker.io.zip"
+		Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      16.631µs | 206.221.176.253 | GET      "/website.rar"
+		Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      54.945µs | 206.221.176.253 | GET      "/apimini-farm-trackerio.rar"
+		Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      51.673µs | 206.221.176.253 | GET      "/apimini-farm-trackerio.zip"
+		Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      38.742µs | 206.221.176.253 | GET      "/api.mini-farm-tracker.io.rar"
+
+	2. Various attempts to query for version control content
+		Feb 20 05:46:17 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 13:46:15 | 404 |      61.282µs |    148.66.1.242 | GET      "/.git/HEAD"
+		Feb 20 05:46:17 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 13:46:16 | 404 |      62.041µs |    148.66.1.242 | GET      "/.git/config"
+		Feb 20 05:46:18 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 13:46:17 | 404 |      56.961µs |    148.66.1.242 | GET      "/.svn/entries"
+		Feb 20 05:46:18 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 13:46:17 | 404 |      47.556µs |    148.66.1.242 | GET      "/.svn/wc.db"
+		Feb 20 07:48:07 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 15:48:05 | 404 |      65.983µs |    148.66.1.242 | GET      "/.git/HEAD"
+		Feb 20 07:48:08 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 15:48:06 | 404 |      55.219µs |    148.66.1.242 | GET      "/.git/config"
+		Feb 20 07:48:08 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 15:48:06 | 404 |      74.434µs |    148.66.1.242 | GET      "/.svn/entries"
+		Feb 20 07:48:08 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 15:48:07 | 404 |      65.825µs |    148.66.1.242 | GET      "/.svn/wc.db"
+		Feb 20 09:00:48 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 17:00:46 | 404 |      63.688µs |    148.66.1.242 | GET      "/.git/HEAD"
+		Feb 20 09:00:48 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 17:00:47 | 404 |       43.38µs |    148.66.1.242 | GET      "/.svn/entries"
+		Feb 20 09:00:48 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 17:00:46 | 404 |      51.889µs |    148.66.1.242 | GET      "/.git/config"
+		Feb 20 09:00:48 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 17:00:47 | 404 |      50.416µs |    148.66.1.242 | GET      "/.svn/wc.db"
+
+	Solution:
+	1. Rate limit per IP addresses
+	2. Concurrency limitation to all routes which are not available.
+	3. Both of these values are very aggressive to limit useful information which is able to be obtained
+
+	*/
+	r.NoRoute(noRoute()...)
+	concurrencyForOtherRoutes := ConcurrencyLimiter(100, false)
+
 	api := r.Group("/api")
 	{
 		sensorApi := api.Group("/sensors")
@@ -136,19 +204,20 @@ func SetupRouter(server *Server) *gin.Engine {
 			})
 		}
 	}
+	api.Use(concurrencyForOtherRoutes)
 
-	r.GET("/ping", func(c *gin.Context) {
+	r.GET("/ping", concurrencyForOtherRoutes, func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
 	})
 
-	r.POST("/webhook", func(c *gin.Context) {
+	r.POST("/webhook", concurrencyForOtherRoutes, func(c *gin.Context) {
 		handleWebhook(c, server)
 	})
 
 	log.Printf("Endpoint: %s not logged\n", HEALTH_ENDPOINT)
-	r.GET(HEALTH_ENDPOINT, func(c *gin.Context) {
+	r.GET(HEALTH_ENDPOINT, concurrencyForOtherRoutes, func(c *gin.Context) {
 
 		var wg sync.WaitGroup
 		results := make(chan error, 2)

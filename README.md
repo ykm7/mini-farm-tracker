@@ -81,8 +81,14 @@ Ideal outcomes would be flat resource usage across App Platform and Mongo. (Agai
   - [x] Input validation
   - [x] Authentication - TODO as part of v2
 - [x] Encryption (passwords) TODO as part of v2 although would like to allow for 3rd party auth.
-- [x] Rate limiting considered however given its not a publically supplied API (just supplies website) not likely all that benefical.
-- [x] Concurrency limit added however doesn't actively deny the connection but rather logging spike so I can action.
+~~[x] Rate limiting considered however given its not a publically supplied API (just supplies website) not likely all that benefical.~~
+~~[x] Concurrency limit added however doesn't actively deny the connection but rather logging spike so I can action.~~
+- [x] Rate limiting and concurrency limitation added focused on routes which are not supported.
+  - This was prompted by some [`interesting`](#interesting-network-traffic) network traffic detected.
+  - **TODO** The concurrency limitation does not apply limitation across all instances rather on an instance basis
+    - This can be changed to:
+      - Use the redis to coordinate across instances, have to consider the tradeoffs.
+      - make further use of load balancer within DigitalOcean.
 - [x] Project scanned with `gosec`.
     > gosec ./... [within `server` directory.]
   - [x] Add github workflow to scan with gosec on `master` branch interactions.
@@ -465,3 +471,60 @@ Following [configuration path](https://golang.testcontainers.org/features/config
   - Hardware provided
   - [x] Gateway
   - [x] 2x ultrasonic sensors to measure depth in tanks.
+
+## Misc.
+
+<a id="interesting-network-traffic"></a>
+### Interesting network traffic
+
+1. Various attempts to grab the project
+
+  Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      51.638µs | 206.221.176.253 | GET      "/backup.rar"
+  
+  Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      47.694µs | 206.221.176.253 | GET      "/site.zip"
+  
+  Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      44.674µs | 206.221.176.253 | GET      "/backup.zip"
+  
+  Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      23.071µs | 206.221.176.253 | GET      "/api_mini-farm-tracker_io.rar"
+  
+  Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      28.328µs | 206.221.176.253 | GET      "/website.zip"
+  
+  Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      18.078µs | 206.221.176.253 | GET      "/api_mini-farm-tracker_io.zip"
+  
+  Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      31.558µs | 206.221.176.253 | GET      "/site.rar"
+  
+  Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      40.026µs | 206.221.176.253 | GET      "/api.mini-farm-tracker.io.zip"
+  
+  Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      16.631µs | 206.221.176.253 | GET      "/website.rar"
+  
+  Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      54.945µs | 206.221.176.253 | GET      "/apimini-farm-trackerio.rar"
+  
+  Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      51.673µs | 206.221.176.253 | GET      "/apimini-farm-trackerio.zip"
+  
+  Feb 20 10:39:32 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 18:39:30 | 404 |      38.742µs | 206.221.176.253 | GET      "/api.mini-farm-tracker.io.rar"
+
+2. Various attempts to query for version control content
+  
+  Feb 20 05:46:17 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 13:46:15 | 404 |      61.282µs |    148.66.1.242 | GET      "/.git/HEAD"
+  
+  Feb 20 05:46:17 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 13:46:16 | 404 |      62.041µs |    148.66.1.242 | GET      "/.git/config"
+  
+  Feb 20 05:46:18 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 13:46:17 | 404 |      56.961µs |    148.66.1.242 | GET      "/.svn/entries"
+  
+  Feb 20 05:46:18 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 13:46:17 | 404 |      47.556µs |    148.66.1.242 | GET      "/.svn/wc.db"
+  
+  Feb 20 07:48:07 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 15:48:05 | 404 |      65.983µs |    148.66.1.242 | GET      "/.git/HEAD"
+  
+  Feb 20 07:48:08 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 15:48:06 | 404 |      55.219µs |    148.66.1.242 | GET      "/.git/config"
+  
+  Feb 20 07:48:08 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 15:48:06 | 404 |      74.434µs |    148.66.1.242 | GET      "/.svn/entries"
+  
+  Feb 20 07:48:08 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 15:48:07 | 404 |      65.825µs |    148.66.1.242 | GET      "/.svn/wc.db"
+  
+  Feb 20 09:00:48 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 17:00:46 | 404 |      63.688µs |    148.66.1.242 | GET      "/.git/HEAD"
+  
+  Feb 20 09:00:48 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 17:00:47 | 404 |       43.38µs |    148.66.1.242 | GET      "/.svn/entries"
+  
+  Feb 20 09:00:48 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 17:00:46 | 404 |      51.889µs |    148.66.1.242 | GET      "/.git/config"
+  
+  Feb 20 09:00:48 shark-app mini-farm-tracker-server [GIN] 2025/02/20 - 17:00:47 | 404 |      50.416µs |    148.66.1.242 | GET      "/.svn/wc.db"
