@@ -77,6 +77,8 @@
   const assetIdToStarting = ref<Map<ObjectId, number>>(new Map())
   const assetToData = ref<Map<ObjectId, Promise<GraphData>>>(new Map())
 
+  const sensorToAggregationData = ref<Map<string, Partial<CalibratedDataNamesGrouping>>>(new Map())
+
   // sensor id -> cancellation tokens for all network calls (for the sensor)
   const cancelTokens: Map<ObjectId, CancelTokenSource[]> = new Map()
 
@@ -321,21 +323,25 @@
   /**
    * TODO: Give actually better name
    */
-  interface Temp2 {
+  interface AggregatedDataPoint {
     unit: string
     value: number
     date: Date
   }
 
   type AggregatedDataGrouping = {
-    [K in keyof typeof AGGREGATION_TYPE]: Temp2[]
+    [K in keyof typeof AGGREGATION_TYPE]: AggregatedDataPoint[]
+  }
+
+  type CalibratedDataNamesGrouping = {
+    [K in keyof typeof CalibratedDataNames]: AggregatedDataMapping
   }
 
   /**
    * TODO: Give actually better name
    */
-  interface Temp {
-    type: CalibratedDataNames
+  interface AggregatedDataMapping {
+    // type: CalibratedDataNames
     data: AggregatedDataGrouping
   }
 
@@ -346,7 +352,7 @@
    *
    * Currently with the limited data not really required.
    */
-  const pullAggregatedData = async function (sensorId: string = "2cf7f1c0613006fe"): Promise<any> {
+  const pullAggregatedData = async function (sensorId: string = "2cf7f1c0613006fe"): Promise<void> {
     const now = new Date()
 
     const epoch = new Date()
@@ -364,14 +370,12 @@
         `${BASE_URL}/api/sensors/${sensorId}/data/aggregated_data?${params.toString()}`
       )
 
-      // console.log("🚀 ~ response:", response)
-
       if (response.data.length == 0) {
         return
       }
 
-      const t: Temp = {
-        type: type,
+      const t: AggregatedDataMapping = {
+        // type: type,
         data: {
           HOURLY: [],
           DAILY: [],
@@ -382,10 +386,10 @@
       }
 
       response.data.forEach((d: AggregationData) => {
-        const u: Temp2 = {
+        const u: AggregatedDataPoint = {
           unit: d.totalValue?.unit!,
           value: d.totalValue?.value!,
-          date: d.date
+          date: d.date,
         }
 
         switch (d.metadata.period) {
@@ -412,7 +416,14 @@
       })
 
       console.log("🚀 ~ t:", t)
+
+      const x = {
+        [type]: t,
+      } as Partial<CalibratedDataNamesGrouping>
+
+      sensorToAggregationData.value.set(sensorId, x)
     } catch (e) {}
+      console.log("🚀 ~ pullAggregatedData ~ sensorToAggregationData.value:", sensorToAggregationData.value)
   }
 
   onMounted(pullAggregatedData)

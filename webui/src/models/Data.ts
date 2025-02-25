@@ -66,7 +66,11 @@ export enum AGGREGATION_TYPE {
 }
 
 
-
+/**
+ * TODO:
+ * Re-examine.
+ * Hmm... probably could be a keyof CalibratedDataPoints.
+ */
 export enum CalibratedDataNames {
   VOLUME = "volume",
   AIR_TEMPERATURE = "airTemperature",
