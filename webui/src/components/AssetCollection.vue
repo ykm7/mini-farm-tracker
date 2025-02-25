@@ -53,7 +53,12 @@
 <script setup lang="ts">
   import { customMerge } from "@/helper"
   import type { Asset } from "@/models/Asset"
-  import type { CalibratedData } from "@/models/Data"
+  import {
+    AGGREGATION_TYPE,
+    CalibratedDataNames,
+    type AggregationData,
+    type CalibratedData,
+  } from "@/models/Data"
   import { useAssetStore } from "@/stores/asset"
   import type { GraphData, Unit } from "@/types/GraphRelated"
   import type { ObjectId } from "@/types/ObjectId"
@@ -61,7 +66,7 @@
   import axios, { type CancelTokenSource } from "axios"
 
   import mergeWith from "lodash/mergeWith"
-  import { computed, ref, watch } from "vue"
+  import { computed, onMounted, ref, watch } from "vue"
   import AsyncWrapper from "./AsyncWrapper.vue"
   import TimeseriesGraph from "./TimeseriesGraph.vue"
 
@@ -312,6 +317,105 @@
       }
     }
   }
+
+  /**
+   * TODO: Give actually better name
+   */
+  interface Temp2 {
+    unit: string
+    value: number
+    date: Date
+  }
+
+  type AggregatedDataGrouping = {
+    [K in keyof typeof AGGREGATION_TYPE]: Temp2[]
+  }
+
+  /**
+   * TODO: Give actually better name
+   */
+  interface Temp {
+    type: CalibratedDataNames
+    data: AggregatedDataGrouping
+  }
+
+  /**
+   * TODO:
+   * Add sensor
+   * Add data type
+   *
+   * Currently with the limited data not really required.
+   */
+  const pullAggregatedData = async function (sensorId: string = "2cf7f1c0613006fe"): Promise<any> {
+    const now = new Date()
+
+    const epoch = new Date()
+    epoch.setFullYear(now.getFullYear() - 2)
+
+    const type: CalibratedDataNames = CalibratedDataNames.RAIN_FALL_HOURLY
+    const params = new URLSearchParams({
+      start: epoch.toISOString(),
+      end: now.toISOString(),
+      dataType: type,
+    })
+
+    try {
+      const response = await axios.get<AggregationData[]>(
+        `${BASE_URL}/api/sensors/${sensorId}/data/aggregated_data?${params.toString()}`
+      )
+
+      // console.log("🚀 ~ response:", response)
+
+      if (response.data.length == 0) {
+        return
+      }
+
+      const t: Temp = {
+        type: type,
+        data: {
+          HOURLY: [],
+          DAILY: [],
+          WEEKLY: [],
+          MONTHLY: [],
+          YEARLY: [],
+        },
+      }
+
+      response.data.forEach((d: AggregationData) => {
+        const u: Temp2 = {
+          unit: d.totalValue?.unit!,
+          value: d.totalValue?.value!,
+          date: d.date
+        }
+
+        switch (d.metadata.period) {
+          case AGGREGATION_TYPE.HOURLY:
+            t.data.HOURLY.push(u)
+            break
+
+          case AGGREGATION_TYPE.DAILY:
+            t.data.DAILY.push(u)
+            break
+
+          case AGGREGATION_TYPE.WEEKLY:
+            t.data.WEEKLY.push(u)
+            break
+
+          case AGGREGATION_TYPE.MONTHLY:
+            t.data.MONTHLY.push(u)
+            break
+
+          case AGGREGATION_TYPE.YEARLY:
+            t.data.YEARLY.push(u)
+            break
+        }
+      })
+
+      console.log("🚀 ~ t:", t)
+    } catch (e) {}
+  }
+
+  onMounted(pullAggregatedData)
 </script>
 <style scoped>
   .card-title {

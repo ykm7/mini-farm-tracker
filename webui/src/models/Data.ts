@@ -43,3 +43,37 @@ interface CalibratedDataType {
 export interface CalibratedData extends Data {
   DataPoints: CalibratedDataPoints
 }
+
+export interface AggregationData {
+  date: Date
+  metadata: {
+    period: AGGREGATION_TYPE
+    sensor?: string
+    dataType?: CalibratedDataNames
+  }
+  totalValue?: {
+    unit: string
+    value: number
+  }
+}
+
+export enum AGGREGATION_TYPE {
+  HOURLY = "HOURLY",
+  DAILY = "DAILY",
+  WEEKLY = "WEEKLY",
+  MONTHLY = "MONTHLY",
+  YEARLY = "YEARLY",
+}
+
+
+
+export enum CalibratedDataNames {
+  VOLUME = "volume",
+  AIR_TEMPERATURE = "airTemperature",
+  LIGHT_INTENSITY = "lightIntensity",
+  UV_INDEX = "uVIndex",
+  WIND_SPEED = "windSpeed",
+  WIND_DIRECTION = "windDirection",
+  RAIN_FALL_HOURLY = "rainfallHourly",
+  BAROMETRIC_PRESSURE = "barometricPressure",
+}
