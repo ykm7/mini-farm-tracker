@@ -408,6 +408,23 @@ type SensorConfiguration struct {
 }
 
 /*
+*
+Applied the BSON tags to keep the json and bson field names consistent
+*/
+type AggregationData struct {
+	Date     primitive.DateTime `json:"date" bson:"date"`
+	Metadata struct {
+		Period   AGGREGATION_TYPE     `json:"period" bson:"period"`
+		Sensor   *string              `json:"sensor,omitempty" bson:"sensor,omitempty"`
+		DataType *CalibratedDataNames `json:"dataType,omitempty" bson:"dataType,omitempty"`
+	} `json:"metadata" bson:"metadata"`
+	TotalValue *struct {
+		Unit  UNITS   `json:"unit" bson:"unit"`
+		Value float64 `json:"value" bson:"value"`
+	} `json:"totalValue,omitempty" bson:"totalValue,omitempty"`
+}
+
+/*
 https://www.thethingsindustries.com/docs/the-things-stack/concepts/data-formats/#uplink-messages
 */
 type UplinkMessage struct {

@@ -99,10 +99,13 @@ func getAggregationData(c *gin.Context, server *Server) {
 	).SetProjection(
 		bson.D{
 			{
-				Key: "Id", Value: 0,
+				Key: "_id", Value: 0,
 			},
 			{
 				Key: "metadata.sensor", Value: 0,
+			},
+			{
+				Key: "metadata.dataType", Value: 0,
 			},
 		},
 	).SetLimit(DATA_API_LIMIT)
