@@ -83,7 +83,7 @@ type MongoCollection[T any] interface {
 	UpdateOne(ctx context.Context, filter interface{}, update interface{}, opts ...*options.UpdateOptions) (*mongo.UpdateResult, error)
 	Watch(ctx context.Context, pipeline interface{}, opts ...*options.ChangeStreamOptions) (*mongo.ChangeStream, error)
 	DeleteMany(ctx context.Context, filter interface{}, opts ...*options.DeleteOptions) (*mongo.DeleteResult, error)
-	Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) ([]interface{}, error)
+	Aggregate(ctx context.Context, pipeline interface{}, results interface{}, opts ...*options.AggregateOptions) error
 }
 
 type MongoDatabaseImpl struct {
@@ -137,8 +137,8 @@ func GetCalibratedDataCollection(mongoDb MongoDatabase) MongoCollection[Calibrat
 	return getTypedCollection[CalibratedData](mongoDb, string(CALIBRATED_DATA_COLLECTION))
 }
 
-func GetAggregatedDataCollection(mongoDb MongoDatabase) MongoCollection[any] {
-	return getTypedCollection[any](mongoDb, string(AGGREGATED_DATA_COLLECTION))
+func GetAggregatedDataCollection(mongoDb MongoDatabase) MongoCollection[AggregationData] {
+	return getTypedCollection[AggregationData](mongoDb, string(AGGREGATED_DATA_COLLECTION))
 }
 
 func GetAssetsCollection(mongoDb MongoDatabase) MongoCollection[Asset] {
@@ -198,22 +198,22 @@ func (m *MongoCollectionWrapper[T]) DeleteMany(ctx context.Context, filter inter
 	return m.col.DeleteMany(ctx, filter, opts...)
 }
 
-func (m *MongoCollectionWrapper[T]) Aggregate(ctx context.Context, pipeline interface{}, opts ...*options.AggregateOptions) ([]interface{}, error) {
+func (m *MongoCollectionWrapper[T]) Aggregate(ctx context.Context, pipeline interface{}, results interface{}, opts ...*options.AggregateOptions) error {
 	if pipeline == nil {
-		return nil, errors.New("pipeline cannot be nil")
+		return errors.New("pipeline cannot be nil")
 	}
 
 	cursor, err := m.col.Aggregate(ctx, pipeline, opts...)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer cursor.Close(ctx)
 
-	var results []interface{}
-	if err := cursor.All(ctx, &results); err != nil {
-		return nil, err
+	// var results []R
+	if err := cursor.All(ctx, results); err != nil {
+		return err
 	}
-	return results, nil
+	return nil
 }
 
 /*

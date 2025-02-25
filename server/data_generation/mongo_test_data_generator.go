@@ -88,6 +88,7 @@ func pullAllRainfallAggregations(mongodb core.MongoDatabase) {
 	go func() {
 		defer wg.Done()
 
+		// Refactor this to remove the timeout and to be tied to all the tasks queued
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		defer cancel()
 

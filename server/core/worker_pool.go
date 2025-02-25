@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"reflect"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -74,7 +73,8 @@ func (t *TaskMongoAggregation[T, S]) Job(ctx context.Context) TaskJobResult {
 		// we deliberately are NOT releasing the lock but instead setting the TTL to be released in the future.
 	}
 
-	results, err := t.source.Aggregate(ctx, t.pipeline)
+	var results []S
+	err := t.source.Aggregate(ctx, t.pipeline, &results)
 	if err != nil {
 		jobResult.err = err
 		return jobResult
@@ -85,17 +85,7 @@ func (t *TaskMongoAggregation[T, S]) Job(ctx context.Context) TaskJobResult {
 		return jobResult
 	}
 
-	docs := make([]S, len(results))
-	for i, doc := range results {
-		if convertedDoc, ok := doc.(S); ok {
-			docs[i] = convertedDoc
-		} else {
-			jobResult.err = fmt.Errorf("unable to convert %+v to type of %s\n", doc, reflect.TypeFor[S]())
-			return jobResult
-		}
-	}
-
-	_, err = t.target.InsertMany(ctx, docs)
+	_, err = t.target.InsertMany(ctx, results)
 	if err != nil {
 		jobResult.err = err
 		return jobResult

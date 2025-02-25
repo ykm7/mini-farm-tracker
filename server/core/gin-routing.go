@@ -194,6 +194,9 @@ func SetupRouter(server *Server) *gin.Engine {
 				sensorDataApi.GET("/calibrated_data", func(ctx *gin.Context) {
 					getCalibratedDataWithSensorId(ctx, server)
 				})
+				sensorDataApi.GET("/aggregated_data", func(ctx *gin.Context) {
+					getAggregationData(ctx, server)
+				})
 			}
 		}
 
