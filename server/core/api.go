@@ -16,27 +16,25 @@ import (
 const DATA_API_LIMIT_HEADER = "X-Max-Data-Limit"
 const DATA_API_LIMIT = 500
 
-func getStartStopTimes(c *gin.Context) (start time.Time, end time.Time, err error) {
-	now := time.Now()
-	// default to 7 days
-	startDate := c.DefaultQuery(START_DATE, now.AddDate(0, 0, -7).Format(time.RFC3339))
-	// should be "now"
-	endDate := c.DefaultQuery(END_DATE, now.Format(time.RFC3339))
+type DataWithTimes struct {
+	SensorId  string
+	StartTime time.Time
+	EndTime   *time.Time
+}
 
-	// var err error
-	start, err = time.Parse(time.RFC3339, startDate)
-	if err != nil {
-		err = fmt.Errorf("Invalid start time format")
-		return
-	}
+type QuerySensorData struct {
+	SensorId string `uri:"sensor_id" binding:"required"`
+}
 
-	end, err = time.Parse(time.RFC3339, endDate)
-	if err != nil {
-		err = fmt.Errorf("Invalid end time format")
-		return
-	}
+type QueryTimeData struct {
+	StartTime time.Time  `form:"start" binding:"required" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"` // RFC3339
+	EndTime   *time.Time `form:"end,omitempty" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"`            // RFC3339, optional
+}
 
-	return
+type QueryAggregationData struct {
+	StartTime time.Time           `form:"start" binding:"required" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"` // RFC3339
+	DataType  CalibratedDataNames `form:"dataType" binding:"required,oneof=volume airTemperature lightIntensity uVIndex windSpeed windDirection rainfallHourly barometricPressure"`
+	EndTime   *time.Time          `form:"end,omitempty" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"` // RFC3339, optional
 }
 
 func handleWithoutSensorID(c *gin.Context, server *Server) {
@@ -62,6 +60,78 @@ func handleWithSensorID(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusNotImplemented, nil)
 }
 
+func getAggregationData(c *gin.Context, server *Server) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var querySensorData QuerySensorData
+	var queryTimeData QueryAggregationData
+	if err := c.ShouldBindUri(&querySensorData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := c.ShouldBind(&queryTimeData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if queryTimeData.EndTime == nil {
+		log.Println("No end time available, using the default of a 7 day period")
+		v := time.Now().AddDate(0, 0, -7)
+		queryTimeData.EndTime = &v
+	}
+
+	sensor, exists := server.Sensors.Get(querySensorData.SensorId)
+	if !exists {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+			"status": fmt.Sprintf("Unable to find sensor: %s", querySensorData.SensorId),
+		})
+		return
+	}
+
+	options := options.Find().SetSort(
+		bson.D{
+			{
+				Key: "date", Value: 1,
+			},
+		},
+	).SetProjection(
+		bson.D{
+			{
+				Key: "Id", Value: 0,
+			},
+			{
+				Key: "metadata.sensor", Value: 0,
+			},
+		},
+	).SetLimit(DATA_API_LIMIT)
+
+	filter := bson.D{
+		{Key: "metadata.sensor", Value: sensor.Id},
+		{Key: "metadata.dataType", Value: queryTimeData.DataType},
+		{Key: "date",
+			Value: bson.D{
+				{Key: "$gte", Value: primitive.NewDateTimeFromTime(queryTimeData.StartTime)},
+				{Key: "$lt", Value: primitive.NewDateTimeFromTime(*queryTimeData.EndTime)},
+			},
+		},
+	}
+
+	results, err := GetAggregatedDataCollection(server.MongoDb).Find(ctx, filter, options)
+	if err != nil {
+		log.Printf("Error within %T data query: %v\n", results, err)
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"status": err,
+		})
+		return
+	}
+
+	c.Header(DATA_API_LIMIT_HEADER, fmt.Sprint(DATA_API_LIMIT))
+	c.JSON(http.StatusOK, results)
+	return
+}
+
 func getRawDataWithSensorId(c *gin.Context, server *Server) {
 	sharedDataPullFunctionality(c, server, GetRawDataCollection)
 }
@@ -71,21 +141,31 @@ func getCalibratedDataWithSensorId(c *gin.Context, server *Server) {
 }
 
 func sharedDataPullFunctionality[T QueryData](c *gin.Context, server *Server, dataPullFn func(db MongoDatabase) MongoCollection[T]) {
-	sensorID := c.Param(SENSOR_ID_PARAM)
-
-	start, end, err := getStartStopTimes(c)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("%v", err)})
+	var querySensorData QuerySensorData
+	var queryTimeData QueryTimeData
+	if err := c.ShouldBindUri(&querySensorData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	if err := c.ShouldBind(&queryTimeData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if queryTimeData.EndTime == nil {
+		log.Println("No end time available, using the default of a 7 day period")
+		v := time.Now().AddDate(0, 0, -7)
+		queryTimeData.EndTime = &v
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	sensor, exists := server.Sensors.Get(sensorID)
+	sensor, exists := server.Sensors.Get(querySensorData.SensorId)
 	if !exists {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-			"status": fmt.Sprintf("Unable to find sensor: %s", sensorID),
+			"status": fmt.Sprintf("Unable to find sensor: %s", querySensorData.SensorId),
 		})
 		return
 	}
@@ -115,8 +195,8 @@ func sharedDataPullFunctionality[T QueryData](c *gin.Context, server *Server, da
 			bson.D{
 				{Key: "sensor", Value: sensor.Id},
 				{Key: "timestamp", Value: bson.D{
-					{Key: "$gte", Value: primitive.NewDateTimeFromTime(start)},
-					{Key: "$lt", Value: primitive.NewDateTimeFromTime(end)},
+					{Key: "$gte", Value: primitive.NewDateTimeFromTime(queryTimeData.StartTime)},
+					{Key: "$lt", Value: primitive.NewDateTimeFromTime(*queryTimeData.EndTime)},
 				}},
 			},
 			options,
@@ -124,7 +204,7 @@ func sharedDataPullFunctionality[T QueryData](c *gin.Context, server *Server, da
 		if err != nil {
 			log.Printf("Error within %T data query: %v\n", results, err)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"status": "ok",
+				"status": err,
 			})
 			return
 		}
