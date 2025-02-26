@@ -1,3 +1,5 @@
+import type { AGGREGATION_TYPE, CalibratedDataNames } from "@/models/Data"
+
 export type Unit =
   | "mm" // millimeters
   | "cm" // centimeters
@@ -22,6 +24,26 @@ export interface GraphDataType {
   unit: Unit
 }
 
+// import type { ExtendedDataPoint } from "vue-chartjs";
+export type ExtendedDataPoint = {
+  [key: string]: string | number | null | ExtendedDataPoint;
+};
+
+export const dynamicTimeUnit = (dataPoints: DisplayPoint[]) => {
+  const oldest = dataPoints[0]
+  const newest = dataPoints[dataPoints.length - 1]
+
+  const diff = Date.parse(newest.timestamp) - Date.parse(oldest.timestamp)
+
+  const hours = diff / (1000 * 60 * 60)
+
+  if (hours < 1) return "minute"
+  if (hours < 24) return "hour"
+  if (hours < 30 * 24) return "day"
+  if (hours < 365 * 24) return "month"
+  return "year"
+}
+
 export type KeyOf<T> = keyof T
 
 export class GraphData {
@@ -39,4 +61,26 @@ export class GraphData {
 
 export const createGraphData = (): GraphData => {
   return {}
+}
+
+export type CalibratedDataNamesGrouping = {
+  [K in keyof typeof CalibratedDataNames]: AggregatedDataMapping
+}
+
+export type AggregatedDataGrouping = {
+  [K in keyof typeof AGGREGATION_TYPE]: AggregatedDataPoint[]
+}
+
+export interface AggregatedDataPoint {
+  unit: string
+  value: number
+  date: Date
+}
+
+/**
+ * TODO: Give actually better name
+ */
+export interface AggregatedDataMapping {
+  // type: CalibratedDataNames
+  data: AggregatedDataGrouping
 }

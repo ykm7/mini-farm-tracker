@@ -44,6 +44,25 @@
               </template>
             </AsyncWrapper>
           </div>
+          <div
+            v-if="asset.Sensors && sensorToAggregationData.get(asset.Sensors[0])"
+            class="group-section"
+          >
+            <!-- <AsyncWrapper :promise="sensorToAggregationData.get(asset.Sensors[0])!"> -->
+            <!-- <template v-slot="{ data }"> -->
+            <!-- <div v-if="data"> -->
+            <!-- :key="updateTrigger" -->
+            <HistoricDataGraph :data="sensorToAggregationData.get(asset.Sensors[0])!" />
+            <!-- <TimeseriesGraph
+                    :item="asset"
+                    @update-starting-date="handleUpdateStartingTimeEvent"
+                    :displayData="data"
+                    emptyLabel="No calibrated data available for this asset"
+                  /> -->
+            <!-- </div> -->
+            <!-- </template> -->
+            <!-- </AsyncWrapper> -->
+          </div>
         </div>
       </CCard>
     </div>
@@ -60,7 +79,13 @@
     type CalibratedData,
   } from "@/models/Data"
   import { useAssetStore } from "@/stores/asset"
-  import type { GraphData, Unit } from "@/types/GraphRelated"
+  import type {
+    AggregatedDataMapping,
+    AggregatedDataPoint,
+    CalibratedDataNamesGrouping,
+    GraphData,
+    Unit,
+  } from "@/types/GraphRelated"
   import type { ObjectId } from "@/types/ObjectId"
   import { CCard, CCardBody, CCardTitle, CListGroup, CListGroupItem } from "@coreui/vue"
   import axios, { type CancelTokenSource } from "axios"
@@ -68,6 +93,7 @@
   import mergeWith from "lodash/mergeWith"
   import { computed, onMounted, ref, watch } from "vue"
   import AsyncWrapper from "./AsyncWrapper.vue"
+  import HistoricDataGraph from "./HistoricDataGraph.vue"
   import TimeseriesGraph from "./TimeseriesGraph.vue"
 
   const BASE_URL: string = import.meta.env.VITE_BASE_URL
@@ -77,7 +103,18 @@
   const assetIdToStarting = ref<Map<ObjectId, number>>(new Map())
   const assetToData = ref<Map<ObjectId, Promise<GraphData>>>(new Map())
 
+  // const updateTrigger = ref(0)
+
   const sensorToAggregationData = ref<Map<string, Partial<CalibratedDataNamesGrouping>>>(new Map())
+
+  // watch(
+  //   sensorToAggregationData,
+  //   () => {
+  //     updateTrigger.value++
+  //     console.log("🚀 ~ updateTrigger.value:", updateTrigger.value)
+  //   },
+  //   { deep: true }
+  // )
 
   // sensor id -> cancellation tokens for all network calls (for the sensor)
   const cancelTokens: Map<ObjectId, CancelTokenSource[]> = new Map()
@@ -323,27 +360,6 @@
   /**
    * TODO: Give actually better name
    */
-  interface AggregatedDataPoint {
-    unit: string
-    value: number
-    date: Date
-  }
-
-  type AggregatedDataGrouping = {
-    [K in keyof typeof AGGREGATION_TYPE]: AggregatedDataPoint[]
-  }
-
-  type CalibratedDataNamesGrouping = {
-    [K in keyof typeof CalibratedDataNames]: AggregatedDataMapping
-  }
-
-  /**
-   * TODO: Give actually better name
-   */
-  interface AggregatedDataMapping {
-    // type: CalibratedDataNames
-    data: AggregatedDataGrouping
-  }
 
   /**
    * TODO:
@@ -358,6 +374,7 @@
     const epoch = new Date()
     epoch.setFullYear(now.getFullYear() - 2)
 
+    // TODO: fix
     const type: CalibratedDataNames = CalibratedDataNames.RAIN_FALL_HOURLY
     const params = new URLSearchParams({
       start: epoch.toISOString(),
@@ -415,15 +432,14 @@
         }
       })
 
-      console.log("🚀 ~ t:", t)
-
-      const x = {
-        [type]: t,
-      } as Partial<CalibratedDataNamesGrouping>
+      const x: Partial<CalibratedDataNamesGrouping> = {
+        RAIN_FALL_HOURLY: t,
+      }
 
       sensorToAggregationData.value.set(sensorId, x)
-    } catch (e) {}
-      console.log("🚀 ~ pullAggregatedData ~ sensorToAggregationData.value:", sensorToAggregationData.value)
+    } catch (e) {
+      console.warn(e)
+    }
   }
 
   onMounted(pullAggregatedData)
