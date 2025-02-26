@@ -48,20 +48,7 @@
             v-if="asset.Sensors && sensorToAggregationData.get(asset.Sensors[0])"
             class="group-section"
           >
-            <!-- <AsyncWrapper :promise="sensorToAggregationData.get(asset.Sensors[0])!"> -->
-            <!-- <template v-slot="{ data }"> -->
-            <!-- <div v-if="data"> -->
-            <!-- :key="updateTrigger" -->
             <HistoricDataGraph :data="sensorToAggregationData.get(asset.Sensors[0])!" />
-            <!-- <TimeseriesGraph
-                    :item="asset"
-                    @update-starting-date="handleUpdateStartingTimeEvent"
-                    :displayData="data"
-                    emptyLabel="No calibrated data available for this asset"
-                  /> -->
-            <!-- </div> -->
-            <!-- </template> -->
-            <!-- </AsyncWrapper> -->
           </div>
         </div>
       </CCard>
@@ -103,19 +90,7 @@
   const assetIdToStarting = ref<Map<ObjectId, number>>(new Map())
   const assetToData = ref<Map<ObjectId, Promise<GraphData>>>(new Map())
 
-  // const updateTrigger = ref(0)
-
   const sensorToAggregationData = ref<Map<string, Partial<CalibratedDataNamesGrouping>>>(new Map())
-
-  // watch(
-  //   sensorToAggregationData,
-  //   () => {
-  //     updateTrigger.value++
-  //     console.log("🚀 ~ updateTrigger.value:", updateTrigger.value)
-  //   },
-  //   { deep: true }
-  // )
-
   // sensor id -> cancellation tokens for all network calls (for the sensor)
   const cancelTokens: Map<ObjectId, CancelTokenSource[]> = new Map()
 
@@ -386,7 +361,7 @@
       const response = await axios.get<AggregationData[]>(
         `${BASE_URL}/api/sensors/${sensorId}/data/aggregated_data?${params.toString()}`
       )
-      
+
       if (response.data.length == 0) {
         return
       }
