@@ -248,6 +248,7 @@
       }
     }
 
+    // TODO: Add https://www.chartjs.org/docs/latest/samples/advanced/data-decimation.html for significant data points
     return {
       datasets: [
         {
@@ -301,6 +302,7 @@
           },
         },
         y: {
+          beginAtZero: true,
           title: {
             display: true,
             text: `Value (${current.value.unit})`,
