@@ -38,99 +38,125 @@
   }>()
 
   const chartOptions = computed<ChartOptions<"bar">>(() => {
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      y: {
-        beginAtZero: true,
-        title: {
-          display: true,
-          text: 'Rainfall (mm)'
-        }
-      },
-      x_day: {
-        type: "time",
-        time: {
-          parser: "YYYY-MM-DD",
-          unit: "day",
-          displayFormats: {
-            day: "MMM DD",
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: "Rainfall (mm)",
+          },
+          ticks: {
+            callback: (value) => `${value} mm`,
           },
         },
-        ticks: {
-          source: "data",
-          align: "start",
-          autoSkip: true,
-          maxTicksLimit: 10
-        },
-      },
-      x_week: {
-        type: "time",
-        time: {
-          parser: "YYYY-[W]WW",
-          unit: "week",
-          displayFormats: {
-            week: "YYYY [W]WW",
+        x_day: {
+          type: "time",
+          time: {
+            parser: "YYYY-MM-DD",
+            unit: "day",
+            displayFormats: {
+              day: "MMM DD",
+            },
+          },
+          ticks: {
+            source: "data",
+            align: "start",
+            autoSkip: true,
+            maxTicksLimit: 10,
           },
         },
-        ticks: {
-          source: "data",
-          align: "start",
-          autoSkip: true,
-          maxTicksLimit: 10
-        },
-      },
-      x_month: {
-        type: "time",
-        time: {
-          parser: "YYYY-MM-DD",
-          unit: "month",
-          displayFormats: {
-            month: "MMM YYYY",
+        x_week: {
+          type: "time",
+          time: {
+            parser: "YYYY-[W]WW",
+            unit: "week",
+            displayFormats: {
+              week: "YYYY [W]WW",
+            },
+          },
+          ticks: {
+            source: "data",
+            align: "start",
+            autoSkip: true,
+            maxTicksLimit: 10,
           },
         },
-        ticks: {
-          source: "data",
-          align: "start",
-          autoSkip: true,
-          maxTicksLimit: 12
-        },
-      },
-      x_year: {
-        type: "time",
-        time: {
-          parser: "YYYY-MM-DD",
-          unit: "year",
-          displayFormats: {
-            year: "YYYY",
+        x_month: {
+          type: "time",
+          time: {
+            parser: "YYYY-MM-DD",
+            unit: "month",
+            displayFormats: {
+              month: "MMM YYYY",
+            },
+          },
+          ticks: {
+            source: "data",
+            align: "start",
+            autoSkip: true,
+            maxTicksLimit: 12,
           },
         },
-        ticks: {
-          source: "data",
-          align: "start",
-          autoSkip: false,
+        x_year: {
+          type: "time",
+          time: {
+            parser: "YYYY-MM-DD",
+            unit: "year",
+            displayFormats: {
+              year: "YYYY",
+            },
+          },
+          ticks: {
+            source: "data",
+            align: "start",
+            autoSkip: false,
+          },
         },
       },
-    },
-    plugins: {
-      legend: {
-        position: "top",
+      plugins: {
+        legend: {
+          position: "top",
+        },
+        tooltip: {
+          mode: "x",
+          callbacks: {
+            // title: (tooltipItems) => {
+            //   const item = tooltipItems[0]
+            //   return `${item.dataset.label} - ${item.label}`
+            // },
+            label: (context) => {
+              return `Rainfall: ${context.parsed.y.toFixed(2)} mm`
+            },
+            // TODO: Expand on this in the future
+            // footer: (tooltipItems) => {
+            //   const value = tooltipItems[0].parsed.y
+            //   if (value > 50) return "Heavy rainfall"
+            //   if (value > 25) return "Moderate rainfall"
+            //   return "Light rainfall"
+            // },
+          },
+        },
       },
-      tooltip: {
-        mode: 'index',
-        intersect: false,
-      }
-    },
-    elements: {
-      bar: {
-        borderWidth: 1,
-      }
-    },
-    barPercentage: 1.0,
-    categoryPercentage: 1.0,
-  }
-});
+      elements: {
+        bar: {
+          borderWidth: 1,
+          hoverBackgroundColor: "rgba(75, 192, 192, 0.8)",
+          hoverBorderColor: "rgb(75, 192, 192)",
+          hoverBorderWidth: 2,
+        },
+      },
+      barPercentage: 1.0,
+      categoryPercentage: 1.0,
+    }
+  })
+
+  function getColor(value: number) {
+  const intensity = value / 100; // Adjust based on your max rainfall
+  return `rgba(0, 0, 255, ${intensity})`;
+}
 
   const rawDataGraph = computed<ChartData<"bar", ExtendedDataPoint[]>>(() => {
     const data: ChartDataset<"bar", ExtendedDataPoint[]>[] = []
@@ -154,6 +180,12 @@
           }
         }),
         backgroundColor: "rgba(255, 99, 132, 0.2)",
+        // TODO: maybe play with this when we have more data, looks weird currently.
+        // backgroundColor: (context) => {
+        //   console.log("🚀 ~ context:", context)
+        //   const dataPoint = context.raw as ExtendedDataPoint;
+        //   return getColor(dataPoint.y);
+        // },
         borderColor: "rgb(255, 99, 132)",
         borderWidth: 1,
       })
