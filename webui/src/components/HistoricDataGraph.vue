@@ -40,10 +40,12 @@
   const chartOptions = computed<ChartOptions<"bar">>(() => {
     return {
       responsive: true,
+      maintainAspectRatio: false,
       scales: {
         x_day: {
           type: "time",
           time: {
+            parser: "YYYY-MM-DD",
             unit: "day",
             displayFormats: {
               day: "MMM DD",
@@ -56,7 +58,11 @@
         x_week: {
           type: "time",
           time: {
+            parser: "YYYY-[W]WW",
             unit: "week",
+            displayFormats: {
+              week: "YYYY [W]WW",
+            },
           },
           ticks: {
             autoSkip: true,
@@ -65,6 +71,7 @@
         x_month: {
           type: "time",
           time: {
+            parser: "YYYY-MM-DD",
             unit: "month",
             displayFormats: {
               month: "MMM YYYY",
@@ -77,7 +84,11 @@
         x_year: {
           type: "time",
           time: {
+            parser: "YYYY-MM-DD",
             unit: "year",
+            displayFormats: {
+              year: "YYYY",
+            },
           },
           ticks: {
             autoSkip: true,
@@ -171,7 +182,6 @@
       })
     }
 
-    console.log("🚀 ~ data:", data)
     return {
       datasets: data,
     }
@@ -211,6 +221,7 @@
       }
 
       .graph-custom-wrapper-group {
+        /* width: 100%; */
         display: flex;
         flex-direction: column;
 
@@ -220,6 +231,7 @@
 
         canvas {
           min-height: 0;
+          /* width: 100%; */
         }
       }
     }

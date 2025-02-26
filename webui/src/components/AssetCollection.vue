@@ -386,9 +386,8 @@
       const response = await axios.get<AggregationData[]>(
         `${BASE_URL}/api/sensors/${sensorId}/data/aggregated_data?${params.toString()}`
       )
-      console.log("🚀 ~ pullAggregatedData ~ response.data:", response.data)
+      
       if (response.data.length == 0) {
-        
         return
       }
 
