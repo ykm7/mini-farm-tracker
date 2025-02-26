@@ -43,6 +43,7 @@
       maintainAspectRatio: false,
       scales: {
         y: {
+          stacked: true,
           beginAtZero: true,
           title: {
             display: true,
@@ -53,6 +54,7 @@
           },
         },
         x_day: {
+          stacked: true,
           type: "time",
           time: {
             parser: "YYYY-MM-DD",
@@ -69,6 +71,7 @@
           },
         },
         x_week: {
+          stacked: true,
           type: "time",
           time: {
             parser: "YYYY-[W]WW",
@@ -85,6 +88,7 @@
           },
         },
         x_month: {
+          stacked: true,
           type: "time",
           time: {
             parser: "YYYY-MM-DD",
@@ -101,6 +105,7 @@
           },
         },
         x_year: {
+          stacked: true,
           type: "time",
           time: {
             parser: "YYYY-MM-DD",
@@ -143,8 +148,14 @@
       elements: {
         bar: {
           borderWidth: 1,
-          hoverBackgroundColor: "rgba(75, 192, 192, 0.8)",
-          hoverBorderColor: "rgb(75, 192, 192)",
+          // hoverBackgroundColor: "rgba(0, 0, 0, 0.6)",
+          hoverBackgroundColor: (context) => {
+            const index = ["DAILY", "WEEKLY", "MONTHLY", "YEARLY"].indexOf(context.dataset.label!)
+            return `rgba(0, 0, 0, ${0.6 - index * 0.1})`
+          },
+          hoverBorderColor: "rgb(0, 0, 0)",
+          // hoverBackgroundColor: "rgba(75, 192, 192, 0.8)",
+          // hoverBorderColor: "rgb(75, 192, 192)",
           hoverBorderWidth: 2,
         },
       },
@@ -152,11 +163,6 @@
       categoryPercentage: 1.0,
     }
   })
-
-  function getColor(value: number) {
-  const intensity = value / 100; // Adjust based on your max rainfall
-  return `rgba(0, 0, 255, ${intensity})`;
-}
 
   const rawDataGraph = computed<ChartData<"bar", ExtendedDataPoint[]>>(() => {
     const data: ChartDataset<"bar", ExtendedDataPoint[]>[] = []
@@ -179,14 +185,16 @@
             y: d.value,
           }
         }),
-        backgroundColor: "rgba(255, 99, 132, 0.2)",
+        backgroundColor: "rgba(0, 0, 0, 0.4)",
+        borderColor: "rgb(0, 0, 0)",
         // TODO: maybe play with this when we have more data, looks weird currently.
         // backgroundColor: (context) => {
         //   console.log("🚀 ~ context:", context)
         //   const dataPoint = context.raw as ExtendedDataPoint;
         //   return getColor(dataPoint.y);
         // },
-        borderColor: "rgb(255, 99, 132)",
+        // backgroundColor: "rgba(255, 99, 132, 0.2)",
+        // borderColor: "rgb(255, 99, 132)",
         borderWidth: 1,
       })
     }
@@ -201,8 +209,10 @@
             y: d.value,
           }
         }),
-        backgroundColor: "rgba(255, 159, 64, 0.2)",
-        borderColor: "rgb(255, 159, 64)",
+        backgroundColor: "rgba(0, 0, 0, 0.3)",
+        borderColor: "rgb(0, 0, 0)",
+        // backgroundColor: "rgba(255, 159, 64, 0.2)",
+        // borderColor: "rgb(255, 159, 64)",
         borderWidth: 1,
       })
     }
@@ -217,8 +227,10 @@
             y: d.value,
           }
         }),
-        backgroundColor: "rgba(255, 205, 86, 0.2)",
-        borderColor: "rgb(255, 205, 86)",
+        backgroundColor: "rgba(0, 0, 0, 0.2)",
+        borderColor: "rgb(0, 0, 0)",
+        // backgroundColor: "rgba(255, 205, 86, 0.2)",
+        // borderColor: "rgb(255, 205, 86)",
         borderWidth: 1,
       })
     }
@@ -233,8 +245,10 @@
             y: d.value,
           }
         }),
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
-        borderColor: "rgb(75, 192, 192)",
+        backgroundColor: "rgba(0, 0, 0, 0.1)",
+        borderColor: "rgb(0, 0, 0)",
+        // backgroundColor: "rgba(75, 192, 192, 0.2)",
+        // borderColor: "rgb(75, 192, 192)",
         borderWidth: 1,
       })
     }
