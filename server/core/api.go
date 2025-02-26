@@ -27,14 +27,14 @@ type QuerySensorData struct {
 }
 
 type QueryTimeData struct {
-	StartTime time.Time  `form:"start" binding:"required" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"` // RFC3339
-	EndTime   *time.Time `form:"end,omitempty" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"`            // RFC3339, optional
+	StartTime *time.Time `form:"start,omitempty" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"` // RFC3339
+	EndTime   *time.Time `form:"end,omitempty" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"`   // RFC3339, optional
 }
 
 type QueryAggregationData struct {
-	StartTime time.Time           `form:"start" binding:"required" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"` // RFC3339
 	DataType  CalibratedDataNames `form:"dataType" binding:"required,oneof=volume airTemperature lightIntensity uVIndex windSpeed windDirection rainfallHourly barometricPressure"`
-	EndTime   *time.Time          `form:"end,omitempty" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"` // RFC3339, optional
+	StartTime *time.Time          `form:"start,omitempty" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"` // RFC3339
+	EndTime   *time.Time          `form:"end,omitempty" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"`   // RFC3339, optional
 }
 
 func handleWithoutSensorID(c *gin.Context, server *Server) {
@@ -76,9 +76,15 @@ func getAggregationData(c *gin.Context, server *Server) {
 		return
 	}
 
-	if queryTimeData.EndTime == nil {
-		log.Println("No end time available, using the default of a 7 day period")
+	if queryTimeData.StartTime == nil {
+		log.Println("No start time available, using the default of a 7 day period")
 		v := time.Now().AddDate(0, 0, -7)
+		queryTimeData.StartTime = &v
+	}
+
+	if queryTimeData.EndTime == nil {
+		log.Println("No end time available, using now")
+		v := time.Now()
 		queryTimeData.EndTime = &v
 	}
 
@@ -115,7 +121,7 @@ func getAggregationData(c *gin.Context, server *Server) {
 		{Key: "metadata.dataType", Value: queryTimeData.DataType},
 		{Key: "date",
 			Value: bson.D{
-				{Key: "$gte", Value: primitive.NewDateTimeFromTime(queryTimeData.StartTime)},
+				{Key: "$gte", Value: primitive.NewDateTimeFromTime(*queryTimeData.StartTime)},
 				{Key: "$lt", Value: primitive.NewDateTimeFromTime(*queryTimeData.EndTime)},
 			},
 		},
@@ -156,9 +162,15 @@ func sharedDataPullFunctionality[T QueryData](c *gin.Context, server *Server, da
 		return
 	}
 
-	if queryTimeData.EndTime == nil {
-		log.Println("No end time available, using the default of a 7 day period")
+	if queryTimeData.StartTime == nil {
+		log.Println("No start time available, using the default of a 7 day period")
 		v := time.Now().AddDate(0, 0, -7)
+		queryTimeData.StartTime = &v
+	}
+
+	if queryTimeData.EndTime == nil {
+		log.Println("No end time available, using now")
+		v := time.Now()
 		queryTimeData.EndTime = &v
 	}
 
@@ -198,7 +210,7 @@ func sharedDataPullFunctionality[T QueryData](c *gin.Context, server *Server, da
 			bson.D{
 				{Key: "sensor", Value: sensor.Id},
 				{Key: "timestamp", Value: bson.D{
-					{Key: "$gte", Value: primitive.NewDateTimeFromTime(queryTimeData.StartTime)},
+					{Key: "$gte", Value: primitive.NewDateTimeFromTime(*queryTimeData.StartTime)},
 					{Key: "$lt", Value: primitive.NewDateTimeFromTime(*queryTimeData.EndTime)},
 				}},
 			},
