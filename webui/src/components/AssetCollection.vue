@@ -44,6 +44,12 @@
               </template>
             </AsyncWrapper>
           </div>
+          <div
+            v-if="asset.Sensors && sensorToAggregationData.get(asset.Sensors[0])"
+            class="group-section"
+          >
+            <HistoricDataGraph :data="sensorToAggregationData.get(asset.Sensors[0])!" />
+          </div>
         </div>
       </CCard>
     </div>
@@ -53,16 +59,28 @@
 <script setup lang="ts">
   import { customMerge } from "@/helper"
   import type { Asset } from "@/models/Asset"
-  import type { CalibratedData } from "@/models/Data"
+  import {
+    AGGREGATION_TYPE,
+    CalibratedDataNames,
+    type AggregationData,
+    type CalibratedData,
+  } from "@/models/Data"
   import { useAssetStore } from "@/stores/asset"
-  import type { GraphData, Unit } from "@/types/GraphRelated"
+  import type {
+    AggregatedDataMapping,
+    AggregatedDataPoint,
+    CalibratedDataNamesGrouping,
+    GraphData,
+    Unit,
+  } from "@/types/GraphRelated"
   import type { ObjectId } from "@/types/ObjectId"
   import { CCard, CCardBody, CCardTitle, CListGroup, CListGroupItem } from "@coreui/vue"
   import axios, { type CancelTokenSource } from "axios"
 
   import mergeWith from "lodash/mergeWith"
-  import { computed, ref, watch } from "vue"
+  import { computed, onMounted, ref, watch } from "vue"
   import AsyncWrapper from "./AsyncWrapper.vue"
+  import HistoricDataGraph from "./HistoricDataGraph.vue"
   import TimeseriesGraph from "./TimeseriesGraph.vue"
 
   const BASE_URL: string = import.meta.env.VITE_BASE_URL
@@ -72,6 +90,7 @@
   const assetIdToStarting = ref<Map<ObjectId, number>>(new Map())
   const assetToData = ref<Map<ObjectId, Promise<GraphData>>>(new Map())
 
+  const sensorToAggregationData = ref<Map<string, Partial<CalibratedDataNamesGrouping>>>(new Map())
   // sensor id -> cancellation tokens for all network calls (for the sensor)
   const cancelTokens: Map<ObjectId, CancelTokenSource[]> = new Map()
 
@@ -312,6 +331,93 @@
       }
     }
   }
+
+  /**
+   * TODO: Give actually better name
+   */
+
+  /**
+   * TODO:
+   * Add sensor
+   * Add data type
+   *
+   * Currently with the limited data not really required.
+   */
+  const pullAggregatedData = async function (sensorId: string = "2cf7f1c0613006fe"): Promise<void> {
+    const now = new Date()
+
+    const epoch = new Date()
+    epoch.setFullYear(now.getFullYear() - 2)
+
+    // TODO: fix
+    const type: CalibratedDataNames = CalibratedDataNames.RAIN_FALL_HOURLY
+    const params = new URLSearchParams({
+      start: epoch.toISOString(),
+      end: now.toISOString(),
+      dataType: type,
+    })
+
+    try {
+      const response = await axios.get<AggregationData[]>(
+        `${BASE_URL}/api/sensors/${sensorId}/data/aggregated_data?${params.toString()}`
+      )
+
+      if (response.data.length == 0) {
+        return
+      }
+
+      const t: AggregatedDataMapping = {
+        // type: type,
+        data: {
+          HOURLY: [],
+          DAILY: [],
+          WEEKLY: [],
+          MONTHLY: [],
+          YEARLY: [],
+        },
+      }
+
+      response.data.forEach((d: AggregationData) => {
+        const u: AggregatedDataPoint = {
+          unit: d.totalValue?.unit!,
+          value: d.totalValue?.value!,
+          date: d.date,
+        }
+
+        switch (d.metadata.period) {
+          case AGGREGATION_TYPE.HOURLY:
+            t.data.HOURLY.push(u)
+            break
+
+          case AGGREGATION_TYPE.DAILY:
+            t.data.DAILY.push(u)
+            break
+
+          case AGGREGATION_TYPE.WEEKLY:
+            t.data.WEEKLY.push(u)
+            break
+
+          case AGGREGATION_TYPE.MONTHLY:
+            t.data.MONTHLY.push(u)
+            break
+
+          case AGGREGATION_TYPE.YEARLY:
+            t.data.YEARLY.push(u)
+            break
+        }
+      })
+
+      const x: Partial<CalibratedDataNamesGrouping> = {
+        RAIN_FALL_HOURLY: t,
+      }
+
+      sensorToAggregationData.value.set(sensorId, x)
+    } catch (e) {
+      console.warn(e)
+    }
+  }
+
+  onMounted(pullAggregatedData)
 </script>
 <style scoped>
   .card-title {

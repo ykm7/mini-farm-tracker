@@ -61,7 +61,7 @@
 
 <script setup lang="ts" generic="T">
   import { ALL_YEARS, ONE_DAY, ONE_HOUR, ONE_MONTH, ONE_WEEK, ONE_YEAR } from "@/helper"
-  import type { DisplayPoint, GraphData, GraphDataType, KeyOf } from "@/types/GraphRelated"
+  import { dynamicTimeUnit, type GraphData, type GraphDataType, type KeyOf } from "@/types/GraphRelated"
   import type { ChartData, ChartOptions, Point } from "chart.js"
   import {
     Chart,
@@ -248,6 +248,7 @@
       }
     }
 
+    // TODO: Add https://www.chartjs.org/docs/latest/samples/advanced/data-decimation.html for significant data points
     return {
       datasets: [
         {
@@ -301,6 +302,7 @@
           },
         },
         y: {
+          beginAtZero: true,
           title: {
             display: true,
             text: `Value (${current.value.unit})`,
@@ -332,20 +334,7 @@
     }
   })
 
-  const dynamicTimeUnit = (dataPoints: DisplayPoint[]) => {
-    const oldest = dataPoints[0]
-    const newest = dataPoints[dataPoints.length - 1]
-
-    const diff = Date.parse(newest.timestamp) - Date.parse(oldest.timestamp)
-
-    const hours = diff / (1000 * 60 * 60)
-
-    if (hours < 1) return "minute"
-    if (hours < 24) return "hour"
-    if (hours < 30 * 24) return "day"
-    if (hours < 365 * 24) return "month"
-    return "year"
-  }
+  
 
   const setDefaultGraph = (displayData: GraphData) => {
     var key: keyof GraphData
