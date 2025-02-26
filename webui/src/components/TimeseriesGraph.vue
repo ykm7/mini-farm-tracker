@@ -61,7 +61,7 @@
 
 <script setup lang="ts" generic="T">
   import { ALL_YEARS, ONE_DAY, ONE_HOUR, ONE_MONTH, ONE_WEEK, ONE_YEAR } from "@/helper"
-  import { dynamicTimeUnit, type DisplayPoint, type GraphData, type GraphDataType, type KeyOf } from "@/types/GraphRelated"
+  import { dynamicTimeUnit, type GraphData, type GraphDataType, type KeyOf } from "@/types/GraphRelated"
   import type { ChartData, ChartOptions, Point } from "chart.js"
   import {
     Chart,

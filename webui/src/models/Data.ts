@@ -45,7 +45,7 @@ export interface CalibratedData extends Data {
 }
 
 export interface AggregationData {
-  date: Date
+  date: string
   metadata: {
     period: AGGREGATION_TYPE
     sensor?: string

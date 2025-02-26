@@ -74,7 +74,7 @@ export type AggregatedDataGrouping = {
 export interface AggregatedDataPoint {
   unit: string
   value: number
-  date: Date
+  date: string
 }
 
 /**

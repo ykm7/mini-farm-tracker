@@ -2,7 +2,7 @@
   <div class="graph-top-wrapper">
     <!-- <div class="graph-buttons"></div> -->
     <div class="graph-wrapper">
-      <div class="graph-custom-wrapper">
+      <div class="graph-custom-wrapper-group graph-custom-wrapper">
         <Bar :options="chartOptions" :data="rawDataGraph" />
       </div>
     </div>
@@ -40,28 +40,48 @@
   const chartOptions = computed<ChartOptions<"bar">>(() => {
     return {
       responsive: true,
-      x_day: {
-        type: "time",
-        time: {
-          unit: "day",
+      scales: {
+        x_day: {
+          type: "time",
+          time: {
+            unit: "day",
+            displayFormats: {
+              day: "MMM DD",
+            },
+          },
+          ticks: {
+            autoSkip: true,
+          },
         },
-      },
-      x_week: {
-        type: "time",
-        time: {
-          unit: "week",
+        x_week: {
+          type: "time",
+          time: {
+            unit: "week",
+          },
+          ticks: {
+            autoSkip: true,
+          },
         },
-      },
-      x_month: {
-        type: "time",
-        time: {
-          unit: "month",
+        x_month: {
+          type: "time",
+          time: {
+            unit: "month",
+            displayFormats: {
+              month: "MMM YYYY",
+            },
+          },
+          ticks: {
+            autoSkip: true,
+          },
         },
-      },
-      x_year: {
-        type: "time",
-        time: {
-          unit: "year",
+        x_year: {
+          type: "time",
+          time: {
+            unit: "year",
+          },
+          ticks: {
+            autoSkip: true,
+          },
         },
       },
       plugins: {
@@ -93,7 +113,7 @@
         label: "DAILY",
         data: rain.data.DAILY.map((d: AggregatedDataPoint) => {
           return {
-            x: d.date as unknown as number,
+            x: d.date,
             y: d.value,
           }
         }),
@@ -109,7 +129,7 @@
         label: "WEEKLY",
         data: rain.data.WEEKLY.map((d: AggregatedDataPoint) => {
           return {
-            x: d.date as unknown as number,
+            x: d.date,
             y: d.value,
           }
         }),
@@ -125,7 +145,7 @@
         label: "MONTHLY",
         data: rain.data.MONTHLY.map((d: AggregatedDataPoint) => {
           return {
-            x: d.date as unknown as number,
+            x: d.date,
             y: d.value,
           }
         }),
@@ -141,7 +161,7 @@
         label: "YEARLY",
         data: rain.data.YEARLY.map((d: AggregatedDataPoint) => {
           return {
-            x: d.date as unknown as number,
+            x: d.date,
             y: d.value,
           }
         }),
@@ -151,6 +171,7 @@
       })
     }
 
+    console.log("🚀 ~ data:", data)
     return {
       datasets: data,
     }
