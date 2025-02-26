@@ -42,6 +42,9 @@
       responsive: true,
       maintainAspectRatio: false,
       scales: {
+        y: {
+          beginAtZero: true,
+        },
         x_day: {
           type: "time",
           time: {
@@ -52,20 +55,24 @@
             },
           },
           ticks: {
-            autoSkip: true,
+            source: "data",
+            align: "center",
+            autoSkip: false,
           },
         },
         x_week: {
           type: "time",
           time: {
-            parser: "YYYY-[W]WW",
+            parser: "YYYY-MMM-[W]WW",
             unit: "week",
             displayFormats: {
-              week: "YYYY [W]WW",
+              week: "YYYY MMM [W]WW",
             },
           },
           ticks: {
-            autoSkip: true,
+            source: "data",
+            align: "center",
+            autoSkip: false,
           },
         },
         x_month: {
@@ -78,7 +85,9 @@
             },
           },
           ticks: {
-            autoSkip: true,
+            source: "data",
+            align: "center",
+            autoSkip: false,
           },
         },
         x_year: {
@@ -91,7 +100,9 @@
             },
           },
           ticks: {
-            autoSkip: true,
+            source: "data",
+            align: "center",
+            autoSkip: false,
           },
         },
       },
@@ -100,7 +111,7 @@
           position: "top",
         },
         title: {
-          display: true,
+          display: false,
           text: "Historic data (rainfall)",
         },
       },
