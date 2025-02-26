@@ -38,85 +38,99 @@
   }>()
 
   const chartOptions = computed<ChartOptions<"bar">>(() => {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        y: {
-          beginAtZero: true,
-        },
-        x_day: {
-          type: "time",
-          time: {
-            parser: "YYYY-MM-DD",
-            unit: "day",
-            displayFormats: {
-              day: "MMM DD",
-            },
-          },
-          ticks: {
-            source: "data",
-            align: "center",
-            autoSkip: false,
-          },
-        },
-        x_week: {
-          type: "time",
-          time: {
-            parser: "YYYY-MMM-[W]WW",
-            unit: "week",
-            displayFormats: {
-              week: "YYYY MMM [W]WW",
-            },
-          },
-          ticks: {
-            source: "data",
-            align: "center",
-            autoSkip: false,
-          },
-        },
-        x_month: {
-          type: "time",
-          time: {
-            parser: "YYYY-MM-DD",
-            unit: "month",
-            displayFormats: {
-              month: "MMM YYYY",
-            },
-          },
-          ticks: {
-            source: "data",
-            align: "center",
-            autoSkip: false,
-          },
-        },
-        x_year: {
-          type: "time",
-          time: {
-            parser: "YYYY-MM-DD",
-            unit: "year",
-            displayFormats: {
-              year: "YYYY",
-            },
-          },
-          ticks: {
-            source: "data",
-            align: "center",
-            autoSkip: false,
-          },
-        },
-      },
-      plugins: {
-        legend: {
-          position: "top",
-        },
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: {
+        beginAtZero: true,
         title: {
-          display: false,
-          text: "Historic data (rainfall)",
+          display: true,
+          text: 'Rainfall (mm)'
+        }
+      },
+      x_day: {
+        type: "time",
+        time: {
+          parser: "YYYY-MM-DD",
+          unit: "day",
+          displayFormats: {
+            day: "MMM DD",
+          },
+        },
+        ticks: {
+          source: "data",
+          align: "start",
+          autoSkip: true,
+          maxTicksLimit: 10
         },
       },
-    }
-  })
+      x_week: {
+        type: "time",
+        time: {
+          parser: "YYYY-[W]WW",
+          unit: "week",
+          displayFormats: {
+            week: "YYYY [W]WW",
+          },
+        },
+        ticks: {
+          source: "data",
+          align: "start",
+          autoSkip: true,
+          maxTicksLimit: 10
+        },
+      },
+      x_month: {
+        type: "time",
+        time: {
+          parser: "YYYY-MM-DD",
+          unit: "month",
+          displayFormats: {
+            month: "MMM YYYY",
+          },
+        },
+        ticks: {
+          source: "data",
+          align: "start",
+          autoSkip: true,
+          maxTicksLimit: 12
+        },
+      },
+      x_year: {
+        type: "time",
+        time: {
+          parser: "YYYY-MM-DD",
+          unit: "year",
+          displayFormats: {
+            year: "YYYY",
+          },
+        },
+        ticks: {
+          source: "data",
+          align: "start",
+          autoSkip: false,
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        position: "top",
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+      }
+    },
+    elements: {
+      bar: {
+        borderWidth: 1,
+      }
+    },
+    barPercentage: 1.0,
+    categoryPercentage: 1.0,
+  }
+});
 
   const rawDataGraph = computed<ChartData<"bar", ExtendedDataPoint[]>>(() => {
     const data: ChartDataset<"bar", ExtendedDataPoint[]>[] = []
