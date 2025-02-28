@@ -384,7 +384,7 @@ type CalibratedDataPoints struct {
 	WindSpeed      *CalibratedDataType `json:"WindSpeed,omitempty" bson:"windSpeed,omitempty"`
 	WindDirection  *CalibratedDataType `json:"WindDirection,omitempty" bson:"windDirection,omitempty"`
 	// This is rainfall intensity
-	RainfallHourly     *CalibratedDataType `json:"RainfallHourly,omitempty" bson:"rainfallHourly,omitempty"`
+	RainGauge          *CalibratedDataType `json:"RainGauge,omitempty" bson:"rainGauge,omitempty"`
 	BarometricPressure *CalibratedDataType `json:"BarometricPressure,omitempty" bson:"barometricPressure,omitempty"`
 	PeakWindGust       *CalibratedDataType `json:"PeakWindGust,omitempty" bson:"peakWindGust,omitempty"`
 	RainAccumulation   *CalibratedDataType `json:"RainAccumulation,omitempty" bson:"rainAccumulation,omitempty"`

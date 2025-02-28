@@ -55,8 +55,10 @@ export class GraphData {
   UvIndex?: GraphDataType
   WindSpeed?: GraphDataType
   WindDirection?: GraphDataType
-  RainfallHourly?: GraphDataType
+  RainGauge?: GraphDataType
   BarometricPressure?: GraphDataType
+  PeakWindGust?: GraphDataType
+  RainAccumulation?: GraphDataType
 }
 
 export const createGraphData = (): GraphData => {

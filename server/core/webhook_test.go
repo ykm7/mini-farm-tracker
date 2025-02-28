@@ -514,7 +514,7 @@ func Test_handleWebhook(t *testing.T) {
 									Data:  0.8,
 									Units: M_PER_SEC,
 								},
-								RainfallHourly: &CalibratedDataType{
+								RainGauge: &CalibratedDataType{
 									Data:  2.30898,
 									Units: MM_PER_HOUR,
 								},
@@ -542,7 +542,7 @@ func Test_handleWebhook(t *testing.T) {
 		},
 		{
 			name:    "Invalid 'S2120RawData' data - no messages",
-			runTest: false,
+			runTest: true,
 			args: args{
 				additionalHeaders: http.Header{
 					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
@@ -619,7 +619,7 @@ func Test_handleWebhook(t *testing.T) {
 		},
 		{
 			name:    "Invalid 'S2120RawData' data - no data at all",
-			runTest: false,
+			runTest: true,
 			args: args{
 				additionalHeaders: http.Header{
 					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
@@ -671,7 +671,7 @@ func Test_handleWebhook(t *testing.T) {
 		},
 		{
 			name:    "Valid 'LDDS45RawData' data",
-			runTest: false,
+			runTest: true,
 			args: args{
 				additionalHeaders: http.Header{
 					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
@@ -778,7 +778,7 @@ func Test_handleWebhook(t *testing.T) {
 		},
 		{
 			name:    "No 'X-Downlink-Apikey' header provided",
-			runTest: false,
+			runTest: true,
 			args: args{
 				server: &Server{},
 			},
@@ -791,7 +791,7 @@ func Test_handleWebhook(t *testing.T) {
 		},
 		{
 			name:    "Mismatch 'X-Downlink-Apikey' header provided",
-			runTest: false,
+			runTest: true,
 			args: args{
 				additionalHeaders: http.Header{
 					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},

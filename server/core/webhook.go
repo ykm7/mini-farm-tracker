@@ -292,7 +292,7 @@ func storeS2120CalibratedData(
 
 			case RainGauge:
 				if v, ok := value.(float64); ok {
-					dataPoint.RainfallHourly = &CalibratedDataType{
+					dataPoint.RainGauge = &CalibratedDataType{
 						Data:  v,
 						Units: MM_PER_HOUR,
 					}

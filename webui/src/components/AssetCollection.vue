@@ -268,16 +268,16 @@
             })
           }
 
-          if (d.DataPoints.RainfallHourly) {
-            if (newGraphData.RainfallHourly == null) {
-              newGraphData.RainfallHourly = {
+          if (d.DataPoints.RainGauge) {
+            if (newGraphData.RainGauge == null) {
+              newGraphData.RainGauge = {
                 data: [],
-                unit: d.DataPoints.RainfallHourly.Units as Unit,
+                unit: d.DataPoints.RainGauge.Units as Unit,
               }
             }
 
-            newGraphData.RainfallHourly.data.push({
-              value: d.DataPoints.RainfallHourly.Data,
+            newGraphData.RainGauge.data.push({
+              value: d.DataPoints.RainGauge.Data,
               timestamp: d.Timestamp,
             })
           }
@@ -292,6 +292,34 @@
 
             newGraphData.BarometricPressure.data.push({
               value: d.DataPoints.BarometricPressure.Data,
+              timestamp: d.Timestamp,
+            })
+          }
+
+          if (d.DataPoints.PeakWindGust) {
+            if (newGraphData.PeakWindGust == null) {
+              newGraphData.PeakWindGust = {
+                data: [],
+                unit: d.DataPoints.PeakWindGust.Units as Unit,
+              }
+            }
+
+            newGraphData.PeakWindGust.data.push({
+              value: d.DataPoints.PeakWindGust.Data,
+              timestamp: d.Timestamp,
+            })
+          }
+
+          if (d.DataPoints.RainAccumulation) {
+            if (newGraphData.RainAccumulation == null) {
+              newGraphData.RainAccumulation = {
+                data: [],
+                unit: d.DataPoints.RainAccumulation.Units as Unit,
+              }
+            }
+
+            newGraphData.RainAccumulation.data.push({
+              value: d.DataPoints.RainAccumulation.Data,
               timestamp: d.Timestamp,
             })
           }
