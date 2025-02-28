@@ -45,7 +45,7 @@
       maintainAspectRatio: false,
       scales: {
         y: {
-          stacked: true,
+          stacked: false,
           beginAtZero: true,
           title: {
             display: true,
@@ -56,7 +56,7 @@
           },
         },
         x_day: {
-          stacked: true,
+          stacked: false,
           type: "time",
           time: {
             parser: "YYYY-MM-DD",
@@ -73,14 +73,15 @@
           },
         },
         x_week: {
-          stacked: true,
+          stacked: false,
           type: "time",
           time: {
-            parser: "YYYY-[W]WW",
+            parser: "YYYY-MM-DD",
             unit: "week",
             displayFormats: {
-              week: "YYYY [W]WW",
+              week: "MMM D",
             },
+            isoWeekday: 1,
           },
           ticks: {
             source: "data",
@@ -90,7 +91,7 @@
           },
         },
         x_month: {
-          stacked: true,
+          stacked: false,
           type: "time",
           time: {
             parser: "YYYY-MM-DD",
@@ -107,7 +108,7 @@
           },
         },
         x_year: {
-          stacked: true,
+          stacked: false,
           type: "time",
           time: {
             parser: "YYYY-MM-DD",
@@ -129,6 +130,8 @@
         },
         tooltip: {
           mode: "index",
+          axis: "y",
+          // mode: "x",
           intersect: true,
           callbacks: {
             // title: (tooltipItems) => {
@@ -136,10 +139,10 @@
             //   return `${item.dataset.label} - ${item.label}`
             // },
             label: (context) => {
-              const label = context.dataset.label?.padEnd(8, " ")
-              console.log("🚀 ~ label:", label)
+              // const label = context.dataset.label?.padEnd(8, "\u00A0")
+              // console.log("🚀 ~ label:", label)
               const value = context.parsed.y.toFixed(2) // .padStart(6, " ")
-              return `${label} rainfall: ${value} mm`
+              return `Rainfall: ${value} mm (${context.dataset.label})`
             },
             // TODO: Expand on this in the future
             // footer: (tooltipItems) => {
@@ -256,6 +259,7 @@
         // backgroundColor: "rgba(75, 192, 192, 0.2)",
         // borderColor: "rgb(75, 192, 192)",
         borderWidth: 1,
+        grouped: false,
       })
     }
 
