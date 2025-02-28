@@ -29,8 +29,10 @@ interface CalibratedDataPoints {
   UvIndex?: CalibratedDataType
   WindSpeed?: CalibratedDataType
   WindDirection?: CalibratedDataType
-  RainfallHourly?: CalibratedDataType
+  RainGauge?: CalibratedDataType
   BarometricPressure?: CalibratedDataType
+  PeakWindGust?: CalibratedDataType
+  RainAccumulation?: CalibratedDataType
 }
 
 interface CalibratedDataType {

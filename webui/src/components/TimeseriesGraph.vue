@@ -61,7 +61,12 @@
 
 <script setup lang="ts" generic="T">
   import { ALL_YEARS, ONE_DAY, ONE_HOUR, ONE_MONTH, ONE_WEEK, ONE_YEAR } from "@/helper"
-  import { dynamicTimeUnit, type GraphData, type GraphDataType, type KeyOf } from "@/types/GraphRelated"
+  import {
+    dynamicTimeUnit,
+    type GraphData,
+    type GraphDataType,
+    type KeyOf,
+  } from "@/types/GraphRelated"
   import type { ChartData, ChartOptions, Point } from "chart.js"
   import {
     Chart,
@@ -177,7 +182,7 @@
           lineLabel: lineLabel,
         }
 
-      case "RainfallHourly":
+      case "RainGauge":
         return {
           title: "Current hourly rainfall",
           emptyLabel: "No calibrated data available for this sensor",
@@ -187,6 +192,20 @@
       case "BarometricPressure":
         return {
           title: "Current barometric pressure",
+          emptyLabel: "No calibrated data available for this sensor",
+          lineLabel: lineLabel,
+        }
+
+      case "PeakWindGust":
+        return {
+          title: "Peak Wind Gust",
+          emptyLabel: "No calibrated data available for this sensor",
+          lineLabel: lineLabel,
+        }
+
+      case "RainAccumulation":
+        return {
+          title: "Rain Accumulation",
           emptyLabel: "No calibrated data available for this sensor",
           lineLabel: lineLabel,
         }
@@ -334,8 +353,6 @@
     }
   })
 
-  
-
   const setDefaultGraph = (displayData: GraphData) => {
     var key: keyof GraphData
     if (selectedGraphType.value != null && selectedGraphType.value.key) {
@@ -351,7 +368,6 @@
       value: displayData[key]!,
     }
   }
-    
 </script>
 
 <style scoped>

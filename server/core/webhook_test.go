@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 
@@ -149,8 +150,8 @@ func validateDataExistingsWithinMockDb(t *testing.T, expected *DateExpectedToFin
 			panic(err)
 		}
 
-		if diff := cmp.Diff(expected.sensors, results, cmpopts.SortSlices(func(a, b Asset) bool {
-			return a.Name < b.Name
+		if diff := cmp.Diff(expected.sensors, results, cmpopts.SortSlices(func(a, b Sensor) bool {
+			return a.Id < b.Id
 		})); diff != "" {
 			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
 		}
@@ -162,9 +163,48 @@ func validateDataExistingsWithinMockDb(t *testing.T, expected *DateExpectedToFin
 			panic(err)
 		}
 
-		if diff := cmp.Diff(expected.rawData, results, cmpopts.SortSlices(func(a, b RawData) bool {
+		// TODO: Ideally I'd like order of ALL the nested arrays to be ignored.
+		rawDataCmp := cmpopts.SortSlices(func(a, b RawData) bool {
 			return a.Timestamp < b.Timestamp
-		})); diff != "" {
+		})
+
+		LDDS45Cmp := cmpopts.SortSlices(func(a, b LDDS45RawData) bool {
+			return a.Distance < b.Distance
+		})
+
+		// S2120Cmp := cmpopts.SortSlices(func(a, b S2120RawData) bool {
+		// 	return a.Messages. < b.Messages.
+		// })
+
+		S2120RawDataMsgCmp := cmpopts.SortSlices(func(a, b S2120RawDataMsg) bool {
+			aType := reflect.TypeOf(a)
+			bType := reflect.TypeOf(b)
+
+			if aType != bType {
+				return false
+			}
+
+			switch aCast := a.(type) {
+			case *S2120RawDataMeasurement:
+				aId := aCast.MeasurementId
+
+				bCast := b.(*S2120RawDataMeasurement)
+				bId := bCast.MeasurementId
+				return aId < bId
+			}
+
+			return false
+		})
+
+		S2120RawDataMeasurementCmp := cmpopts.SortSlices(func(a, b *S2120RawDataMeasurement) bool {
+			if a == nil || b == nil {
+				return false
+			}
+
+			return a.MeasurementId < b.MeasurementId
+		})
+
+		if diff := cmp.Diff(expected.rawData, results, rawDataCmp, LDDS45Cmp, S2120RawDataMsgCmp, S2120RawDataMeasurementCmp); diff != "" {
 			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
 		}
 	}
@@ -175,8 +215,8 @@ func validateDataExistingsWithinMockDb(t *testing.T, expected *DateExpectedToFin
 			panic(err)
 		}
 
-		if diff := cmp.Diff(expected.sensorConfigurations, results, cmpopts.SortSlices(func(a, b Asset) bool {
-			return a.Name < b.Name
+		if diff := cmp.Diff(expected.sensorConfigurations, results, cmpopts.SortSlices(func(a, b SensorConfiguration) bool {
+			return a.Id.String() < b.Id.String()
 		})); diff != "" {
 			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
 		}
@@ -188,8 +228,8 @@ func validateDataExistingsWithinMockDb(t *testing.T, expected *DateExpectedToFin
 			panic(err)
 		}
 
-		if diff := cmp.Diff(expected.calibratedData, results, cmpopts.SortSlices(func(a, b Asset) bool {
-			return a.Name < b.Name // Assuming there's an ID field for sorting
+		if diff := cmp.Diff(expected.calibratedData, results, cmpopts.SortSlices(func(a, b CalibratedData) bool {
+			return a.Timestamp < b.Timestamp // Assuming there's an ID field for sorting
 		})); diff != "" {
 			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
 		}
@@ -230,11 +270,6 @@ type CollectionWrapper[T any] struct {
 	collection MongoCollection[T]
 	data       []T
 }
-
-// type DateExpectedToFind[T any] struct {
-// 	collectionName DB_COLLECTIONS
-// 	data           []T
-// }
 
 type CollectionToData struct {
 	sensors              CollectionWrapper[Sensor]
@@ -310,16 +345,58 @@ func Test_handleWebhook(t *testing.T) {
 						"err":     0,
 						"payload": "",
 						"valid":   true,
+						// From: 4A00F6320000FFA33500084B01090000000027414C0019000009EC
 						"messages": []map[string]interface{}{
 							{
-								"measurementValue": 1.44,
-								"measurementId":    "555",
-								"type":             string(RainGauge),
+								"measurementId":    "4098",
+								"measurementValue": 50,
+								"type":             "Air Humidity",
 							},
 							{
-								"measurementValue": 0.5,
+								"measurementId":    "4097",
+								"measurementValue": 24.6,
+								"type":             "Air Temperature",
+							},
+							{
+								"measurementId":    "4099",
+								"measurementValue": 65443,
+								"type":             "Light Intensity",
+							},
+							{
+								"measurementId":    "4190",
+								"measurementValue": 5.3,
+								"type":             "UV Index",
+							},
+							{
+								"measurementId":    "4105",
+								"measurementValue": 0.8,
+								"type":             "Wind Speed",
+							},
+							{
+								"measurementId":    "4113",
+								"measurementValue": 2.30898,
+								"type":             "Rain Gauge",
+							},
+							{
 								"measurementId":    "4104",
-								"type":             string(WindDirectionSensor),
+								"measurementValue": 265,
+								"type":             "Wind Direction Sensor",
+							},
+							{
+								"measurementId":    "4101",
+								"measurementValue": 100490,
+								"type":             "Barometric Pressure",
+							},
+							{
+								"measurementId":    "4191",
+								"measurementValue": 2.5,
+								"type":             "Peak Wind Gust",
+							},
+							// We don't care about this
+							{
+								"measurementId":    "4213",
+								"measurementValue": 999,
+								"type":             "Rain Accumulation",
 							},
 						},
 					},
@@ -358,14 +435,54 @@ func Test_handleWebhook(t *testing.T) {
 								S2120: &S2120RawData{
 									Messages: []S2120RawDataMsg{
 										&S2120RawDataMeasurement{
-											MeasurementId:    "555",
-											MeasurementValue: 1.44,
+											MeasurementId:    "4097",
+											MeasurementValue: float64(24.6),
+											Type:             AirTemperature,
+										},
+										&S2120RawDataMeasurement{
+											MeasurementId:    "4098",
+											MeasurementValue: float64(50),
+											Type:             AirHumidity,
+										},
+										&S2120RawDataMeasurement{
+											MeasurementId:    "4099",
+											MeasurementValue: float64(65443),
+											Type:             LightIntensity,
+										},
+										&S2120RawDataMeasurement{
+											MeasurementId:    "4190",
+											MeasurementValue: float64(5.3),
+											Type:             UVIndex,
+										},
+										&S2120RawDataMeasurement{
+											MeasurementId:    "4105",
+											MeasurementValue: float64(0.8),
+											Type:             WindSpeed,
+										},
+										&S2120RawDataMeasurement{
+											MeasurementId:    "4113",
+											MeasurementValue: float64(2.30898),
 											Type:             RainGauge,
 										},
 										&S2120RawDataMeasurement{
 											MeasurementId:    "4104",
-											MeasurementValue: 0.5,
+											MeasurementValue: float64(265),
 											Type:             WindDirectionSensor,
+										},
+										&S2120RawDataMeasurement{
+											MeasurementId:    "4101",
+											MeasurementValue: float64(100490),
+											Type:             BarometricPressure,
+										},
+										&S2120RawDataMeasurement{
+											MeasurementId:    "4191",
+											MeasurementValue: float64(2.5),
+											Type:             PeakWindGust,
+										},
+										&S2120RawDataMeasurement{
+											MeasurementId:    "4213",
+											MeasurementValue: float64(999),
+											Type:             "Rain Accumulation",
 										},
 									},
 								},
@@ -377,13 +494,45 @@ func Test_handleWebhook(t *testing.T) {
 							Timestamp: mockConvertTimeStringToMongoTime(MOCK_RECEIVED_AT),
 							Sensor:    MOCK_SENSOR_ID,
 							DataPoints: CalibratedDataPoints{
-								RainfallHourly: &CalibratedDataType{
-									Data:  1.44,
+								AirTemperature: &CalibratedDataType{
+									Data:  24.6,
+									Units: DEGREE_C,
+								},
+								AirHumidity: &CalibratedDataType{
+									Data:  50,
+									Units: AIR_HUMIDITY,
+								},
+								LightIntensity: &CalibratedDataType{
+									Data:  65443,
+									Units: LUX,
+								},
+								UVIndex: &CalibratedDataType{
+									Data:  5.3,
+									Units: UV_INDEX,
+								},
+								WindSpeed: &CalibratedDataType{
+									Data:  0.8,
+									Units: M_PER_SEC,
+								},
+								RainGauge: &CalibratedDataType{
+									Data:  2.30898,
 									Units: MM_PER_HOUR,
 								},
 								WindDirection: &CalibratedDataType{
-									Data:  0.5,
+									Data:  265,
 									Units: DEGREE,
+								},
+								BarometricPressure: &CalibratedDataType{
+									Data:  100490,
+									Units: PRESSURE,
+								},
+								PeakWindGust: &CalibratedDataType{
+									Data:  2.5,
+									Units: M_PER_SEC,
+								},
+								RainAccumulation: &CalibratedDataType{
+									Data:  0.38483,
+									Units: MM_METRE,
 								},
 							},
 						},

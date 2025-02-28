@@ -315,6 +315,9 @@ const (
 	WindDirectionSensor S2120RawDataMeasurementType = "Wind Direction Sensor"
 	RainGauge           S2120RawDataMeasurementType = "Rain Gauge"
 	BarometricPressure  S2120RawDataMeasurementType = "Barometric Pressure"
+	PeakWindGust        S2120RawDataMeasurementType = "Peak Wind Gust"
+	// Again, this is an accumulated value, rather record the periodic values and accumulate manually with periodic logic
+	// RainAccumulation    S2120RawDataMeasurementType = "Rain Accumulation"
 )
 
 type S2120RawDataMeasurementError string
@@ -373,15 +376,18 @@ Available from the different:
 https://cdn.shopify.com/s/files/1/1386/3791/files/SenseCAP_S2120_LoRaWAN_8-in-1_Weather_Station_User_Guide.pdf?v=1662178525
 */
 type CalibratedDataPoints struct {
-	Volume             *CalibratedDataType `json:"Volume,omitempty" bson:"volume,omitempty"`
-	AirTemperature     *CalibratedDataType `json:"AirTemperature,omitempty" bson:"airTemperature,omitempty"`
-	AirHumidity        *CalibratedDataType `json:"AirHumidity,omitempty" bson:"airHumidity,omitempty"`
-	LightIntensity     *CalibratedDataType `json:"LightIntensity,omitempty" bson:"lightIntensity,omitempty"`
-	UVIndex            *CalibratedDataType `json:"UvIndex,omitempty" bson:"uvIndex,omitempty"`
-	WindSpeed          *CalibratedDataType `json:"WindSpeed,omitempty" bson:"windSpeed,omitempty"`
-	WindDirection      *CalibratedDataType `json:"WindDirection,omitempty" bson:"windDirection,omitempty"`
-	RainfallHourly     *CalibratedDataType `json:"RainfallHourly,omitempty" bson:"rainfallHourly,omitempty"`
-	BarometricPressure *CalibratedDataType `json:"bBarometricPressure,omitempty" bson:"barometricPressure,omitempty"`
+	Volume         *CalibratedDataType `json:"Volume,omitempty" bson:"volume,omitempty"`
+	AirTemperature *CalibratedDataType `json:"AirTemperature,omitempty" bson:"airTemperature,omitempty"`
+	AirHumidity    *CalibratedDataType `json:"AirHumidity,omitempty" bson:"airHumidity,omitempty"`
+	LightIntensity *CalibratedDataType `json:"LightIntensity,omitempty" bson:"lightIntensity,omitempty"`
+	UVIndex        *CalibratedDataType `json:"UvIndex,omitempty" bson:"uvIndex,omitempty"`
+	WindSpeed      *CalibratedDataType `json:"WindSpeed,omitempty" bson:"windSpeed,omitempty"`
+	WindDirection  *CalibratedDataType `json:"WindDirection,omitempty" bson:"windDirection,omitempty"`
+	// This is rainfall intensity
+	RainGauge          *CalibratedDataType `json:"RainGauge,omitempty" bson:"rainGauge,omitempty"`
+	BarometricPressure *CalibratedDataType `json:"BarometricPressure,omitempty" bson:"barometricPressure,omitempty"`
+	PeakWindGust       *CalibratedDataType `json:"PeakWindGust,omitempty" bson:"peakWindGust,omitempty"`
+	RainAccumulation   *CalibratedDataType `json:"RainAccumulation,omitempty" bson:"rainAccumulation,omitempty"`
 }
 
 type CalibratedDataType struct {

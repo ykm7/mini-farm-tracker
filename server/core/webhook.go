@@ -72,6 +72,7 @@ func handleWebhook(c *gin.Context, server *Server) {
 		}
 		err = json.Unmarshal(jsonData, &data.LDDS45)
 		if err != nil || data.LDDS45 == nil {
+			log.Printf("For payload (as string) %s and expected sensor %s have error %v - raw bytes %s", string(jsonData), LDDS45, err, *uplinkMessage.UplinkMessage.FrmPayload)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v to expected data type for: %s", jsonData, LDDS45),
 			})
@@ -117,10 +118,8 @@ func handleWebhook(c *gin.Context, server *Server) {
 
 		err = json.Unmarshal(jsonData, &data.S2120)
 
-		// err = data.S2120.Unmarshal(jsonData)
-
 		if err != nil || data.S2120 == nil {
-			log.Printf("For payload (as string) %s and expected sensor %s have error %v", string(jsonData), S2120, err)
+			log.Printf("For payload (as string) %s and expected sensor %s have error %v - raw bytes %s", string(jsonData), S2120, err, *uplinkMessage.UplinkMessage.FrmPayload)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v (as string: %s) to expected data type for: %s", jsonData, string(jsonData), S2120),
 			})
@@ -194,8 +193,33 @@ func storeS2120CalibratedData(
 		return err
 	}
 
-	// Uniquely (atleast, in comparision to the LDDS45 sensor, there is no modification prior to storing the values)
-	// However, they are to be "flattened" to be accessible via a single flat struct instead of within the raw messages slices
+	/**
+	Uniquely (atleast, in comparision to the LDDS45 sensor, there is no modification prior to storing the values)
+	However, they are to be "flattened" to be accessible via a single flat struct instead of within the raw messages slices
+
+	TODO: Not entirely true, a configuration must indicate a reporting rate of 10mins.
+	From the below it is more clear that is less of a dynamic configuration and more of a requirement for these values to be set correctly.
+
+	https://files.seeedstudio.com/products/SenseCAP/101990961_SenseCAP%20S2120/SenseCAP%20S2120%20LoRaWAN%208-in-1%20Weather%20Station%20User%20Guide.pdf
+	13.3 How to obtain the cumulative rainfall from the past ten minutes?
+	1) Connect S2120 to SenseCAP Mate App and set the uplink interval to 10 min.
+	2) Divide the uploaded rainfall intensity by 6 to get the cumulative rainfall from
+	the past ten minutes.
+	The
+	uploaded rainfall intensity data (mm/h) of S2120 is derived by multiplying the
+	cumulative rainfall (mm) from the past ten minutes by 6. Therefore, setting the
+	interval to 10 min will provide the actual cumulative rainfall value.
+
+	https://forum.seeedstudio.com/t/sensecap-weather-sensor-rain-data/270688
+	Every minute the device calculates the cumulative rainfall of the past 10 minutes,
+	which is then multiplied by 6 to derive the mm/hr value representing the rainfall intensity.
+	So to obtain the cumulative rainfall, you can connect the device to the SenseCAP Mate app and set
+	the uplink interval to 10 minutes. The device will upload the rain intensity data calculated at the
+	last minute. By dividing the rainfall intensity data by 6, you can obtain the cumulative rainfall of
+	the past ten minutes. Adding the cumulative rainfall every ten minutes will give you the total rainfall of an hour/ a day.
+
+	If you want to check the cumulative rainfall directly, you can also use the following two devices: S700+S2100
+	*/
 	parsingErr := fmt.Errorf("errors:\n")
 	additionalErrors := fmt.Errorf("")
 	dataPoint := CalibratedDataPoints{}
@@ -267,10 +291,21 @@ func storeS2120CalibratedData(
 
 			case RainGauge:
 				if v, ok := value.(float64); ok {
-					dataPoint.RainfallHourly = &CalibratedDataType{
+					dataPoint.RainGauge = &CalibratedDataType{
 						Data:  v,
 						Units: MM_PER_HOUR,
 					}
+
+					/**
+					1) Connect S2120 to SenseCAP Mate App and set the uplink interval to 10 min.
+					2) Divide the uploaded rainfall intensity by 6 to get the cumulative rainfall from the past ten minutes
+					*/
+					cumulatedRainfallOver10Mins := v / 6
+					dataPoint.RainAccumulation = &CalibratedDataType{
+						Data:  cumulatedRainfallOver10Mins,
+						Units: MM_METRE,
+					}
+
 				} else {
 					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(RainGauge), value)
 				}
@@ -284,6 +319,27 @@ func storeS2120CalibratedData(
 				} else {
 					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(BarometricPressure), value)
 				}
+
+			case PeakWindGust:
+				if v, ok := value.(float64); ok {
+					dataPoint.PeakWindGust = &CalibratedDataType{
+						Data:  v,
+						Units: M_PER_SEC,
+					}
+				} else {
+					additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(BarometricPressure), value)
+				}
+
+				// This is a continuously incrementing value. I prefer to tally the values in small interval and use the scheduled logic to gather all.
+				// case RainAccumulation:
+				// 	if v, ok := value.(float64); ok {
+				// 		dataPoint.RainAccumulation = &CalibratedDataType{
+				// 			Data:  v,
+				// 			Units: MM_METRE,
+				// 		}
+				// 	} else {
+				// 		additionalErrors = fmt.Errorf("%w for %s cannot parse value %d as the expected type (float64)\n", additionalErrors, string(BarometricPressure), value)
+				// 	}
 			}
 		}
 	}
