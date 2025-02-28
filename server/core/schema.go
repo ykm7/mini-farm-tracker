@@ -300,8 +300,10 @@ const (
 	UV_INDEX_DATA_NAMES            CalibratedDataNames = "uVIndex"
 	WIND_SPEED_DATA_NAMES          CalibratedDataNames = "windSpeed"
 	WIND_DIRECTION_DATA_NAMES      CalibratedDataNames = "windDirection"
-	RAIN_FALL_HOURLY_DATA_NAMES    CalibratedDataNames = "rainfallHourly"
+	RAIN_GAUGE_DATA_NAMES          CalibratedDataNames = "rainGauge"
 	BAROMETRIC_PRESSURE_DATA_NAMES CalibratedDataNames = "barometricPressure"
+	PEAK_WIND_GUST_DATA_NAMES      CalibratedDataNames = "peakWindGust"
+	RAIN_ACCUMULATION_DATA_NAMES   CalibratedDataNames = "rainAccumulation"
 )
 
 type S2120RawDataMeasurementType string

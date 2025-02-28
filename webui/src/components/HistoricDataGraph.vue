@@ -167,7 +167,7 @@
   const rawDataGraph = computed<ChartData<"bar", ExtendedDataPoint[]>>(() => {
     const data: ChartDataset<"bar", ExtendedDataPoint[]>[] = []
 
-    const rain = props.data.RAIN_FALL_HOURLY
+    const rain = props.data.RAIN_GAUGE
 
     if (!rain) {
       return {

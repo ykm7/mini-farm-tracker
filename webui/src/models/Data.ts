@@ -80,6 +80,8 @@ export enum CalibratedDataNames {
   UV_INDEX = "uVIndex",
   WIND_SPEED = "windSpeed",
   WIND_DIRECTION = "windDirection",
-  RAIN_FALL_HOURLY = "rainfallHourly",
+  RAIN_GAUGE = "rainGauge",
   BAROMETRIC_PRESSURE = "barometricPressure",
+  PEAK_WIND_GUST = "peakWindGust",
+  RAIN_ACCUMULATION = "rainAccumulation"
 }

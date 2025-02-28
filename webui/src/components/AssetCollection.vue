@@ -378,7 +378,7 @@
     epoch.setFullYear(now.getFullYear() - 2)
 
     // TODO: fix
-    const type: CalibratedDataNames = CalibratedDataNames.RAIN_FALL_HOURLY
+    const type: CalibratedDataNames = CalibratedDataNames.RAIN_ACCUMULATION
     const params = new URLSearchParams({
       start: epoch.toISOString(),
       end: now.toISOString(),
@@ -436,7 +436,7 @@
       })
 
       const x: Partial<CalibratedDataNamesGrouping> = {
-        RAIN_FALL_HOURLY: t,
+        RAIN_GAUGE: t,
       }
 
       sensorToAggregationData.value.set(sensorId, x)

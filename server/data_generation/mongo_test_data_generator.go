@@ -76,7 +76,7 @@ func pullAllRainfallAggregations(mongodb core.MongoDatabase) {
 
 	source := core.GetCalibratedDataCollection(mongodb)
 	target := core.GetAggregatedDataCollection(mongodb)
-	metricType := core.RAIN_FALL_HOURLY_DATA_NAMES
+	metricType := core.RAIN_ACCUMULATION_DATA_NAMES
 
 	tasks := make(chan core.TaskJob)
 

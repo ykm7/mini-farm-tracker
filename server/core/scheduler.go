@@ -75,7 +75,7 @@ func SetupPeriodicTasks(server *Server) {
 		ttl := DAILY_TTL
 		timeRange := time.Now().In(loc).AddDate(0, 0, -1)
 
-		metricType := RAIN_FALL_HOURLY_DATA_NAMES
+		metricType := RAIN_GAUGE_DATA_NAMES
 		rainfallTask := NewTaskMongoAggregation(
 			source,
 			target,
@@ -100,7 +100,7 @@ func SetupPeriodicTasks(server *Server) {
 		ttl := WEEKLY_TTL
 		timeRange := time.Now().In(loc).AddDate(0, 0, -7)
 
-		metricType := RAIN_FALL_HOURLY_DATA_NAMES
+		metricType := RAIN_GAUGE_DATA_NAMES
 		rainfallTask := NewTaskMongoAggregation(
 			source,
 			target,
@@ -125,7 +125,7 @@ func SetupPeriodicTasks(server *Server) {
 		ttl := MONTHLY_TTL
 		timeRange := time.Now().In(loc).AddDate(0, -1, 0)
 
-		metricType := RAIN_FALL_HOURLY_DATA_NAMES
+		metricType := RAIN_GAUGE_DATA_NAMES
 		rainfallTask := NewTaskMongoAggregation(
 			source,
 			target,
@@ -150,7 +150,7 @@ func SetupPeriodicTasks(server *Server) {
 		ttl := YEARLY_TTL
 		timeRange := time.Now().In(loc).AddDate(-1, 0, 0)
 
-		metricType := RAIN_FALL_HOURLY_DATA_NAMES
+		metricType := RAIN_GAUGE_DATA_NAMES
 		rainfallTask := NewTaskMongoAggregation(
 			source,
 			target,
