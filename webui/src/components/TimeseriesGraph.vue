@@ -86,7 +86,9 @@
 
   interface SelectedGraph {
     key: KeyOf<GraphData>
-    value: GraphDataType
+    // This is undefined possible for cases where historically we might not have a data type over a particular time period.
+    // Noticed when a "new" data type was add but historically they weren't present.
+    value?: GraphDataType
   }
 
   interface ChartVisualSettings {
@@ -123,7 +125,7 @@
       return EMPTY
     }
 
-    const lineLabel = currentData.value.unit
+    const lineLabel = currentData.value != null ? currentData.value.unit : "unknown"
 
     switch (key) {
       case "Raw":
@@ -288,7 +290,7 @@
 
   const chartOptions = computed<ChartOptions<"line">>(() => {
     const current = toRaw(selectedGraphType.value)
-    if (current == null) {
+    if (current == null || current.value == null) {
       return {}
     }
 
