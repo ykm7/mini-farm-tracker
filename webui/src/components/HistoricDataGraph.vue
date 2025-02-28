@@ -3,7 +3,9 @@
     <!-- <div class="graph-buttons"></div> -->
     <div class="graph-wrapper">
       <div class="graph-custom-wrapper-group graph-custom-wrapper">
-        <Bar :options="chartOptions" :data="rawDataGraph" />
+        <div class="canvas-wrapper">
+          <Bar :options="chartOptions" :data="rawDataGraph" />
+        </div>
       </div>
     </div>
   </div>
@@ -117,7 +119,7 @@
           ticks: {
             source: "data",
             align: "start",
-            autoSkip: false,
+            autoSkip: true,
           },
         },
       },
@@ -126,14 +128,18 @@
           position: "top",
         },
         tooltip: {
-          mode: "x",
+          mode: "index",
+          intersect: true,
           callbacks: {
             // title: (tooltipItems) => {
             //   const item = tooltipItems[0]
             //   return `${item.dataset.label} - ${item.label}`
             // },
             label: (context) => {
-              return `Rainfall: ${context.parsed.y.toFixed(2)} mm`
+              const label = context.dataset.label?.padEnd(8, " ")
+              console.log("🚀 ~ label:", label)
+              const value = context.parsed.y.toFixed(2) // .padStart(6, " ")
+              return `${label} rainfall: ${value} mm`
             },
             // TODO: Expand on this in the future
             // footer: (tooltipItems) => {
@@ -259,20 +265,8 @@
   })
 </script>
 <style scoped>
-  .graph-top-wrapper {
+  /* .graph-top-wrapper {
     display: flex;
-
-    button {
-      flex: auto;
-      background-color: #42b883;
-      color: #ffffff;
-      border: none;
-      padding: 10px 15px;
-      cursor: pointer;
-      border-radius: 4px;
-      font-size: 14px;
-      transition: background-color 0.3s ease;
-    }
 
     .graph-wrapper {
       flex-grow: 1;
@@ -281,7 +275,6 @@
       min-width: 0;
 
       .graph-custom-wrapper {
-        /* flex-grow: 1; */
         display: flex;
         justify-content: center;
         align-items: center;
@@ -292,7 +285,6 @@
       }
 
       .graph-custom-wrapper-group {
-        /* width: 100%; */
         display: flex;
         flex-direction: column;
 
@@ -302,9 +294,8 @@
 
         canvas {
           min-height: 0;
-          /* width: 100%; */
         }
       }
     }
-  }
+  } */
 </style>

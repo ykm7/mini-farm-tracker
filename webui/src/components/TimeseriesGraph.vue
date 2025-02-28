@@ -51,7 +51,9 @@
             {{ option }}
           </button>
         </div>
-        <Line :options="chartOptions" :data="rawDataGraph" />
+        <div class="canvas-wrapper">
+          <Line :options="chartOptions" :data="rawDataGraph" />
+        </div>
       </div>
 
       <div v-else class="graph-custom-wrapper">{{ computedChartVisualSettings.emptyLabel }}</div>
@@ -313,6 +315,7 @@
           },
           ticks: {
             color: "black",
+            autoSkip: true,
           },
           grid: {
             color: "rgba(255,255,255,0.2)",
@@ -373,7 +376,7 @@
 </script>
 
 <style scoped>
-  .graph-top-wrapper {
+  /* .graph-top-wrapper {
     display: flex;
 
     button {
@@ -416,9 +419,11 @@
       flex-shrink: 1;
       max-width: 100%;
       min-width: 0;
+      display: flex;
+      flex-direction: column;
 
       .graph-custom-wrapper {
-        /* flex-grow: 1; */
+        flex-grow: 1;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -431,9 +436,17 @@
       .graph-custom-wrapper-group {
         display: flex;
         flex-direction: column;
+        width: 100%;
+        height: 100%;
 
         .available-graph-data-options {
-          flex-grow: 0;
+          flex: 0;
+        }
+
+        .canvas-wrapper {
+          min-height: 0;
+          flex-grow: 1;
+          width: 100%;
         }
 
         canvas {
@@ -441,5 +454,5 @@
         }
       }
     }
-  }
+  } */
 </style>
