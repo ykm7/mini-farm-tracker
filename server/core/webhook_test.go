@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 
@@ -175,11 +176,35 @@ func validateDataExistingsWithinMockDb(t *testing.T, expected *DateExpectedToFin
 		// 	return a.Messages. < b.Messages.
 		// })
 
-		S2120RawDataMeasurementCmp := cmpopts.SortSlices(func(a, b S2120RawDataMeasurement) bool {
+		S2120RawDataMsgCmp := cmpopts.SortSlices(func(a, b S2120RawDataMsg) bool {
+			aType := reflect.TypeOf(a)
+			bType := reflect.TypeOf(b)
+
+			if aType != bType {
+				return false
+			}
+
+			switch aCast := a.(type) {
+			case *S2120RawDataMeasurement:
+				aId := aCast.MeasurementId
+
+				bCast := b.(*S2120RawDataMeasurement)
+				bId := bCast.MeasurementId
+				return aId < bId
+			}
+
+			return false
+		})
+
+		S2120RawDataMeasurementCmp := cmpopts.SortSlices(func(a, b *S2120RawDataMeasurement) bool {
+			if a == nil || b == nil {
+				return false
+			}
+
 			return a.MeasurementId < b.MeasurementId
 		})
 
-		if diff := cmp.Diff(expected.rawData, results, rawDataCmp, LDDS45Cmp, S2120RawDataMeasurementCmp); diff != "" {
+		if diff := cmp.Diff(expected.rawData, results, rawDataCmp, LDDS45Cmp, S2120RawDataMsgCmp, S2120RawDataMeasurementCmp); diff != "" {
 			t.Errorf("Slices mismatch (-want +got):\n%s", diff)
 		}
 	}
@@ -245,11 +270,6 @@ type CollectionWrapper[T any] struct {
 	collection MongoCollection[T]
 	data       []T
 }
-
-// type DateExpectedToFind[T any] struct {
-// 	collectionName DB_COLLECTIONS
-// 	data           []T
-// }
 
 type CollectionToData struct {
 	sensors              CollectionWrapper[Sensor]
@@ -328,14 +348,14 @@ func Test_handleWebhook(t *testing.T) {
 						// From: 4A00F6320000FFA33500084B01090000000027414C0019000009EC
 						"messages": []map[string]interface{}{
 							{
-								"measurementId":    "4097",
-								"measurementValue": 24.6,
-								"type":             "Air Temperature",
-							},
-							{
 								"measurementId":    "4098",
 								"measurementValue": 50,
 								"type":             "Air Humidity",
+							},
+							{
+								"measurementId":    "4097",
+								"measurementValue": 24.6,
+								"type":             "Air Temperature",
 							},
 							{
 								"measurementId":    "4099",
@@ -354,7 +374,7 @@ func Test_handleWebhook(t *testing.T) {
 							},
 							{
 								"measurementId":    "4113",
-								"measurementValue": 0,
+								"measurementValue": 2.30898,
 								"type":             "Rain Gauge",
 							},
 							{
@@ -367,16 +387,17 @@ func Test_handleWebhook(t *testing.T) {
 								"measurementValue": 100490,
 								"type":             "Barometric Pressure",
 							},
-							// {
-							// 	"measurementId":    "4191",
-							// 	"measurementValue": 2.5,
-							// 	"type":             "Peak Wind Gust",
-							// },
-							// {
-							// 	"measurementId":    "4213",
-							// 	"measurementValue": 2.54,
-							// 	"type":             "Rain Accumulation",
-							// },
+							{
+								"measurementId":    "4191",
+								"measurementValue": 2.5,
+								"type":             "Peak Wind Gust",
+							},
+							// We don't care about this
+							{
+								"measurementId":    "4213",
+								"measurementValue": 999,
+								"type":             "Rain Accumulation",
+							},
 						},
 					},
 				),
@@ -440,7 +461,7 @@ func Test_handleWebhook(t *testing.T) {
 										},
 										&S2120RawDataMeasurement{
 											MeasurementId:    "4113",
-											MeasurementValue: float64(0),
+											MeasurementValue: float64(2.30898),
 											Type:             RainGauge,
 										},
 										&S2120RawDataMeasurement{
@@ -452,6 +473,16 @@ func Test_handleWebhook(t *testing.T) {
 											MeasurementId:    "4101",
 											MeasurementValue: float64(100490),
 											Type:             BarometricPressure,
+										},
+										&S2120RawDataMeasurement{
+											MeasurementId:    "4191",
+											MeasurementValue: float64(2.5),
+											Type:             PeakWindGust,
+										},
+										&S2120RawDataMeasurement{
+											MeasurementId:    "4213",
+											MeasurementValue: float64(999),
+											Type:             "Rain Accumulation",
 										},
 									},
 								},
@@ -484,7 +515,7 @@ func Test_handleWebhook(t *testing.T) {
 									Units: M_PER_SEC,
 								},
 								RainfallHourly: &CalibratedDataType{
-									Data:  0,
+									Data:  2.30898,
 									Units: MM_PER_HOUR,
 								},
 								WindDirection: &CalibratedDataType{
@@ -495,6 +526,14 @@ func Test_handleWebhook(t *testing.T) {
 									Data:  100490,
 									Units: PRESSURE,
 								},
+								PeakWindGust: &CalibratedDataType{
+									Data:  2.5,
+									Units: M_PER_SEC,
+								},
+								RainAccumulation: &CalibratedDataType{
+									Data:  0.38483,
+									Units: MM_METRE,
+								},
 							},
 						},
 					},
@@ -503,7 +542,7 @@ func Test_handleWebhook(t *testing.T) {
 		},
 		{
 			name:    "Invalid 'S2120RawData' data - no messages",
-			runTest: true,
+			runTest: false,
 			args: args{
 				additionalHeaders: http.Header{
 					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
@@ -580,7 +619,7 @@ func Test_handleWebhook(t *testing.T) {
 		},
 		{
 			name:    "Invalid 'S2120RawData' data - no data at all",
-			runTest: true,
+			runTest: false,
 			args: args{
 				additionalHeaders: http.Header{
 					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
@@ -632,7 +671,7 @@ func Test_handleWebhook(t *testing.T) {
 		},
 		{
 			name:    "Valid 'LDDS45RawData' data",
-			runTest: true,
+			runTest: false,
 			args: args{
 				additionalHeaders: http.Header{
 					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
@@ -739,7 +778,7 @@ func Test_handleWebhook(t *testing.T) {
 		},
 		{
 			name:    "No 'X-Downlink-Apikey' header provided",
-			runTest: true,
+			runTest: false,
 			args: args{
 				server: &Server{},
 			},
@@ -752,7 +791,7 @@ func Test_handleWebhook(t *testing.T) {
 		},
 		{
 			name:    "Mismatch 'X-Downlink-Apikey' header provided",
-			runTest: true,
+			runTest: false,
 			args: args{
 				additionalHeaders: http.Header{
 					"X-Downlink-Apikey": []string{"RANDOM_TEST_KEY"},
