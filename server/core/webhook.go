@@ -72,6 +72,7 @@ func handleWebhook(c *gin.Context, server *Server) {
 		}
 		err = json.Unmarshal(jsonData, &data.LDDS45)
 		if err != nil || data.LDDS45 == nil {
+			log.Printf("For payload (as string) %s and expected sensor %s have error %v - raw bytes %s", string(jsonData), LDDS45, err, *uplinkMessage.UplinkMessage.FrmPayload)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v to expected data type for: %s", jsonData, LDDS45),
 			})
@@ -117,10 +118,8 @@ func handleWebhook(c *gin.Context, server *Server) {
 
 		err = json.Unmarshal(jsonData, &data.S2120)
 
-		// err = data.S2120.Unmarshal(jsonData)
-
 		if err != nil || data.S2120 == nil {
-			log.Printf("For payload (as string) %s and expected sensor %s have error %v", string(jsonData), S2120, err)
+			log.Printf("For payload (as string) %s and expected sensor %s have error %v - raw bytes %s", string(jsonData), S2120, err, *uplinkMessage.UplinkMessage.FrmPayload)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v (as string: %s) to expected data type for: %s", jsonData, string(jsonData), S2120),
 			})
