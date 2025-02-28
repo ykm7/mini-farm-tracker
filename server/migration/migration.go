@@ -198,6 +198,37 @@ func V1OfRawDataToV2(database *mongo.Database) {
 	// Will perform this manually via MongoDB Compass
 }
 
+/*
+*
+Doesn't work as using a timeseries database. At this point will tweak the values manually
+*/
+func convertRainfallHourlyToRainGaugeWithAccumulation(database *mongo.Database) {
+	filter := bson.M{
+		"sensor":                    "2cf7f1c0613006fe",
+		"dataPoints.rainfallHourly": bson.M{"$exists": true},
+	}
+
+	update := mongo.Pipeline{
+		{{Key: "$match", Value: filter}},
+		{{Key: "$limit", Value: 1}}, // Limit to 10 documents for testing
+		{{Key: "$set", Value: bson.D{
+			{Key: "dataPoints.rainGauge", Value: "$dataPoints.rainfallHourly"},
+			{Key: "dataPoints.rainAccumulation", Value: bson.D{
+				{Key: "data", Value: bson.D{{Key: "$divide", Value: bson.A{"$dataPoints.rainfallHourly.data", 6}}}},
+				{Key: "units", Value: "mm"},
+			}},
+		}}},
+		{{Key: "$unset", Value: "dataPoints.rainfallHourly"}},
+	}
+
+	doc, err := database.Collection(string(core.CALIBRATED_DATA_COLLECTION)).UpdateMany(context.TODO(), filter, update)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("Updated: %+v\n", doc)
+}
+
 func main() {
 	envs := core.ReadEnvs()
 
@@ -205,5 +236,6 @@ func main() {
 	// mongoDb := &core.MongoDatabaseImpl{Db: database}
 	defer mongoDeferFn()
 
-	V1OfCalibratedDataToV2(database)
+	// V1OfCalibratedDataToV2(database)
+	convertRainfallHourlyToRainGaugeWithAccumulation(database)
 }

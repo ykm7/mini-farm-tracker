@@ -32,7 +32,7 @@ type QueryTimeData struct {
 }
 
 type QueryAggregationData struct {
-	DataType  CalibratedDataNames `form:"dataType" binding:"required,oneof=volume airTemperature lightIntensity uVIndex windSpeed windDirection rainfallHourly barometricPressure"`
+	DataType  CalibratedDataNames `form:"dataType" binding:"required,oneof=volume airTemperature lightIntensity uVIndex windSpeed windDirection rainGauge barometricPressure peakWindGust rainAccumulation"`
 	StartTime *time.Time          `form:"start,omitempty" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"` // RFC3339
 	EndTime   *time.Time          `form:"end,omitempty" time_format:"2006-01-02T15:04:05Z07:00" time_utc:"1"`   // RFC3339, optional
 }

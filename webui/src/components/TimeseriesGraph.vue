@@ -184,7 +184,7 @@
 
       case "RainGauge":
         return {
-          title: "Current hourly rainfall",
+          title: "Rainfall intensity (hourly)",
           emptyLabel: "No calibrated data available for this sensor",
           lineLabel: lineLabel,
         }
