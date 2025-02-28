@@ -3,7 +3,9 @@
     <!-- <div class="graph-buttons"></div> -->
     <div class="graph-wrapper">
       <div class="graph-custom-wrapper-group graph-custom-wrapper">
-        <Bar :options="chartOptions" :data="rawDataGraph" />
+        <div class="canvas-wrapper">
+          <Bar :options="chartOptions" :data="rawDataGraph" />
+        </div>
       </div>
     </div>
   </div>
@@ -43,7 +45,7 @@
       maintainAspectRatio: false,
       scales: {
         y: {
-          stacked: true,
+          stacked: false,
           beginAtZero: true,
           title: {
             display: true,
@@ -54,7 +56,7 @@
           },
         },
         x_day: {
-          stacked: true,
+          stacked: false,
           type: "time",
           time: {
             parser: "YYYY-MM-DD",
@@ -71,14 +73,15 @@
           },
         },
         x_week: {
-          stacked: true,
+          stacked: false,
           type: "time",
           time: {
-            parser: "YYYY-[W]WW",
+            parser: "YYYY-MM-DD",
             unit: "week",
             displayFormats: {
-              week: "YYYY [W]WW",
+              week: "MMM D",
             },
+            isoWeekday: 1,
           },
           ticks: {
             source: "data",
@@ -88,7 +91,7 @@
           },
         },
         x_month: {
-          stacked: true,
+          stacked: false,
           type: "time",
           time: {
             parser: "YYYY-MM-DD",
@@ -105,7 +108,7 @@
           },
         },
         x_year: {
-          stacked: true,
+          stacked: false,
           type: "time",
           time: {
             parser: "YYYY-MM-DD",
@@ -117,7 +120,7 @@
           ticks: {
             source: "data",
             align: "start",
-            autoSkip: false,
+            autoSkip: true,
           },
         },
       },
@@ -126,14 +129,20 @@
           position: "top",
         },
         tooltip: {
-          mode: "x",
+          mode: "index",
+          axis: "y",
+          // mode: "x",
+          intersect: true,
           callbacks: {
             // title: (tooltipItems) => {
             //   const item = tooltipItems[0]
             //   return `${item.dataset.label} - ${item.label}`
             // },
             label: (context) => {
-              return `Rainfall: ${context.parsed.y.toFixed(2)} mm`
+              // const label = context.dataset.label?.padEnd(8, "\u00A0")
+              // console.log("🚀 ~ label:", label)
+              const value = context.parsed.y.toFixed(2) // .padStart(6, " ")
+              return `Rainfall: ${value} mm (${context.dataset.label})`
             },
             // TODO: Expand on this in the future
             // footer: (tooltipItems) => {
@@ -250,6 +259,7 @@
         // backgroundColor: "rgba(75, 192, 192, 0.2)",
         // borderColor: "rgb(75, 192, 192)",
         borderWidth: 1,
+        grouped: false,
       })
     }
 
@@ -259,20 +269,8 @@
   })
 </script>
 <style scoped>
-  .graph-top-wrapper {
+  /* .graph-top-wrapper {
     display: flex;
-
-    button {
-      flex: auto;
-      background-color: #42b883;
-      color: #ffffff;
-      border: none;
-      padding: 10px 15px;
-      cursor: pointer;
-      border-radius: 4px;
-      font-size: 14px;
-      transition: background-color 0.3s ease;
-    }
 
     .graph-wrapper {
       flex-grow: 1;
@@ -281,7 +279,6 @@
       min-width: 0;
 
       .graph-custom-wrapper {
-        /* flex-grow: 1; */
         display: flex;
         justify-content: center;
         align-items: center;
@@ -292,7 +289,6 @@
       }
 
       .graph-custom-wrapper-group {
-        /* width: 100%; */
         display: flex;
         flex-direction: column;
 
@@ -302,9 +298,8 @@
 
         canvas {
           min-height: 0;
-          /* width: 100%; */
         }
       }
     }
-  }
+  } */
 </style>
