@@ -135,8 +135,8 @@
           position: "top",
         },
         tooltip: {
-          // mode: "x",
-          axis: "x",
+          mode: "point",
+          // axis: "x",
           // axis: "y",
           // mode: "x",
           intersect: true,
