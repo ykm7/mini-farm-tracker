@@ -98,61 +98,32 @@ func pullAllRainfallAggregations(mongodb core.MongoDatabase) {
 	}()
 
 	// daily
-
-	aggregation := core.DAILY_TYPE
-	period := core.DAILY_PERIOD
-	pipeline := core.CreateAggregationPipeline(metricType, aggregation, period, timeRange)
-	daily := core.NewTaskMongoAggregation(
-		source,
-		target,
-		pipeline,
-		// no need for redis interactions
-		nil,
-	)
-
-	tasks <- &daily
+	if task, err := core.GenerateAggregationTask(source, target, metricType, core.DAILY_TYPE, timeRange, nil); err != nil {
+		log.Fatalf("Error while generating daily rainfall accumulation %v\n", err)
+	} else {
+		tasks <- &task
+	}
 
 	// weekly
-	aggregation = core.WEEKLY_TYPE
-	period = core.WEEKLY_PERIOD
-	pipeline = core.CreateAggregationPipeline(metricType, aggregation, period, timeRange)
-	weekly := core.NewTaskMongoAggregation(
-		source,
-		target,
-		pipeline,
-		// no need for redis interactions
-		nil,
-	)
-
-	tasks <- &weekly
+	if task, err := core.GenerateAggregationTask(source, target, metricType, core.WEEKLY_TYPE, timeRange, nil); err != nil {
+		log.Fatalf("Error while generating daily rainfall accumulation %v\n", err)
+	} else {
+		tasks <- &task
+	}
 
 	// monthly
-	aggregation = core.MONTHLY_TYPE
-	period = core.MONTHLY_PERIOD
-	pipeline = core.CreateAggregationPipeline(metricType, aggregation, period, timeRange)
-	monthly := core.NewTaskMongoAggregation(
-		source,
-		target,
-		pipeline,
-		// no need for redis interactions
-		nil,
-	)
-
-	tasks <- &monthly
+	if task, err := core.GenerateAggregationTask(source, target, metricType, core.MONTHLY_TYPE, timeRange, nil); err != nil {
+		log.Fatalf("Error while generating daily rainfall accumulation %v\n", err)
+	} else {
+		tasks <- &task
+	}
 
 	// yearly
-	aggregation = core.YEARLY_TYPE
-	period = core.YEARLY_PERIOD
-	pipeline = core.CreateAggregationPipeline(metricType, aggregation, period, timeRange)
-	yearly := core.NewTaskMongoAggregation(
-		source,
-		target,
-		pipeline,
-		// no need for redis interactions
-		nil,
-	)
-
-	tasks <- &yearly
+	if task, err := core.GenerateAggregationTask(source, target, metricType, core.YEARLY_TYPE, timeRange, nil); err != nil {
+		log.Fatalf("Error while generating daily rainfall accumulation %v\n", err)
+	} else {
+		tasks <- &task
+	}
 
 	wg.Wait()
 }

@@ -275,8 +275,13 @@ Aggregation (tested via MongoDB Compass ):
 func CreateAggregationPipeline(
 	dataType CalibratedDataNames,
 	aggregationType AGGREGATION_TYPE,
-	groupByFormat AGGREGATION_PERIOD,
-	timeRange time.Time) mongo.Pipeline {
+	timeRange time.Time) (mongo.Pipeline, error) {
+
+	groupByFormat, err := aggregationFormatByAggregationPeriod(aggregationType)
+	if err != nil {
+		return nil, err
+	}
+
 	return mongo.Pipeline{
 		{{Key: "$match", Value: bson.D{
 			{Key: fmt.Sprintf("dataPoints.%s", dataType), Value: bson.D{{Key: "$exists", Value: true}}},
@@ -307,5 +312,27 @@ func CreateAggregationPipeline(
 			}},
 		}}},
 		{{Key: "$sort", Value: bson.D{{Key: "date", Value: 1}}}},
+	}, nil
+}
+
+func aggregationFormatByAggregationPeriod(t AGGREGATION_TYPE) (AGGREGATION_PERIOD, error) {
+	switch t {
+	case HOURLY_TYPE:
+		return HOURLY_PERIOD, nil
+
+	case DAILY_TYPE:
+		return DAILY_PERIOD, nil
+
+	case WEEKLY_TYPE:
+		return WEEKLY_PERIOD, nil
+
+	case MONTHLY_TYPE:
+		return MONTHLY_PERIOD, nil
+
+	case YEARLY_TYPE:
+		return YEARLY_PERIOD, nil
+
+	default:
+		return "", fmt.Errorf("type provided %+v does not match expected type for AGGREGATION_PERIOD", t)
 	}
 }
