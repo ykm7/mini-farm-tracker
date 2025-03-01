@@ -50,6 +50,30 @@ const (
 // TODO: Would be an environment variable
 const LOCATION = "Australia/Perth"
 
+func GenerateAggregationTask[T, V any](
+	source MongoCollection[T],
+	target MongoCollection[V],
+	metric CalibratedDataNames,
+	aggregation AGGREGATION_TYPE,
+	timeRange time.Time,
+	redisCheck *TaskRedisCheck,
+) (TaskMongoAggregation[T, V], error) {
+
+	pipeline, err := CreateAggregationPipeline(metric, aggregation, timeRange)
+	if err != nil {
+		return TaskMongoAggregation[T, V]{}, err
+	}
+
+	rainfallTask := NewTaskMongoAggregation(
+		source,
+		target,
+		pipeline,
+		redisCheck,
+	)
+
+	return rainfallTask, nil
+}
+
 func SetupPeriodicTasks(server *Server) {
 	loc, err := time.LoadLocation("Australia/Perth")
 	if err != nil {
@@ -73,46 +97,45 @@ func SetupPeriodicTasks(server *Server) {
 		aggregation := DAILY_TYPE
 		period := DAILY_PERIOD
 		ttl := DAILY_TTL
+		metricType := RAIN_ACCUMULATION_DATA_NAMES
 		timeRange := time.Now().In(loc).AddDate(0, 0, -1)
 
-		metricType := RAIN_GAUGE_DATA_NAMES
-		rainfallTask := NewTaskMongoAggregation(
-			source,
-			target,
-			CreateAggregationPipeline(metricType, aggregation, period, timeRange),
-			&TaskRedisCheck{
-				key:    getKey(metricType, aggregation, period),
-				client: server.Redis,
-				ttl:    ttl,
-			},
-		)
+		redisTask := &TaskRedisCheck{
+			key:    getKey(metricType, aggregation, period),
+			client: server.Redis,
+			ttl:    ttl,
+		}
 
-		server.Tasks <- &rainfallTask
+		if task, err := GenerateAggregationTask(source, target, metricType, aggregation, timeRange, redisTask); err != nil {
+			log.Printf("Error while generating daily rainfall accumulation %v\n", err)
+		} else {
+			server.Tasks <- &task
+		}
 	}); err != nil {
 		log.Fatalf("Unable to start daily scheduled job: %v", err)
 	}
 
-	if _, err := c.AddFunc("@weekly", func() {
+	// Using the cron format to align with ISO 8601 standard with the weekly starting on Monday.
+	if _, err := c.AddFunc("0 0 * * 1", func() {
 		fmt.Println("Every week")
 
 		aggregation := WEEKLY_TYPE
 		period := WEEKLY_PERIOD
 		ttl := WEEKLY_TTL
+		metricType := RAIN_ACCUMULATION_DATA_NAMES
 		timeRange := time.Now().In(loc).AddDate(0, 0, -7)
 
-		metricType := RAIN_GAUGE_DATA_NAMES
-		rainfallTask := NewTaskMongoAggregation(
-			source,
-			target,
-			CreateAggregationPipeline(metricType, aggregation, period, timeRange),
-			&TaskRedisCheck{
-				key:    getKey(metricType, aggregation, period),
-				client: server.Redis,
-				ttl:    ttl,
-			},
-		)
+		redisTask := &TaskRedisCheck{
+			key:    getKey(metricType, aggregation, period),
+			client: server.Redis,
+			ttl:    ttl,
+		}
 
-		server.Tasks <- &rainfallTask
+		if task, err := GenerateAggregationTask(source, target, metricType, aggregation, timeRange, redisTask); err != nil {
+			log.Printf("Error while generating daily rainfall accumulation %v\n", err)
+		} else {
+			server.Tasks <- &task
+		}
 	}); err != nil {
 		log.Fatalf("Unable to start weekly scheduled job: %v", err)
 	}
@@ -124,20 +147,19 @@ func SetupPeriodicTasks(server *Server) {
 		period := MONTHLY_PERIOD
 		ttl := MONTHLY_TTL
 		timeRange := time.Now().In(loc).AddDate(0, -1, 0)
+		metricType := RAIN_ACCUMULATION_DATA_NAMES
 
-		metricType := RAIN_GAUGE_DATA_NAMES
-		rainfallTask := NewTaskMongoAggregation(
-			source,
-			target,
-			CreateAggregationPipeline(metricType, aggregation, period, timeRange),
-			&TaskRedisCheck{
-				key:    getKey(metricType, aggregation, period),
-				client: server.Redis,
-				ttl:    ttl,
-			},
-		)
+		redisTask := &TaskRedisCheck{
+			key:    getKey(metricType, aggregation, period),
+			client: server.Redis,
+			ttl:    ttl,
+		}
 
-		server.Tasks <- &rainfallTask
+		if task, err := GenerateAggregationTask(source, target, metricType, aggregation, timeRange, redisTask); err != nil {
+			log.Printf("Error while generating daily rainfall accumulation %v\n", err)
+		} else {
+			server.Tasks <- &task
+		}
 	}); err != nil {
 		log.Fatalf("Unable to start monthly scheduled job: %v", err)
 	}
@@ -149,20 +171,19 @@ func SetupPeriodicTasks(server *Server) {
 		period := YEARLY_PERIOD
 		ttl := YEARLY_TTL
 		timeRange := time.Now().In(loc).AddDate(-1, 0, 0)
+		metricType := RAIN_ACCUMULATION_DATA_NAMES
 
-		metricType := RAIN_GAUGE_DATA_NAMES
-		rainfallTask := NewTaskMongoAggregation(
-			source,
-			target,
-			CreateAggregationPipeline(metricType, aggregation, period, timeRange),
-			&TaskRedisCheck{
-				key:    getKey(metricType, aggregation, period),
-				client: server.Redis,
-				ttl:    ttl,
-			},
-		)
+		redisTask := &TaskRedisCheck{
+			key:    getKey(metricType, aggregation, period),
+			client: server.Redis,
+			ttl:    ttl,
+		}
 
-		server.Tasks <- &rainfallTask
+		if task, err := GenerateAggregationTask(source, target, metricType, aggregation, timeRange, redisTask); err != nil {
+			log.Printf("Error while generating daily rainfall accumulation %v\n", err)
+		} else {
+			server.Tasks <- &task
+		}
 	}); err != nil {
 		log.Fatalf("Unable to start yearly scheduled job: %v", err)
 	}
