@@ -115,7 +115,8 @@ func SetupPeriodicTasks(server *Server) {
 		log.Fatalf("Unable to start daily scheduled job: %v", err)
 	}
 
-	if _, err := c.AddFunc("@weekly", func() {
+	// Using the cron format to align with ISO 8601 standard with the weekly starting on Monday.
+	if _, err := c.AddFunc("0 0 * * 1", func() {
 		fmt.Println("Every week")
 
 		aggregation := WEEKLY_TYPE
