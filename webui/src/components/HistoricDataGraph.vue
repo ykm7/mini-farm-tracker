@@ -39,6 +39,12 @@
     data: Partial<CalibratedDataNamesGrouping>
   }>()
 
+  function getStartOfISOWeek(date: Date): Date {
+    const day = date.getDay()
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1)
+    return new Date(date.setDate(diff))
+  }
+
   const chartOptions = computed<ChartOptions<"bar">>(() => {
     return {
       responsive: true,
@@ -129,15 +135,73 @@
           position: "top",
         },
         tooltip: {
-          mode: "index",
-          axis: "y",
+          // mode: "x",
+          axis: "x",
+          // axis: "y",
           // mode: "x",
           intersect: true,
           callbacks: {
-            // title: (tooltipItems) => {
-            //   const item = tooltipItems[0]
-            //   return `${item.dataset.label} - ${item.label}`
-            // },
+            title: (tooltipItems) => {
+              const item = tooltipItems[0]
+              if (!item) return ""
+
+              const label = item.label // Format: "Jan 1, 2025, 12:00:00 am"
+              const datasetLabel = item.dataset.label as "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
+              let startDate, endDate
+
+              const parseDate = (dateString: string) => {
+                return new Date(dateString)
+              }
+
+              const formatDate = (date: Date, aggregationType: string) => {
+                const year = date.getFullYear()
+                const month = (date.getMonth() + 1).toString().padStart(2, "0")
+                const day = date.getDate().toString().padStart(2, "0")
+
+                switch (aggregationType) {
+                  case "YEARLY":
+                    return `${year}`
+                  case "MONTHLY":
+                    return `${year}-${month}`
+                  case "WEEKLY":
+                    return `${year}-${month}-${day}`
+                  case "DAILY":
+                  default:
+                    return `${year}-${month}-${day}`
+                }
+              }
+
+              startDate = parseDate(label)
+
+              switch (datasetLabel) {
+                case "DAILY":
+                  endDate = new Date(startDate)
+                  endDate.setHours(24)
+                  break
+                case "WEEKLY":
+                  startDate = getStartOfISOWeek(startDate)
+                  endDate = new Date(startDate)
+                  endDate.setDate(endDate.getDate() + 6)
+                  endDate.setHours(24)
+                  break
+                case "MONTHLY":
+                  startDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
+                  endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1)
+                  break
+                case "YEARLY":
+                  startDate = new Date(startDate.getFullYear(), 0, 1)
+                  endDate = new Date(startDate.getFullYear(), 12)
+                  break
+                default:
+                  return `${datasetLabel} - ${label}`
+              }
+
+              if (datasetLabel == "DAILY") {
+                return `${datasetLabel}: ${formatDate(startDate, datasetLabel)}`
+              } else {
+                return `${datasetLabel}: ${formatDate(startDate, datasetLabel)} to ${formatDate(endDate, datasetLabel)}`
+              }
+            },
             label: (context) => {
               // const label = context.dataset.label?.padEnd(8, "\u00A0")
               // console.log("🚀 ~ label:", label)
