@@ -72,7 +72,12 @@ func handleWebhook(c *gin.Context, server *Server) {
 		}
 		err = json.Unmarshal(jsonData, &data.LDDS45)
 		if err != nil || data.LDDS45 == nil {
-			log.Printf("For payload (as string) %s and expected sensor %s have error %v - raw bytes %s", string(jsonData), LDDS45, err, *uplinkMessage.UplinkMessage.FrmPayload)
+			raw_bytes := "UNKNOWN"
+			if uplinkMessage.UplinkMessage.FrmPayload != nil {
+				raw_bytes = *uplinkMessage.UplinkMessage.FrmPayload
+			}
+
+			log.Printf("For payload (as string) %s and expected sensor %s have error %v - raw bytes %s", string(jsonData), LDDS45, err, raw_bytes)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v to expected data type for: %s", jsonData, LDDS45),
 			})
@@ -119,7 +124,12 @@ func handleWebhook(c *gin.Context, server *Server) {
 		err = json.Unmarshal(jsonData, &data.S2120)
 
 		if err != nil || data.S2120 == nil {
-			log.Printf("For payload (as string) %s and expected sensor %s have error %v - raw bytes %s", string(jsonData), S2120, err, *uplinkMessage.UplinkMessage.FrmPayload)
+			raw_bytes := "UNKNOWN"
+			if uplinkMessage.UplinkMessage.FrmPayload != nil {
+				raw_bytes = *uplinkMessage.UplinkMessage.FrmPayload
+			}
+
+			log.Printf("For payload (as string) %s and expected sensor %s have error %v - raw bytes %s", string(jsonData), S2120, err, raw_bytes)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"status": fmt.Sprintf("Error casting the decoded json: %v (as string: %s) to expected data type for: %s", jsonData, string(jsonData), S2120),
 			})
