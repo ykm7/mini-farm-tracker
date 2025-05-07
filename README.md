@@ -33,23 +33,27 @@ Using Golang
 
 ### Version
 
-[Limited by support version from DigitalOcean.](https://docs.digitalocean.com/products/app-platform/reference/buildpacks/go/)
+~~[Limited by support version from DigitalOcean.](https://docs.digitalocean.com/products/app-platform/reference/buildpacks/go/)
 Specifically it is _App Platform uses version 192 of the Heroku Go Buildpack_
-[Direct list found here (for version _192_)](https://github.com/heroku/heroku-buildpack-go/blob/v192/data.json)
+[Direct list found here (for version _192_)](https://github.com/heroku/heroku-buildpack-go/blob/v192/data.json)~~
 
-[Version selection can be done via](https://go.dev/doc/manage-install)
+~~[Version selection can be done via](https://go.dev/doc/manage-install)
+Latest version is: _1.22.4_~~
 
-Latest version is: _1.22.4_
+https://docs.digitalocean.com/products/app-platform/reference/buildpacks/go/#current-buildpack-version-and-supported-runtimes
+Version upgrade:
+App Platform uses version __205__ of the Heroku Go Buildpack. The buildpack supports Go runtime versions 1.11 up to 1.24. If no version is specified in your app, App Platform defaults to using version 1.20.
 
-Current:
-> go install golang.org/dl/go1.22.4@latest
-> go1.22.4 download
+Latest supported Go version:
+[1.24.1](https://github.com/heroku/heroku-buildpack-go/blob/v205/data.json)
 
 Primary motivation is I have done similar in Python multiple times (Flask, Quart) and while I have created microservices within Golang, I have not used it for web API hosting.
 
 #### Gosec
 
-Last version compatible with _1.22.4_ should be [v2.21.0](https://github.com/securego/gosec/releases/tag/v2.21.0)
+~~Last version compatible with _1.22.4_ should be [v2.21.0](https://github.com/securego/gosec/releases/tag/v2.21.0)~~
+
+Last version compatible with _1.24.1_ should be [v2.22.2](https://github.com/securego/gosec/releases/tag/v2.22.2)
 
 ### Cron style aggregation/s
 
