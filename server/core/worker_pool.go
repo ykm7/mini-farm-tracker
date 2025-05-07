@@ -113,7 +113,7 @@ func TaskHandler(items []TaskJob, goroutineCount int) {
 	taskErrors := make(chan TaskJobResult, taskNum)
 
 	// Start worker goroutines
-	for i := 0; i < goroutineCount; i++ { // Adjust number of workers as needed
+	for i := range goroutineCount { // Adjust number of workers as needed
 		go worker(i, tasks, taskErrors)
 	}
 
@@ -125,7 +125,7 @@ func TaskHandler(items []TaskJob, goroutineCount int) {
 
 	// Collect errors
 	var errs []error
-	for i := 0; i < taskNum; i++ {
+	for range taskNum {
 		select {
 		case result := <-taskErrors:
 			if result.err != nil {

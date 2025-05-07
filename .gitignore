@@ -47,3 +47,7 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode
+
+# Was is a future feature which I had considered writing in Rust. 
+# As a useful features as well as having hands on experience with Rust and integrating Rust within Go. 
+anomaly-detector/

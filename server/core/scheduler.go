@@ -75,9 +75,11 @@ func GenerateAggregationTask[T, V any](
 }
 
 func SetupPeriodicTasks(server *Server) {
-	loc, err := time.LoadLocation("Australia/Perth")
+	loc, err := time.LoadLocation(LOCATION)
 	if err != nil {
 		log.Fatalf("Could not load timezone: %v", err)
+	} else {
+		fmt.Printf("Location is set to %s\n", loc.String())
 	}
 
 	c := cron.New(cron.WithChain(cron.Recover(cron.DefaultLogger)), cron.WithLocation(loc))
