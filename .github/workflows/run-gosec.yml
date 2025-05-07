@@ -30,7 +30,7 @@ jobs:
       # it seems like I cannot use the default setup from - https://github.com/marketplace/actions/gosec-security-checker#github-action
       # The working directory I am trying to use isn't being respected.
       - name: Install Gosec
-        run: go install github.com/securego/gosec/v2/cmd/gosec@v2.21.0
+        run: go install github.com/securego/gosec/v2/cmd/gosec@v2.22.2
 
       - name: Run Gosec Security Scanner
         run: gosec ./...
