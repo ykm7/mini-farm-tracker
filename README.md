@@ -410,6 +410,9 @@ Allow for asset generation
 > go build
 > export GIN_MODE=release && ./mini-farm-tracker-server
 
+##### Build a run locally (windows)
+go build ; if ($?) { .\mini-farm-tracker-server.exe }
+
 #### Network
 
 Firewall options - inbound port of 3000 (TCP) required

@@ -342,7 +342,7 @@
       plugins: {
         title: {
           display: true,
-          text: computedChartVisualSettings.value.title,
+          text: titleValue.value,
         },
       },
       elements: {
@@ -357,6 +357,31 @@
       },
     }
   })
+
+  /**
+   * Very rough function to provide a accumulated value for the Rain Accumulation graph
+   */
+  const titleValue = computed(() => {
+    if (computedChartVisualSettings.value == null) {
+      return "No data available"
+    }
+
+    if (computedChartVisualSettings.value.title== "Rain Accumulation") {
+
+      const current = toRaw(selectedGraphType.value)
+      const accumulated = current?.value?.data.reduce((acc, v) => {
+        acc += v.value;
+        return acc
+      }, 0);
+
+      if (accumulated != null) {
+        return computedChartVisualSettings.value.title + ": " + Number(accumulated.toFixed(2)) + " mm";
+      }
+    }
+
+    return computedChartVisualSettings.value.title
+  })
+  
 
   const setDefaultGraph = (displayData: GraphData) => {
     var key: keyof GraphData
