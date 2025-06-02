@@ -276,9 +276,6 @@
       datasets: [
         {
           label: computedChartVisualSettings.value.lineLabel,
-          meta: {
-            total: 5
-          },
           data:
             props.displayData && current.value
               ? current.value.data.map<Point>((v) => {
@@ -289,10 +286,6 @@
                 })
               : [],
         },
-        // {
-        //   label: "Accumulated",
-        //   data: toRaw(selectedGraphType.value)?.key === 'RainAccumulation' ? [5] : []
-        // }
       ],
     }
   })
@@ -369,8 +362,6 @@
    * Very rough function to provide a accumulated value for the Rain Accumulation graph
    */
   const titleValue = computed(() => {
-    console.log("🚀 ~ titleValue ~ titleValue:", titleValue)
-
     if (computedChartVisualSettings.value == null) {
       return "No data available"
     }
