@@ -1,6 +1,22 @@
 # mini-farm-tracker
 
-Basic overview:
+## Security Status
+
+| Frontend             | Backend         |
+|----------------------|-----------------|
+| [![Known Vulnerabilities](https://snyk.io/test/github/ykm7/mini-farm-tracker/badge.svg?targetFile=webui/package.json&style=flat-square)](https://snyk.io/test/github/ykm7/mini-farm-tracker?targetFile=webui/package.json) | [UNKNOWN] Snyk issue linking to my server files |
+
+### Frontend (Vue)
+
+
+### Backend (Gin)
+
+
+Here’s a Markdown table with each Snyk badge in its own column, using "Frontend" and "Backend" as headers. Replace `your-username` and `your-repo` with your actual GitHub username and repository name.
+
+This layout places each badge under its respective project component, making your repository’s security status clear and organised.
+
+## Basic overview:
 Provide a visualisation platform for various LoRaWAN sensors.
 Initial design is required to track available water in water tanks.
 
@@ -11,17 +27,17 @@ MVP v1.0:
   - [x] Single 8-in-1 weather station
 - [x] This raw data is able to be queried from and displayed via graphs
 - [x] This calibrated data is also to be able to be viewed via the website
-- [x] Cron style aggregation functionality exists to perform periodic data manipulations.
+- [x] Cron-style aggregation functionality exists to perform periodic data manipulations.
   - [x] Daily, weekly, monthly, yearly aggregation (sum) of rainfall occurring.
   - [ ] Expand to other metrics
 - [ ] Display the above aggregated data on the webui
-- [ ] Improve graph choices based on the type of data being display, currently all are line graphs.
+- [ ] Improve graph choices based on the type of data being displayed, currently all are line graphs.
 
 v2.0:
 
-- [ ] Configurations per sensors are able to be created; these are responsible to determine how the raw data is to be modified as then stored as calibrated data. These are to have "starting" times to all the sensor to be re-installed.
-  - [ ] While for the MVP I want configurations to affect incoming data, the actual creation of these configurations should be behind a authentication.
-- [ ] User is able to re-calibrate the data; this will take all the raw data and apply all the calibrations created for the sensor.
+- [ ] Configurations per sensor are able to be created; these are responsible for determining how the raw data is to be modified and then stored as calibrated data. These are to have "starting" times for all the sensors to be reinstalled.
+  - [ ] While for the MVP, I want configurations to affect incoming data, the actual creation of these configurations should be behind authentication.
+- [ ] User can recalibrate the data; this will take all the raw data and apply all the calibrations created for the sensor.
 
 ## website
 
@@ -47,7 +63,7 @@ App Platform uses version __205__ of the Heroku Go Buildpack. The buildpack supp
 Latest supported Go version:
 [1.24.1](https://github.com/heroku/heroku-buildpack-go/blob/v205/data.json)
 
-Primary motivation is I have done similar in Python multiple times (Flask, Quart) and while I have created microservices within Golang, I have not used it for web API hosting.
+Primary motivation is that I have done similar in Python multiple times (Flask, Quart) and while I have created microservices within Golang, I have not used it for web API hosting.
 
 #### Gosec
 
@@ -57,18 +73,18 @@ Last version compatible with _1.24.1_ should be [v2.22.2](https://github.com/sec
 
 ### Cron style aggregation/s
 
-Considersations.
+Considerations.
 
-Purpose of this is to take the conjob style aggregation requests which will be run periodically to "group"
-data pull; ie, sum daily rainfall.
+The purpose of this is to take the conjob-style aggregation requests, which will be run periodically to "group"
+data pull, ie, sum daily rainfall.
 
 Overall, highly overengineered for the traffic we have, however want to experiment and play with concurrent behaviour
-Ideal outcomes would be flat resource usage across App Platform and Mongo. (Again, excessive as App Platform current average 3-4% at current tier.) Avoid spikes.
+Ideal outcomes would be flat resource usage across App Platform and Mongo. (Again, excessive as App Platform's current average 3-4% at current tier.) Avoid spikes.
 
-1. Cron job periodically trigger (hourly, day, weekly etc) for all the aggregated tasks for that time period.
+1. Cron job periodically triggers (hourly, day, weekly etc) for all the aggregated tasks for that time period.
     * `github.com/robfig/cron/v3` used to achieve this.
 
-2. Tasks are assigned a consistent key which will be paired with redis to lock the aggregation to only be performed by a single application (purpose is to sync between the num of applications)
+2. Tasks are assigned a consistent key which will be paired with redis to lock the aggregation to only be performed by a single application (the purpose is to sync between the number of applications)
     * Achieved this - log seen:
 
       `2025/02/16 16:00:01 Unable to acquire lock for key RainfallHourly-DAILY-%Y-%m-%d, already claimed (this is expected for multiple applications)`
@@ -76,30 +92,30 @@ Ideal outcomes would be flat resource usage across App Platform and Mongo. (Agai
 3. Randomise creation of task to minimise clashes (if the task lists are generated/sent to job queue in the same order )
     * Haven't done this step yet.
 
-## Security Considersations
+## Security Considerations
 
 ### Server
 
-- [x] CORS Security - Only production domains or local development URL is allows
-- [x] Currently on POST (or other insertion endpoints are available) so no current need for:
+- [x] CORS Security - Only production domains or local development URL are allowed
+- [x] Currently on POST (or other insertion endpoints are available,) so no current need for:
   - [x] Input validation
   - [x] Authentication - TODO as part of v2
 - [x] Encryption (passwords) TODO as part of v2 although would like to allow for 3rd party auth.
-~~[x] Rate limiting considered however given its not a publically supplied API (just supplies website) not likely all that benefical.~~
-~~[x] Concurrency limit added however doesn't actively deny the connection but rather logging spike so I can action.~~
+~~[x] Rate limiting considered however, given it's not a publicly supplied API (just supplies website), not likely all that beneficial.~~
+~~[x] Concurrency limit added,d however doesn't actively deny the connection but rather logging spikes so I can action.~~
 - [x] Rate limiting and concurrency limitation added focused on routes which are not supported.
   - This was prompted by some [`interesting`](#interesting-network-traffic) network traffic detected.
-  - **TODO** The concurrency limitation does not apply limitation across all instances rather on an instance basis
+  - **TODO** The concurrency limitation does not apply across all instances rather on an instance basis
     - This can be changed to:
-      - Use the redis to coordinate across instances, have to consider the tradeoffs.
-      - make further use of load balancer within DigitalOcean.
+      - Use redis to coordinate across instances, and have to consider the tradeoffs.
+      - Make further use of the load balancer within DigitalOcean.
 - [x] Project scanned with `gosec`.
     > gosec ./... [within `server` directory.]
-  - [x] Add github workflow to scan with gosec on `master` branch interactions.
+  - [x] Add GitHub workflow to scan with gosec on `master` branch interactions.
 ~~- [x] Implemented HSTS header following OWASP guidelines~~
 - [ ] TODO: learn more about OWASP + plus general on [blog by UpGuard on HSTS](https://www.upguard.com/blog/hsts)
 - [x] Shifted security headers to be controllable by Vercel.
-  - Prompted by investigating why Lighthouse (and similar) where indicating the lack of the expected security headers. This is part of investigation into best practices.
+  - Prompted by investigating why Lighthouse (and similar) where indicating the lack of the expected security headers. This is part of an investigation into best practices.
 
 ### WebUI
 
@@ -365,16 +381,16 @@ DigitalOcean connected `Papertrail`
 
 Hosted on: <b>[vercel](https://vercel.com)</b>
 
-vercel CLI is used to deploy when required.
+Vercel CLI is used to deploy when required.
 
 ### Environment variables
 
-Once updated via the vercel dashboard, it is important to pull them locally.
+Once updated via the Vercel dashboard, it is important to pull them locally.
 
 This will pull the "production" environment fields to test local development against the production server.
 > vercel env pull --environment=production .env.production
 
-From here can use the vercel deploy steps within the `package.json` file.
+From here can use the Vercel deploy steps within the `package.json` file.
 
 ## Server
 
@@ -382,7 +398,7 @@ built in: [gin-gonic](https://gin-gonic.com/)
 
 Hosted on: <b>DigitalOcean</b>
 
-Domain established within DigitalOcean directing to droplet:
+Domain established within DigitalOcean, directing to droplet:
 `mini-farm-tracker.io`
 
 DNS Records are configured within DigitalOcean to allow for vercel website to be sued.
@@ -391,7 +407,7 @@ DNS Records are configured within DigitalOcean to allow for vercel website to be
 
 <https://openweathermap.org/price>
 
-TODO: haven't anything with this currently.
+TODO: haven't done anything with this currently.
 
 ### Development
 
@@ -417,13 +433,13 @@ go build ; if ($?) { .\mini-farm-tracker-server.exe }
 
 Firewall options - inbound port of 3000 (TCP) required
 
-SSL certificate (Let's Encrypt) created on domain bought from namecheap.
+SSL certificate (Let's Encrypt) created on the domain bought from namecheap.
 
 ### Testing
 
-#### testContainer (currently only implemented for server - mongoDB)
+#### testContainer (currently only implemented for server - MongoDB)
 
-NOTE: testContainer can use cloud resources however prefer to run locally.
+NOTE: testContainer can use cloud resources, however prefer to run locally.
 
 #### TODO
 
@@ -440,7 +456,7 @@ Requires:
 
 With my environment, I have problems with the embedded testContainers cleanup logic.
 
-Following [configuration path](https://golang.testcontainers.org/features/configuration/) adding a line to disable `ryuk` allows correct running:
+Following [configuration path](https://golang.testcontainers.org/features/configuration/), adding a line to disable `ryuk` allows correct running:
 
 > ryuk.disabled=true
 
@@ -449,15 +465,15 @@ Following [configuration path](https://golang.testcontainers.org/features/config
 ### WebUI
 
 - [x] Graphs
-  - Initial HW will allow for 2 sensors; one for each tank.
-- [ ] V2 will have auth, although as part of the purpose of this is a demo project, putting it behind a auth "wall" is counter productive initially.
+  - Initial HW will allow for 2 sensors, one for each tank.
+- [ ] V2 will have auth, although as part of the purpose of this is a demo project, putting it behind an auth "wall" is counterproductive initially.
 
 ### Server
 
-- [x] Investigate HTTP servers - SSL secured and CORs established
-  - Currently implmented with [gin](https://github.com/gin-gonic/gin)
+- [x] Investigate HTTP servers - SSL secured and CORS established
+  - Currently implemented with [gin](https://github.com/gin-gonic/gin)
 - [x] Investigate Containerisation options.
-  - Initial version is simply running binary.
+  - The initial version is simply running binary.
   - solutions such as k8/docker (compose) are viable however k8 atleast is likely an overkill. All I want really want is crash/restart tolerance.
   - [x] For now a solution found using the App Platform within DigitalOcean. Allows:
     - [x] Health endpoints
