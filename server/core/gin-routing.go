@@ -274,9 +274,14 @@ func SetupRouter(server *Server) *gin.Engine {
 	})
 
 	log.Printf("Endpoint: %s not logged\n", METRICS_ENDPOINT)
+	promHandler := promhttp.Handler()
 	r.GET(METRICS_ENDPOINT, gin.BasicAuth(gin.Accounts{
 		server.Envs.Metrics_username: server.Envs.Metrics_password,
-	}), gin.WrapH(promhttp.Handler()))
+	}), func(c *gin.Context) {
+		c.Header("Content-Encoding", "identity")
+		c.Header("Cache-Control", "no-transform")
+		promHandler.ServeHTTP(c.Writer, c.Request)
+	})
 
 	return r
 }
