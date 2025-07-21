@@ -403,6 +403,12 @@ Domain established within DigitalOcean, directing to droplet:
 
 DNS Records are configured within DigitalOcean to allow for vercel website to be sued.
 
+## Monitoring (Grafana + Prometheus)
+
+Single droplet (DigitalOcean) established for the monitoring/alerting for expected outputs.
+
+Ubuntu LTS (24.04) selected (Sydney)
+
 ## Weather
 
 <https://openweathermap.org/price>

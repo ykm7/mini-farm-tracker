@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 60s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['prometheus:9090']
+
+  - job_name: 'mini-farm-tracker'
+    scheme: http # TODO: Change to HTTPS
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['api.mini-farm-tracker.io']
+    basic_auth:
+      username: 'prometheus'
+      password_file: /etc/prometheus/secrets/prometheus_password

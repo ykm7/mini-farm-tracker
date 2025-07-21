@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"mini-farm-tracker-server/core"
+	"mini-farm-tracker-server/metrics"
 )
 
 func main() {
@@ -38,6 +39,7 @@ func main() {
 		Tasks:       make(chan core.TaskJob),
 		ExitContext: innerCtx,
 		ExitChan:    exitChan,
+		Metrics:     metrics.NewPrometheusMetrics(),
 	}
 
 	core.ListenToSensors(server)
