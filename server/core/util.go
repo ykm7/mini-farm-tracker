@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"log"
+	"mini-farm-tracker-server/metrics"
 	"os"
 	"sync"
 	"time"
@@ -24,6 +25,7 @@ type Server struct {
 	Tasks       chan TaskJob
 	ExitContext context.Context
 	ExitChan    chan struct{}
+	Metrics     *metrics.PrometheusMetrics
 }
 
 func NewSyncCache[K comparable, V any]() *syncCacheImpl[K, V] {

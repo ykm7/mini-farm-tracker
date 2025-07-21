@@ -9,11 +9,15 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	compress "github.com/lf4096/gin-compress"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/sync/semaphore"
 	"golang.org/x/time/rate"
 )
 
-const HEALTH_ENDPOINT = "/health"
+const (
+	HEALTH_ENDPOINT  = "/health"
+	METRICS_ENDPOINT = "/metrics"
+)
 
 const (
 	SENSOR_ID_PARAM = "sensor_id"
@@ -42,7 +46,7 @@ func noRoute() []gin.HandlerFunc {
 
 func CustomLogger() gin.HandlerFunc {
 	return gin.LoggerWithConfig(gin.LoggerConfig{
-		SkipPaths: []string{HEALTH_ENDPOINT},
+		SkipPaths: []string{HEALTH_ENDPOINT, METRICS_ENDPOINT},
 	})
 }
 
@@ -268,6 +272,9 @@ func SetupRouter(server *Server) *gin.Engine {
 			})
 		}
 	})
+
+	log.Printf("Endpoint: %s not logged\n", METRICS_ENDPOINT)
+	r.GET(METRICS_ENDPOINT, gin.WrapH(promhttp.Handler()))
 
 	return r
 }

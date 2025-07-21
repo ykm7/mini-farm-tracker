@@ -39,6 +39,8 @@ func handleWebhook(c *gin.Context, server *Server) {
 		return
 	}
 
+	server.Metrics.IncAuthenticatedWebhook(*uplinkMessage.EndDeviceIDs.DeviceID)
+
 	sensor, exists := server.Sensors.Get(*uplinkMessage.EndDeviceIDs.DeviceID)
 	if !exists {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
@@ -168,6 +170,8 @@ func handleWebhook(c *gin.Context, server *Server) {
 		})
 		return
 	}
+
+	server.Metrics.IncSuccessfulWebhook(*uplinkMessage.EndDeviceIDs.DeviceID)
 
 	// Respond with a success status
 	c.JSON(http.StatusOK, gin.H{"message": "Webhook received successfully"})
