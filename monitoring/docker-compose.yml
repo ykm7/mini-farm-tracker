@@ -6,6 +6,7 @@ services:
     container_name: prometheus
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/secrets/prometheus_password:/etc/prometheus/secrets/prometheus_password:ro
     restart: unless-stopped
 
   grafana:
