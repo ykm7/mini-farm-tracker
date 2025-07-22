@@ -39,7 +39,7 @@ func main() {
 		Tasks:       make(chan core.TaskJob),
 		ExitContext: innerCtx,
 		ExitChan:    exitChan,
-		Metrics:     metrics.NewPrometheusMetrics(),
+		Metrics:     metrics.NewPrometheusMetrics(redis),
 	}
 
 	core.ListenToSensors(server)

@@ -18,7 +18,7 @@ import (
 )
 
 func handleWebhook(c *gin.Context, server *Server) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
 	apiKey := c.GetHeader("X-Downlink-Apikey")
@@ -39,7 +39,7 @@ func handleWebhook(c *gin.Context, server *Server) {
 		return
 	}
 
-	server.Metrics.IncAuthenticatedWebhook(*uplinkMessage.EndDeviceIDs.DeviceID)
+	server.Metrics.IncAuthenticatedWebhook(ctx, *uplinkMessage.EndDeviceIDs.DeviceID)
 
 	sensor, exists := server.Sensors.Get(*uplinkMessage.EndDeviceIDs.DeviceID)
 	if !exists {
@@ -171,7 +171,7 @@ func handleWebhook(c *gin.Context, server *Server) {
 		return
 	}
 
-	server.Metrics.IncSuccessfulWebhook(*uplinkMessage.EndDeviceIDs.DeviceID)
+	server.Metrics.IncSuccessfulWebhook(ctx, *uplinkMessage.EndDeviceIDs.DeviceID)
 
 	// Respond with a success status
 	c.JSON(http.StatusOK, gin.H{"message": "Webhook received successfully"})
