@@ -47,6 +47,19 @@ Using NodeJS v22.13.0
 
 Using Golang
 
+## Monitoring (Grafana + Prometheus)
+
+Single droplet (DigitalOcean) established for the monitoring/alerting for expected outputs.
+
+Ubuntu LTS (24.04) selected (Sydney)
+
+### Dashboard
+
+I have setup a public dashboard to track the health of my devices.
+
+[Grafana Monitoring - Public Dashboard](https://monitoring.mini-farm-tracker.io)
+
+
 ### Version
 
 ~~[Limited by support version from DigitalOcean.](https://docs.digitalocean.com/products/app-platform/reference/buildpacks/go/)
@@ -402,12 +415,6 @@ Domain established within DigitalOcean, directing to droplet:
 `mini-farm-tracker.io`
 
 DNS Records are configured within DigitalOcean to allow for vercel website to be sued.
-
-## Monitoring (Grafana + Prometheus)
-
-Single droplet (DigitalOcean) established for the monitoring/alerting for expected outputs.
-
-Ubuntu LTS (24.04) selected (Sydney)
 
 ## Weather
 
