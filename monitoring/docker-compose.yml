@@ -22,6 +22,7 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true          # Enable anonymous access
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer       # Read-only permissions
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_DISABLE_PASSWORD_RESET=true
     volumes:
       - grafana-storage:/var/lib/grafana
     depends_on:
