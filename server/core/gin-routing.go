@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
-	compress "github.com/lf4096/gin-compress"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/sync/semaphore"
 	"golang.org/x/time/rate"
@@ -126,7 +126,9 @@ func SetupRouter(server *Server) *gin.Engine {
 	// r.Use(CSPHandler())
 	// r.Use(COOPHandler())
 	r.Use(gin.Recovery())
-	r.Use(compress.Compress())
+	// Not that we actually need to give Prometheus can handle gzip but the below library allows for excluding paths.
+	//   r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{"/api/"})))
+	r.Use(gzip.Gzip(gzip.DefaultCompression))
 	r.Use(ReleaseSemaphore())
 
 	config := cors.DefaultConfig()
