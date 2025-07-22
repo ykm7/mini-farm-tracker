@@ -126,9 +126,19 @@ func SetupRouter(server *Server) *gin.Engine {
 	// r.Use(CSPHandler())
 	// r.Use(COOPHandler())
 	r.Use(gin.Recovery())
-	// Not that we actually need to give Prometheus can handle gzip but the below library allows for excluding paths.
-	//   r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{"/api/"})))
-	r.Use(gzip.Gzip(gzip.DefaultCompression))
+	// The prometheus endpoint already applies compression and therefore needs to be excluded to prevent double-compression
+	// Testing:
+	// Requesting /metrics with default headers (Accept-Encoding: gzip, deflate, br)
+	// ----------------------------------------------------------------------------------
+	// Content-Encoding - gzip
+	// Content-Type 	- text/plain; version=0.0.4; charset=utf-8; escaping=underscores
+	// size				- 2.02kb
+	// ----------------------------------------------------------------------------------
+	// Requesting /metrics with headers to force uncompression (Accept-Encoding: identify)
+	// ----------------------------------------------------------------------------------
+	// Content-Type 	- text/plain; version=0.0.4; charset=utf-8; escaping=underscores
+	// size				- 8.02kb
+	r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedPaths([]string{METRICS_ENDPOINT})))
 	r.Use(ReleaseSemaphore())
 
 	config := cors.DefaultConfig()
