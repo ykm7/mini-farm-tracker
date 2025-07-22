@@ -9,7 +9,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/sync/semaphore"
 	"golang.org/x/time/rate"
 )
@@ -286,7 +285,7 @@ func SetupRouter(server *Server) *gin.Engine {
 	})
 
 	log.Printf("Endpoint: %s not logged\n", METRICS_ENDPOINT)
-	promHandler := promhttp.Handler()
+	promHandler := server.Metrics.HandlerWithRedisUpdate()
 	r.GET(METRICS_ENDPOINT, gin.BasicAuth(gin.Accounts{
 		server.Envs.Metrics_username: server.Envs.Metrics_password,
 	}), gin.WrapH(promHandler))
