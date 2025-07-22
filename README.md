@@ -6,15 +6,11 @@
 |----------------------|-----------------|
 | [![Known Vulnerabilities](https://snyk.io/test/github/ykm7/mini-farm-tracker/badge.svg?targetFile=webui/package.json&style=flat-square)](https://snyk.io/test/github/ykm7/mini-farm-tracker?targetFile=webui/package.json) | [UNKNOWN] Snyk issue linking to my server files |
 
-### Frontend (Vue)
+### IoT Dashboard
 
+I have set up a public dashboard to track the health of my devices.
 
-### Backend (Gin)
-
-
-Here’s a Markdown table with each Snyk badge in its own column, using "Frontend" and "Backend" as headers. Replace `your-username` and `your-repo` with your actual GitHub username and repository name.
-
-This layout places each badge under its respective project component, making your repository’s security status clear and organised.
+[Grafana Monitoring - Public Dashboard](https://monitoring.mini-farm-tracker.io)
 
 ## Basic overview:
 Provide a visualisation platform for various LoRaWAN sensors.
@@ -52,13 +48,6 @@ Using Golang
 Single droplet (DigitalOcean) established for the monitoring/alerting for expected outputs.
 
 Ubuntu LTS (24.04) selected (Sydney)
-
-### Dashboard
-
-I have setup a public dashboard to track the health of my devices.
-
-[Grafana Monitoring - Public Dashboard](https://monitoring.mini-farm-tracker.io)
-
 
 ### Version
 
