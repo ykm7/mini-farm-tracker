@@ -286,7 +286,7 @@ func SetupRouter(server *Server) *gin.Engine {
 
 	log.Printf("Endpoint: %s not logged\n", METRICS_ENDPOINT)
 	promHandler := server.Metrics.HandlerWithRedisUpdate()
-	r.GET(METRICS_ENDPOINT, gin.BasicAuth(gin.Accounts{
+	r.GET(METRICS_ENDPOINT, concurrencyForOtherRoutes, gin.BasicAuth(gin.Accounts{
 		server.Envs.Metrics_username: server.Envs.Metrics_password,
 	}), gin.WrapH(promHandler))
 
