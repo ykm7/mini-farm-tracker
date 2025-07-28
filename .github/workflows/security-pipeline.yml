@@ -83,10 +83,10 @@ jobs:
         uses: snyk/actions/docker@master
         with:
           image: ${{ matrix.image }}
-          sarif: true
-          args: |
-            --severity-threshold=high
-            --sarif-file-output=snyk.sarif
+          # should be enabled by default - https://github.com/snyk/actions/tree/master/docker#snyk-docker-action
+          # but it appears dependent on the use of "--file=Dockerfile". Trying some combinations
+          sarif: true 
+          args: --severity-threshold=high --file=Dockerfile #--sarif-file-output=snyk.sarif 
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
