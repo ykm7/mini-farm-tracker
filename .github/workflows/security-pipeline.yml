@@ -93,13 +93,14 @@ jobs:
           # should be enabled by default - https://github.com/snyk/actions/tree/master/docker#snyk-docker-action
           # but it appears dependent on the use of "--file=Dockerfile". Trying some combinations
           sarif: true
-          json: true
-          args: --severity-threshold=high --sarif-file-output=snyk-${{ steps.sanitize.outputs.safe_name }}.sarif --json-file-output=snyk-${{ steps.sanitize.outputs.safe_name }}.json
+          args: >
+            --severity-threshold=high
+            --sarif-file-output=snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Print Snyk JSON Output
-        run: cat snyk-${{ steps.sanitize.outputs.safe_name }}.json
+        run: cat snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
 
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
