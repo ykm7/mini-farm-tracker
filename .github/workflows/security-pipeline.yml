@@ -97,17 +97,11 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      # different approach attempting to manually tweak the category used field to allow multiple
-      - name: Patch SARIF Category
-        run: |
-          jq '.runs[].tool.driver.name = "snyk-${{ steps.sanitize.outputs.safe_name }}"' \
-            snyk-${{ steps.sanitize.outputs.safe_name }}.sarif \
-            > tmp.sarif && mv tmp.sarif snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
-
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
+          category: snyk-${{ steps.sanitize.outputs.safe_name }}
 
   #     - name: Upload Snyk SARIF as Artifact
   #       uses: actions/upload-artifact@v4
