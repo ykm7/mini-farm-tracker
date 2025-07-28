@@ -97,49 +97,61 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      - name: Upload Snyk SARIF as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: snyk-${{ steps.sanitize.outputs.safe_name }}
-          path: snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
-
-  list-artifacts:
-    runs-on: ubuntu-latest
-    needs: snyk-docker-scan
-    outputs:
-      artifact-names: ${{ steps.collect.outputs.artifact-names }}
-    steps:
-      - name: Download All Snyk Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: snyk-results
-
-      - name: Collect Artifact Names
-        id: collect
+      # different approach attempting to manually tweak the category used field to allow multiple
+      - name: Patch SARIF Category
         run: |
-          names=$(ls snyk-results | jq -R -s -c 'split("\n")[:-1]')
-          echo "artifact-names=$names" >> $GITHUB_OUTPUT
-          echo "Found artifacts: $names"
+          jq '.runs[].tool.driver.name = "snyk-${{ steps.sanitize.outputs.safe_name }}"' \
+            snyk-${{ steps.sanitize.outputs.safe_name }}.sarif \
+            > tmp.sarif && mv tmp.sarif snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
 
-  upload-sarif-matrix:
-    runs-on: ubuntu-latest
-    needs: list-artifacts
-    strategy:
-      fail-fast: false
-      matrix:
-        sarif_name: ${{ fromJson(needs.list-artifacts.outputs.artifact-names) }}
-    steps:
-      - name: Checkout Source
-        uses: actions/checkout@v3
-
-      - name: Download Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ matrix.sarif_name }}
-          path: sarif-result
-
-      - name: Upload SARIF
+      - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: sarif-result/${{ matrix.sarif_name }}.sarif
-          category: ${{ matrix.sarif_name }}
+          sarif_file: snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
+
+  #     - name: Upload Snyk SARIF as Artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: snyk-${{ steps.sanitize.outputs.safe_name }}
+  #         path: snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
+
+  # list-artifacts:
+  #   runs-on: ubuntu-latest
+  #   needs: snyk-docker-scan
+  #   outputs:
+  #     artifact-names: ${{ steps.collect.outputs.artifact-names }}
+  #   steps:
+  #     - name: Download All Snyk Artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         path: snyk-results
+
+  #     - name: Collect Artifact Names
+  #       id: collect
+  #       run: |
+  #         names=$(ls snyk-results | jq -R -s -c 'split("\n")[:-1]')
+  #         echo "artifact-names=$names" >> $GITHUB_OUTPUT
+  #         echo "Found artifacts: $names"
+
+  # upload-sarif-matrix:
+  #   runs-on: ubuntu-latest
+  #   needs: list-artifacts
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       sarif_name: ${{ fromJson(needs.list-artifacts.outputs.artifact-names) }}
+  #   steps:
+  #     - name: Checkout Source
+  #       uses: actions/checkout@v3
+
+  #     - name: Download Artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: ${{ matrix.sarif_name }}
+  #         path: sarif-result
+
+  #     - name: Upload SARIF
+  #       uses: github/codeql-action/upload-sarif@v3
+  #       with:
+  #         sarif_file: sarif-result/${{ matrix.sarif_name }}.sarif
+  #         category: ${{ matrix.sarif_name }}
