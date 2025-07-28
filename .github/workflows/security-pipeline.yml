@@ -78,6 +78,13 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v3
 
+      # have to make sure the expected SARIF filename can be valid from the docker image
+      - name: Sanitize Image Name
+        id: sanitize
+        run: |
+          safe_name=$(echo "${{ matrix.image }}" | tr '/:' '-')
+          echo "safe_name=$safe_name" >> $GITHUB_OUTPUT
+
       - name: Run Snyk on ${{ matrix.image }}
         continue-on-error: true
         uses: snyk/actions/docker@master
@@ -86,26 +93,24 @@ jobs:
           # should be enabled by default - https://github.com/snyk/actions/tree/master/docker#snyk-docker-action
           # but it appears dependent on the use of "--file=Dockerfile". Trying some combinations
           sarif: true 
-          args: --severity-threshold=high --file=Dockerfile #--sarif-file-output=snyk.sarif 
+          args: --severity-threshold=high --sarif-file-output=snyk-${{ steps.sanitize.outputs.safe_name }}.sarif 
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      - name: Sanitize Image Name
-        id: sanitize
-        run: |
-          safe_name=$(echo "${{ matrix.image }}" | tr '/:' '-')
-          echo "safe_name=$safe_name" >> $GITHUB_OUTPUT
 
       - name: Upload Snyk SARIF as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: snyk-${{ steps.sanitize.outputs.safe_name }}
-          path: snyk.sarif
+          path: snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
 
   snyk-aggregate:
     runs-on: ubuntu-latest
     needs: snyk-docker-scan
     steps:
+      # Required to fix issue for the step not being able to determine a functional git hash (Error: The checkout path provided to the action does not appear to be a git repository.)
+      - name: Checkout Source
+        uses: actions/checkout@v3
+
       - name: Download Snyk SARIF Artifacts
         uses: actions/download-artifact@v4
         with:
