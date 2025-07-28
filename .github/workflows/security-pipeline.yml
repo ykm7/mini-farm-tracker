@@ -1,4 +1,8 @@
 name: Security Pipeline
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
 on:
   push:
     branches:
