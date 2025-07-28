@@ -97,7 +97,48 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      - name: Print Snyk JSON Output
+      ## used this to determine issue with category. The .sarif file contains two .tools section however the second one is blank
+      # - name: Print Snyk JSON Output
+      #   run: cat snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
+
+      - name: Check and Normalize SARIF
+        run: |
+          file="snyk-${{ steps.sanitize.outputs.safe_name }}.sarif"
+
+          # Count how many runs there are
+          run_count=$(jq '.runs | length' "$file")
+
+          echo "SARIF contains $run_count runs."
+
+          if [ "$run_count" -gt 1 ]; then
+            echo "Checking for empty runs..."
+            non_empty_runs=$(jq '[.runs[] | select(.results | length > 0)] | length' "$file")
+            echo "$non_empty_runs non-empty runs found."
+
+            if [ "$non_empty_runs" -eq 1 ]; then
+              echo "Removing empty runs and keeping only the non-empty run."
+              jq --arg category "snyk-${{ steps.sanitize.outputs.safe_name }}" \
+                '[.runs[] | select(.results | length > 0)] 
+                  | {version: "2.1.0", runs: .} 
+                  | .runs[0].tool.driver.name = $category' \
+                "$file" > tmp.sarif && mv tmp.sarif "$file"
+            else
+              echo "Multiple non-empty runs detected. Keeping all but renaming categories."
+              jq --arg category "snyk-${{ steps.sanitize.outputs.safe_name }}" \
+                '(.runs[] | .tool.driver.name) = $category' \
+                "$file" > tmp.sarif && mv tmp.sarif "$file"
+            fi
+          else
+            echo "Only one run found, setting category."
+            jq --arg category "snyk-${{ steps.sanitize.outputs.safe_name }}" \
+              '.runs[0].tool.driver.name = $category' \
+              "$file" > tmp.sarif && mv tmp.sarif "$file"
+          fi
+
+          echo "Final SARIF structure:"
+          jq '.runs | length' "$file"
+
+      - name: Print Snyk JSON Output (after cleanup)
         run: cat snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
 
       - name: Upload result to GitHub Code Scanning
