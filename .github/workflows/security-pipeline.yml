@@ -103,28 +103,43 @@ jobs:
           name: snyk-${{ steps.sanitize.outputs.safe_name }}
           path: snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
 
-  snyk-aggregate:
+  list-sarif-artifacts:
     runs-on: ubuntu-latest
     needs: snyk-docker-scan
+    outputs:
+      sarif-matrix: ${{ steps.collect.outputs.sarif-matrix }}
     steps:
-      # Required to fix issue for the step not being able to determine a functional git hash (Error: The checkout path provided to the action does not appear to be a git repository.)
-      - name: Checkout Source
-        uses: actions/checkout@v3
-
       - name: Download Snyk SARIF Artifacts
         uses: actions/download-artifact@v4
         with:
           path: snyk-results
 
-      - name: Merge SARIF Files
+      - name: Collect SARIF Names
+        id: collect
         run: |
-          if ls snyk-results/**/*.sarif 1> /dev/null 2>&1; then
-            jq -s '{ "version": "2.1.0", "runs": map(.runs) | add }' snyk-results/**/*.sarif > combined-snyk.sarif
-          else
-            echo '{ "version": "2.1.0", "runs": [] }' > combined-snyk.sarif
-          fi
+          names=$(find snyk-results -name '*.sarif' | sed 's|.*/||' | sed 's|\.sarif$||' | jq -R -s -c 'split("\n")[:-1]')
+          echo "sarif-matrix=$names" >> $GITHUB_OUTPUT
+          echo "Found SARIF files: $names"
 
-      - name: Upload Combined SARIF
+  upload-sarif-matrix:
+    runs-on: ubuntu-latest
+    needs: list-sarif-artifacts
+    strategy:
+      fail-fast: false
+      matrix:
+        sarif_name: ${{ fromJson(needs.list-sarif-artifacts.outputs.sarif-matrix) }}
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v3
+
+      - name: Download Artifact for ${{ matrix.sarif_name }}
+        uses: actions/download-artifact@v4
+        with:
+          name: snyk-${{ matrix.sarif_name }}
+          path: sarif-result
+
+      - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: combined-snyk.sarif
+          sarif_file: sarif-result/${{ matrix.sarif_name }}.sarif
+          category: snyk-${{ matrix.sarif_name }}
