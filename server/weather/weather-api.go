@@ -137,5 +137,5 @@ func main() {
 
 	log.Println(string(body))
 
-	log.Println("%+v", weather)
+	log.Printf("%+v\n", weather)
 }

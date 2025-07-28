@@ -1,0 +1,192 @@
+# Output from: snyk/actions/docker@master
+# Testing prom/prometheus:v3.5.0...
+
+# Organization:      ykmpersson
+# Package manager:   linux
+# Project name:      docker-image|prom/prometheus
+# Docker image:      prom/prometheus:v3.5.0
+# Platform:          linux/amd64
+# Licenses:          enabled
+
+# ✔ Tested prom/prometheus:v3.5.0 for known issues, no vulnerable paths found.
+
+# -------------------------------------------------------
+
+# Testing prom/prometheus:v3.5.0...
+
+# Organization:      ykmpersson
+# Package manager:   gomodules
+# Target file:       /bin/promtool
+# Project name:      github.com/prometheus/prometheus
+# Docker image:      prom/prometheus:v3.5.0
+# Licenses:          enabled
+
+# ✔ Tested 832 dependencies for known issues, no vulnerable paths found.
+
+# -------------------------------------------------------
+
+# Testing prom/prometheus:v3.5.0...
+
+# Organization:      ykmpersson
+# Package manager:   gomodules
+# Target file:       /bin/prometheus
+# Project name:      github.com/prometheus/prometheus
+# Docker image:      prom/prometheus:v3.5.0
+# Licenses:          enabled
+
+# ✔ Tested 890 dependencies for known issues, no vulnerable paths found.
+
+
+# Tested 3 projects, no vulnerable paths were found.
+
+name: Security Pipeline
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/server
+    env:
+      GO111MODULE: on
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: ./server/go.mod
+          # https://github.com/actions/setup-go/tree/v4/?tab=readme-ov-file#caching-dependency-files-and-build-outputs
+          cache-dependency-path: ./server/go.sum # to fix caching warning from action
+
+      - name: Get dependencies
+        run: go mod tidy
+    
+      # Run Go tests with race detection (helps catch data race issues) TODO fix
+      # - name: Run Go Tests with Race Detection
+      #   run: go test -race ./...
+
+      # it seems like I cannot use the default setup from - https://github.com/marketplace/actions/gosec-security-checker#github-action
+      # The working directory I am trying to use isn't being respected.
+      - name: Install Gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@v2.22.2
+
+      # Run Gosec and generate SARIF output for GitHub Security tab
+      - name: Run Gosec Security Scanner
+        run: gosec -fmt sarif -out gosec-report.sarif ./...
+
+      - name: Upload Gosec SARIF Report
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: server/gosec-report.sarif
+
+  extract-images:
+      runs-on: ubuntu-latest
+      outputs:
+        images: ${{ steps.set-matrix.outputs.images }}
+      steps:
+        - name: Checkout Source
+          uses: actions/checkout@v3
+
+        - name: Extract Images from docker-compose.yml
+          id: set-matrix
+          run: |
+            images=$(grep -E '^\s*image:' monitoring/docker-compose.yml | awk '{print $2}' | jq -R -s -c 'split("\n")[:-1]')
+            echo "Extracted images: $images"
+            echo "images=$images" >> $GITHUB_OUTPUT
+
+  # should be with the previous to allow Snyk to check images in parallel
+  snyk-docker-scan:
+    runs-on: ubuntu-latest
+    needs: extract-images
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJson(needs.extract-images.outputs.images) }}
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v3
+
+      # have to make sure the expected SARIF filename can be valid from the docker image
+      - name: Sanitize Image Name
+        id: sanitize
+        run: |
+          safe_name=$(echo "${{ matrix.image }}" | tr '/:' '-')
+          echo "safe_name=$safe_name" >> $GITHUB_OUTPUT
+
+      - name: Run Snyk on ${{ matrix.image }}
+        continue-on-error: true
+        uses: snyk/actions/docker@master
+        with:
+          image: ${{ matrix.image }}
+          # should be enabled by default - https://github.com/snyk/actions/tree/master/docker#snyk-docker-action
+          # but it appears dependent on the use of "--file=Dockerfile". Trying some combinations
+          # sarif: true
+          command: monitor # once the issues with multiple SARIF entries is fixed will rely on Synk direct connection
+          args: --severity-threshold=high # --sarif-file-output=snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      ## used this to determine issue with category. The .sarif file contains two .tools section however the second one is blank
+      # - name: Print Snyk JSON Output
+      #   run: cat snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
+
+      # - name: Check and Normalize SARIF
+      #   run: |
+      #     file="snyk-${{ steps.sanitize.outputs.safe_name }}.sarif"
+
+      #     # Count how many runs there are
+      #     run_count=$(jq '.runs | length' "$file")
+
+      #     echo "SARIF contains $run_count runs."
+
+      #     if [ "$run_count" -gt 1 ]; then
+      #       echo "Checking for empty runs..."
+      #       non_empty_runs=$(jq '[.runs[] | select(.results | length > 0)] | length' "$file")
+      #       echo "$non_empty_runs non-empty runs found."
+
+      #       if [ "$non_empty_runs" -eq 1 ]; then
+      #         echo "Removing empty runs and keeping only the non-empty run."
+      #         jq --arg category "snyk-${{ steps.sanitize.outputs.safe_name }}" \
+      #           '[.runs[] | select(.results | length > 0)] 
+      #             | {version: "2.1.0", runs: .} 
+      #             | .runs[0].tool.driver.name = $category' \
+      #           "$file" > tmp.sarif && mv tmp.sarif "$file"
+      #       else
+      #         echo "Multiple non-empty runs detected. Keeping all but renaming categories."
+      #         jq --arg category "snyk-${{ steps.sanitize.outputs.safe_name }}" \
+      #           '(.runs[] | .tool.driver.name) = $category' \
+      #           "$file" > tmp.sarif && mv tmp.sarif "$file"
+      #       fi
+      #     else
+      #       echo "Only one run found, setting category."
+      #       jq --arg category "snyk-${{ steps.sanitize.outputs.safe_name }}" \
+      #         '.runs[0].tool.driver.name = $category' \
+      #         "$file" > tmp.sarif && mv tmp.sarif "$file"
+      #     fi
+
+      #     echo "Final SARIF structure:"
+      #     jq '.runs | length' "$file"
+
+      # - name: Print Snyk JSON Output (after cleanup)
+      #   run: cat snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
+
+      # This is tied to the above output example and to this - https://github.blog/changelog/2025-07-21-code-scanning-will-stop-combining-multiple-sarif-runs-uploaded-in-the-same-sarif-file/
+      # Given the above results in three elements. Use the Synk related monitoring instead of output to github currently.
+      # - name: Upload result to GitHub Code Scanning
+      #   uses: github/codeql-action/upload-sarif@v3
+      #   with:
+      #     sarif_file: snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
+      #     category: snyk-${{ steps.sanitize.outputs.safe_name }}
