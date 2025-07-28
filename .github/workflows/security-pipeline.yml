@@ -103,31 +103,31 @@ jobs:
           name: snyk-${{ steps.sanitize.outputs.safe_name }}
           path: snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
 
-  list-sarif-artifacts:
+  list-artifacts:
     runs-on: ubuntu-latest
     needs: snyk-docker-scan
     outputs:
-      sarif-matrix: ${{ steps.collect.outputs.sarif-matrix }}
+      artifact-names: ${{ steps.collect.outputs.artifact-names }}
     steps:
-      - name: Download Snyk SARIF Artifacts
+      - name: Download All Snyk Artifacts
         uses: actions/download-artifact@v4
         with:
           path: snyk-results
 
-      - name: Collect SARIF Names
+      - name: Collect Artifact Names
         id: collect
         run: |
-          names=$(find snyk-results -name '*.sarif' | sed 's|.*/||' | sed 's|\.sarif$||' | jq -R -s -c 'split("\n")[:-1]')
-          echo "sarif-matrix=$names" >> $GITHUB_OUTPUT
-          echo "Found SARIF files: $names"
+          names=$(ls snyk-results | jq -R -s -c 'split("\n")[:-1]')
+          echo "artifact-names=$names" >> $GITHUB_OUTPUT
+          echo "Found artifacts: $names"
 
   upload-sarif-matrix:
     runs-on: ubuntu-latest
-    needs: list-sarif-artifacts
+    needs: list-artifacts
     strategy:
       fail-fast: false
       matrix:
-        sarif_name: ${{ fromJson(needs.list-sarif-artifacts.outputs.sarif-matrix) }}
+        sarif_name: ${{ fromJson(needs.list-artifacts.outputs.artifact-names) }}
     steps:
       - name: Checkout Source
         uses: actions/checkout@v3
