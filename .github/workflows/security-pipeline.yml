@@ -1,3 +1,44 @@
+# Output from: snyk/actions/docker@master
+# Testing prom/prometheus:v3.5.0...
+
+# Organization:      ykmpersson
+# Package manager:   linux
+# Project name:      docker-image|prom/prometheus
+# Docker image:      prom/prometheus:v3.5.0
+# Platform:          linux/amd64
+# Licenses:          enabled
+
+# ✔ Tested prom/prometheus:v3.5.0 for known issues, no vulnerable paths found.
+
+# -------------------------------------------------------
+
+# Testing prom/prometheus:v3.5.0...
+
+# Organization:      ykmpersson
+# Package manager:   gomodules
+# Target file:       /bin/promtool
+# Project name:      github.com/prometheus/prometheus
+# Docker image:      prom/prometheus:v3.5.0
+# Licenses:          enabled
+
+# ✔ Tested 832 dependencies for known issues, no vulnerable paths found.
+
+# -------------------------------------------------------
+
+# Testing prom/prometheus:v3.5.0...
+
+# Organization:      ykmpersson
+# Package manager:   gomodules
+# Target file:       /bin/prometheus
+# Project name:      github.com/prometheus/prometheus
+# Docker image:      prom/prometheus:v3.5.0
+# Licenses:          enabled
+
+# ✔ Tested 890 dependencies for known issues, no vulnerable paths found.
+
+
+# Tested 3 projects, no vulnerable paths were found.
+
 name: Security Pipeline
 permissions:
   contents: read
@@ -92,8 +133,9 @@ jobs:
           image: ${{ matrix.image }}
           # should be enabled by default - https://github.com/snyk/actions/tree/master/docker#snyk-docker-action
           # but it appears dependent on the use of "--file=Dockerfile". Trying some combinations
-          sarif: true
-          args: --severity-threshold=high --sarif-file-output=snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
+          # sarif: true
+          command: monitor # once the issues with multiple SARIF entries is fixed will rely on Synk direct connection
+          args: --severity-threshold=high # --sarif-file-output=snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
@@ -101,95 +143,50 @@ jobs:
       # - name: Print Snyk JSON Output
       #   run: cat snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
 
-      - name: Check and Normalize SARIF
-        run: |
-          file="snyk-${{ steps.sanitize.outputs.safe_name }}.sarif"
+      # - name: Check and Normalize SARIF
+      #   run: |
+      #     file="snyk-${{ steps.sanitize.outputs.safe_name }}.sarif"
 
-          # Count how many runs there are
-          run_count=$(jq '.runs | length' "$file")
+      #     # Count how many runs there are
+      #     run_count=$(jq '.runs | length' "$file")
 
-          echo "SARIF contains $run_count runs."
+      #     echo "SARIF contains $run_count runs."
 
-          if [ "$run_count" -gt 1 ]; then
-            echo "Checking for empty runs..."
-            non_empty_runs=$(jq '[.runs[] | select(.results | length > 0)] | length' "$file")
-            echo "$non_empty_runs non-empty runs found."
+      #     if [ "$run_count" -gt 1 ]; then
+      #       echo "Checking for empty runs..."
+      #       non_empty_runs=$(jq '[.runs[] | select(.results | length > 0)] | length' "$file")
+      #       echo "$non_empty_runs non-empty runs found."
 
-            if [ "$non_empty_runs" -eq 1 ]; then
-              echo "Removing empty runs and keeping only the non-empty run."
-              jq --arg category "snyk-${{ steps.sanitize.outputs.safe_name }}" \
-                '[.runs[] | select(.results | length > 0)] 
-                  | {version: "2.1.0", runs: .} 
-                  | .runs[0].tool.driver.name = $category' \
-                "$file" > tmp.sarif && mv tmp.sarif "$file"
-            else
-              echo "Multiple non-empty runs detected. Keeping all but renaming categories."
-              jq --arg category "snyk-${{ steps.sanitize.outputs.safe_name }}" \
-                '(.runs[] | .tool.driver.name) = $category' \
-                "$file" > tmp.sarif && mv tmp.sarif "$file"
-            fi
-          else
-            echo "Only one run found, setting category."
-            jq --arg category "snyk-${{ steps.sanitize.outputs.safe_name }}" \
-              '.runs[0].tool.driver.name = $category' \
-              "$file" > tmp.sarif && mv tmp.sarif "$file"
-          fi
+      #       if [ "$non_empty_runs" -eq 1 ]; then
+      #         echo "Removing empty runs and keeping only the non-empty run."
+      #         jq --arg category "snyk-${{ steps.sanitize.outputs.safe_name }}" \
+      #           '[.runs[] | select(.results | length > 0)] 
+      #             | {version: "2.1.0", runs: .} 
+      #             | .runs[0].tool.driver.name = $category' \
+      #           "$file" > tmp.sarif && mv tmp.sarif "$file"
+      #       else
+      #         echo "Multiple non-empty runs detected. Keeping all but renaming categories."
+      #         jq --arg category "snyk-${{ steps.sanitize.outputs.safe_name }}" \
+      #           '(.runs[] | .tool.driver.name) = $category' \
+      #           "$file" > tmp.sarif && mv tmp.sarif "$file"
+      #       fi
+      #     else
+      #       echo "Only one run found, setting category."
+      #       jq --arg category "snyk-${{ steps.sanitize.outputs.safe_name }}" \
+      #         '.runs[0].tool.driver.name = $category' \
+      #         "$file" > tmp.sarif && mv tmp.sarif "$file"
+      #     fi
 
-          echo "Final SARIF structure:"
-          jq '.runs | length' "$file"
+      #     echo "Final SARIF structure:"
+      #     jq '.runs | length' "$file"
 
-      - name: Print Snyk JSON Output (after cleanup)
-        run: cat snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
+      # - name: Print Snyk JSON Output (after cleanup)
+      #   run: cat snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
 
-      - name: Upload result to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
-          category: snyk-${{ steps.sanitize.outputs.safe_name }}
-
-  #     - name: Upload Snyk SARIF as Artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: snyk-${{ steps.sanitize.outputs.safe_name }}
-  #         path: snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
-
-  # list-artifacts:
-  #   runs-on: ubuntu-latest
-  #   needs: snyk-docker-scan
-  #   outputs:
-  #     artifact-names: ${{ steps.collect.outputs.artifact-names }}
-  #   steps:
-  #     - name: Download All Snyk Artifacts
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         path: snyk-results
-
-  #     - name: Collect Artifact Names
-  #       id: collect
-  #       run: |
-  #         names=$(ls snyk-results | jq -R -s -c 'split("\n")[:-1]')
-  #         echo "artifact-names=$names" >> $GITHUB_OUTPUT
-  #         echo "Found artifacts: $names"
-
-  # upload-sarif-matrix:
-  #   runs-on: ubuntu-latest
-  #   needs: list-artifacts
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       sarif_name: ${{ fromJson(needs.list-artifacts.outputs.artifact-names) }}
-  #   steps:
-  #     - name: Checkout Source
-  #       uses: actions/checkout@v3
-
-  #     - name: Download Artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: ${{ matrix.sarif_name }}
-  #         path: sarif-result
-
-  #     - name: Upload SARIF
-  #       uses: github/codeql-action/upload-sarif@v3
-  #       with:
-  #         sarif_file: sarif-result/${{ matrix.sarif_name }}.sarif
-  #         category: ${{ matrix.sarif_name }}
+      # This is tied to the above output example and to this - https://github.blog/changelog/2025-07-21-code-scanning-will-stop-combining-multiple-sarif-runs-uploaded-in-the-same-sarif-file/
+      # Given the above results in three elements. Use the Synk related monitoring instead of output to github currently.
+      # - name: Upload result to GitHub Code Scanning
+      #   uses: github/codeql-action/upload-sarif@v3
+      #   with:
+      #     sarif_file: snyk-${{ steps.sanitize.outputs.safe_name }}.sarif
+      #     category: snyk-${{ steps.sanitize.outputs.safe_name }}
