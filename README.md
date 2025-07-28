@@ -2,9 +2,11 @@
 
 ## Security Status
 
-| Frontend             | Backend         |
-|----------------------|-----------------|
-| [![Known Vulnerabilities](https://snyk.io/test/github/ykm7/mini-farm-tracker/badge.svg?targetFile=webui/package.json&style=flat-square)](https://snyk.io/test/github/ykm7/mini-farm-tracker?targetFile=webui/package.json) | [UNKNOWN] Snyk issue linking to my server files |
+| Frontend             | Backend         | Pipeline |
+|----------------------|-----------------|------------|
+| [![Known Vulnerabilities](https://snyk.io/test/github/ykm7/mini-farm-tracker/badge.svg?targetFile=webui/package.json&style=flat-square)](https://snyk.io/test/github/ykm7/mini-farm-tracker?targetFile=webui/package.json) | [![Known Vulnerabilities](https://snyk.io/test/github/ykm7/mini-farm-tracker/badge.svg?targetFile=server/go.mod&style=flat-square)](https://snyk.io/test/github/ykm7/mini-farm-tracker?targetFile=server/go.mod) | [![Security Pipeline](https://github.com/ykm7/mini-farm-tracker/actions/workflows/security-pipeline.yml/badge.svg)](https://github.com/ykm7/mini-farm-tracker/actions/workflows/security-pipeline.yml) |
+
+Pipeline: 
 
 ### IoT Dashboard
 
