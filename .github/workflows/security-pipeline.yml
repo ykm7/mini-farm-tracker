@@ -94,9 +94,12 @@ jobs:
           # but it appears dependent on the use of "--file=Dockerfile". Trying some combinations
           sarif: true
           json: true
-          args: --severity-threshold=high --sarif-file-output=snyk-${{ steps.sanitize.outputs.safe_name }}.sarif 
+          args: --severity-threshold=high --sarif-file-output=snyk-${{ steps.sanitize.outputs.safe_name }}.sarif --json-file-output=snyk-${{ steps.sanitize.outputs.safe_name }}.json
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Print Snyk JSON Output
+        run: cat snyk-${{ steps.sanitize.outputs.safe_name }}.json
 
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
