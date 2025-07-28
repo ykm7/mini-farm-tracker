@@ -71,6 +71,12 @@ jobs:
       matrix:
         image: ${{ fromJson(needs.extract-images.outputs.images) }}
     steps:
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Authenticate Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
       - name: Checkout Source
         uses: actions/checkout@v3
 
