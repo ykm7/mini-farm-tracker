@@ -84,11 +84,42 @@ jobs:
         with:
           image: ${{ matrix.image }}
           sarif: true
-          args: --severity-threshold=high
+          args: |
+            --severity-threshold=high
+            --sarif-file-output=snyk.sarif
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      - name: Upload result to GitHub Code Scanning
+      - name: Sanitize Image Name
+        id: sanitize
+        run: |
+          safe_name=$(echo "${{ matrix.image }}" | tr '/:' '-')
+          echo "safe_name=$safe_name" >> $GITHUB_OUTPUT
+
+      - name: Upload Snyk SARIF as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-${{ steps.sanitize.outputs.safe_name }}
+          path: snyk.sarif
+
+  snyk-aggregate:
+    runs-on: ubuntu-latest
+    needs: snyk-docker-scan
+    steps:
+      - name: Download Snyk SARIF Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: snyk-results
+
+      - name: Merge SARIF Files
+        run: |
+          if ls snyk-results/**/*.sarif 1> /dev/null 2>&1; then
+            jq -s '{ "version": "2.1.0", "runs": map(.runs) | add }' snyk-results/**/*.sarif > combined-snyk.sarif
+          else
+            echo '{ "version": "2.1.0", "runs": [] }' > combined-snyk.sarif
+          fi
+
+      - name: Upload Combined SARIF
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: snyk.sarif
+          sarif_file: combined-snyk.sarif
