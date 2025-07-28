@@ -141,5 +141,5 @@ jobs:
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: sarif-result/*.sarif
-          category: snyk-${{ matrix.sarif_name }}
+          sarif_file: sarif-result/${{ matrix.sarif_name }}.sarif
+          category: ${{ matrix.sarif_name }}
