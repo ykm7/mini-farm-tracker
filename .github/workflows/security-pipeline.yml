@@ -92,7 +92,8 @@ jobs:
           image: ${{ matrix.image }}
           # should be enabled by default - https://github.com/snyk/actions/tree/master/docker#snyk-docker-action
           # but it appears dependent on the use of "--file=Dockerfile". Trying some combinations
-          sarif: true 
+          sarif: true
+          json: true
           args: --severity-threshold=high --sarif-file-output=snyk-${{ steps.sanitize.outputs.safe_name }}.sarif 
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
